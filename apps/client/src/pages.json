@@ -1,0 +1,103 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "乐航成长"
+      }
+    },
+    {
+      "path": "pages/growth/index",
+      "style": {
+        "navigationBarTitleText": "成长档案"
+      }
+    },
+    {
+      "path": "pages/training/index",
+      "style": {
+        "navigationBarTitleText": "AI陪练"
+      }
+    },
+    {
+      "path": "pages/training/session",
+      "style": {
+        "navigationBarTitleText": "训练中",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/homework/index",
+      "style": {
+        "navigationBarTitleText": "作业闯关"
+      }
+    },
+    {
+      "path": "pages/schedule/index",
+      "style": {
+        "navigationBarTitleText": "课程表"
+      }
+    },
+    {
+      "path": "pages/moments/index",
+      "style": {
+        "navigationBarTitleText": "精彩瞬间"
+      }
+    },
+    {
+      "path": "pages/user/index",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/user/login",
+      "style": {
+        "navigationBarTitleText": "登录"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "乐航成长",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F5F5F5"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#4CAF50",
+    "borderStyle": "black",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-active.png",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/growth/index",
+        "iconPath": "static/tabbar/growth.png",
+        "selectedIconPath": "static/tabbar/growth-active.png",
+        "text": "成长"
+      },
+      {
+        "pagePath": "pages/training/index",
+        "iconPath": "static/tabbar/training.png",
+        "selectedIconPath": "static/tabbar/training-active.png",
+        "text": "陪练"
+      },
+      {
+        "pagePath": "pages/schedule/index",
+        "iconPath": "static/tabbar/schedule.png",
+        "selectedIconPath": "static/tabbar/schedule-active.png",
+        "text": "课程"
+      },
+      {
+        "pagePath": "pages/user/index",
+        "iconPath": "static/tabbar/user.png",
+        "selectedIconPath": "static/tabbar/user-active.png",
+        "text": "我的"
+      }
+    ]
+  }
+}

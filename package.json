@@ -1,0 +1,19 @@
+{
+  "name": "yilehang",
+  "version": "1.0.0",
+  "description": "易乐航·ITS智慧体教云平台",
+  "private": true,
+  "scripts": {
+    "dev:client": "pnpm --filter @yilehang/client dev:h5",
+    "dev:coach": "pnpm --filter @yilehang/coach dev:h5",
+    "dev:admin": "pnpm --filter @yilehang/admin dev",
+    "dev:api": "cd apps/api && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "build:client": "pnpm --filter @yilehang/client build:h5",
+    "build:coach": "pnpm --filter @yilehang/coach build:h5",
+    "build:admin": "pnpm --filter @yilehang/admin build"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
