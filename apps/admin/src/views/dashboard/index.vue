@@ -8,8 +8,9 @@
             <el-icon><UserFilled /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ stats.totalStudents }}</div>
+            <div class="stat-value">{{ overview.students?.total || 0 }}</div>
             <div class="stat-label">学员总数</div>
+            <div class="stat-sub">本月新增 {{ overview.students?.new_this_month || 0 }}</div>
           </div>
         </el-card>
       </el-col>
@@ -19,7 +20,7 @@
             <el-icon><Avatar /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ stats.totalCoaches }}</div>
+            <div class="stat-value">{{ overview.coaches?.total || 0 }}</div>
             <div class="stat-label">教练总数</div>
           </div>
         </el-card>
@@ -30,8 +31,9 @@
             <el-icon><Reading /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ stats.todayCourses }}</div>
-            <div class="stat-label">今日课程</div>
+            <div class="stat-value">{{ overview.bookings?.today || 0 }}</div>
+            <div class="stat-label">今日预约</div>
+            <div class="stat-sub">待确认 {{ overview.bookings?.pending || 0 }}</div>
           </div>
         </el-card>
       </el-col>
@@ -41,8 +43,11 @@
             <el-icon><Money /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">¥{{ stats.monthRevenue }}</div>
+            <div class="stat-value">¥{{ formatMoney(overview.revenue?.this_month) }}</div>
             <div class="stat-label">本月营收</div>
+            <div class="stat-sub" :class="{ positive: overview.revenue?.growth_rate > 0 }">
+              {{ overview.revenue?.growth_rate > 0 ? '+' : '' }}{{ overview.revenue?.growth_rate || 0 }}%
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -53,45 +58,64 @@
       <el-col :span="16">
         <el-card>
           <template #header>
-            <span>营收趋势</span>
+            <div class="card-header">
+              <span>营收趋势</span>
+              <el-button text @click="loadRevenueStats">
+                <el-icon><Refresh /></el-icon>
+              </el-button>
+            </div>
           </template>
-          <div ref="revenueChartRef" class="chart"></div>
+          <div v-loading="loadingRevenue" ref="revenueChartRef" class="chart"></div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card>
           <template #header>
-            <span>课程分布</span>
+            <div class="card-header">
+              <span>预约统计 (近7天)</span>
+              <el-button text @click="loadBookingStats">
+                <el-icon><Refresh /></el-icon>
+              </el-button>
+            </div>
           </template>
-          <div ref="courseChartRef" class="chart"></div>
+          <div v-loading="loadingBooking" ref="bookingChartRef" class="chart"></div>
         </el-card>
       </el-col>
     </el-row>
 
     <!-- 最近数据 -->
     <el-row :gutter="20">
-      <el-col :span="12">
+      <el-col :span="24">
         <el-card>
           <template #header>
-            <span>最近报名</span>
+            <div class="card-header">
+              <span>最近预约</span>
+              <el-button text @click="loadRecentBookings">
+                <el-icon><Refresh /></el-icon>
+              </el-button>
+            </div>
           </template>
-          <el-table :data="recentEnrollments" stripe>
-            <el-table-column prop="studentName" label="学员" />
-            <el-table-column prop="courseName" label="课程" />
-            <el-table-column prop="time" label="时间" />
-          </el-table>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card>
-          <template #header>
-            <span>今日课程</span>
-          </template>
-          <el-table :data="todaySchedules" stripe>
-            <el-table-column prop="time" label="时间" width="100" />
-            <el-table-column prop="courseName" label="课程" />
-            <el-table-column prop="coachName" label="教练" />
-            <el-table-column prop="enrolled" label="人数" width="80" />
+          <el-table :data="recentBookings" stripe v-loading="loadingRecent">
+            <el-table-column prop="student_name" label="学员" width="120" />
+            <el-table-column prop="coach_name" label="教练" width="120" />
+            <el-table-column prop="booking_date" label="日期" width="120" />
+            <el-table-column label="时间" width="120">
+              <template #default="{ row }">
+                {{ row.start_time }} - {{ row.end_time }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="getStatusType(row.status)">
+                  {{ getStatusText(row.status) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="created_at" label="创建时间">
+              <template #default="{ row }">
+                {{ formatDateTime(row.created_at) }}
+              </template>
+            </el-table-column>
           </el-table>
         </el-card>
       </el-col>
@@ -100,55 +124,130 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
+import { UserFilled, Avatar, Reading, Money, Refresh } from '@element-plus/icons-vue'
+import api from '@/api'
 
 const revenueChartRef = ref<HTMLElement>()
-const courseChartRef = ref<HTMLElement>()
+const bookingChartRef = ref<HTMLElement>()
 
-// 统计数据
-const stats = ref({
-  totalStudents: 256,
-  totalCoaches: 12,
-  todayCourses: 8,
-  monthRevenue: '52,800'
-})
+// 加载状态
+const loadingOverview = ref(false)
+const loadingRevenue = ref(false)
+const loadingBooking = ref(false)
+const loadingRecent = ref(false)
 
-// 最近报名
-const recentEnrollments = ref([
-  { studentName: '小明', courseName: '篮球基础班', time: '10分钟前' },
-  { studentName: '小红', courseName: '体能训练课', time: '30分钟前' },
-  { studentName: '小刚', courseName: '篮球提高班', time: '1小时前' }
-])
+// 数据
+const overview = ref<any>({})
+const recentBookings = ref<any[]>([])
+const revenueStats = ref<any[]>([])
+const bookingStats = ref<any[]>([])
 
-// 今日课程
-const todaySchedules = ref([
-  { time: '09:00', courseName: '篮球基础班', coachName: '张教练', enrolled: '12/15' },
-  { time: '10:30', courseName: '体能训练课', coachName: '李教练', enrolled: '18/20' },
-  { time: '14:00', courseName: '篮球提高班', coachName: '张教练', enrolled: '10/12' }
-])
+let revenueChart: echarts.ECharts | null = null
+let bookingChart: echarts.ECharts | null = null
 
-onMounted(() => {
-  initRevenueChart()
-  initCourseChart()
-})
+function formatMoney(value: number | undefined): string {
+  if (!value) return '0'
+  return value.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
+
+function formatDateTime(dateStr: string): string {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return `${date.getMonth() + 1}-${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+function getStatusType(status: string): string {
+  const map: Record<string, string> = {
+    pending: 'warning',
+    confirmed: 'primary',
+    completed: 'success',
+    cancelled: 'info',
+    no_show: 'danger'
+  }
+  return map[status] || 'info'
+}
+
+function getStatusText(status: string): string {
+  const map: Record<string, string> = {
+    pending: '待确认',
+    confirmed: '已确认',
+    completed: '已完成',
+    cancelled: '已取消',
+    no_show: '未到'
+  }
+  return map[status] || status
+}
+
+async function loadOverview() {
+  loadingOverview.value = true
+  try {
+    overview.value = await api.get('/dashboard/overview')
+  } catch (error) {
+    console.error('获取概览数据失败:', error)
+  } finally {
+    loadingOverview.value = false
+  }
+}
+
+async function loadRecentBookings() {
+  loadingRecent.value = true
+  try {
+    recentBookings.value = await api.get('/dashboard/recent-bookings', { params: { limit: 10 } })
+  } catch (error) {
+    console.error('获取最近预约失败:', error)
+  } finally {
+    loadingRecent.value = false
+  }
+}
+
+async function loadRevenueStats() {
+  loadingRevenue.value = true
+  try {
+    revenueStats.value = await api.get('/dashboard/revenue-stats', { params: { months: 6 } })
+    await nextTick()
+    initRevenueChart()
+  } catch (error) {
+    console.error('获取营收统计失败:', error)
+  } finally {
+    loadingRevenue.value = false
+  }
+}
+
+async function loadBookingStats() {
+  loadingBooking.value = true
+  try {
+    bookingStats.value = await api.get('/dashboard/booking-stats', { params: { days: 7 } })
+    await nextTick()
+    initBookingChart()
+  } catch (error) {
+    console.error('获取预约统计失败:', error)
+  } finally {
+    loadingBooking.value = false
+  }
+}
 
 function initRevenueChart() {
   if (!revenueChartRef.value) return
 
-  const chart = echarts.init(revenueChartRef.value)
-  chart.setOption({
+  if (revenueChart) {
+    revenueChart.dispose()
+  }
+
+  revenueChart = echarts.init(revenueChartRef.value)
+  revenueChart.setOption({
     tooltip: { trigger: 'axis' },
     xAxis: {
       type: 'category',
-      data: ['1月', '2月', '3月', '4月', '5月', '6月']
+      data: revenueStats.value.map(item => item.month)
     },
     yAxis: { type: 'value' },
     series: [{
       name: '营收',
       type: 'line',
       smooth: true,
-      data: [42000, 45000, 48000, 51000, 49000, 52800],
+      data: revenueStats.value.map(item => item.revenue),
       areaStyle: {
         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
           { offset: 0, color: 'rgba(76, 175, 80, 0.3)' },
@@ -161,24 +260,51 @@ function initRevenueChart() {
   })
 }
 
-function initCourseChart() {
-  if (!courseChartRef.value) return
+function initBookingChart() {
+  if (!bookingChartRef.value) return
 
-  const chart = echarts.init(courseChartRef.value)
-  chart.setOption({
-    tooltip: { trigger: 'item' },
-    series: [{
-      type: 'pie',
-      radius: ['40%', '70%'],
-      data: [
-        { value: 45, name: '篮球', itemStyle: { color: '#4CAF50' } },
-        { value: 25, name: '体能', itemStyle: { color: '#2196F3' } },
-        { value: 15, name: '足球', itemStyle: { color: '#FF9800' } },
-        { value: 15, name: '其他', itemStyle: { color: '#9C27B0' } }
-      ]
-    }]
+  if (bookingChart) {
+    bookingChart.dispose()
+  }
+
+  bookingChart = echarts.init(bookingChartRef.value)
+  bookingChart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: {
+      data: ['预约数', '完成数'],
+      bottom: 0
+    },
+    xAxis: {
+      type: 'category',
+      data: bookingStats.value.map(item => {
+        const date = new Date(item.date)
+        return `${date.getMonth() + 1}-${date.getDate()}`
+      })
+    },
+    yAxis: { type: 'value' },
+    series: [
+      {
+        name: '预约数',
+        type: 'bar',
+        data: bookingStats.value.map(item => item.total),
+        itemStyle: { color: '#2196F3' }
+      },
+      {
+        name: '完成数',
+        type: 'bar',
+        data: bookingStats.value.map(item => item.completed),
+        itemStyle: { color: '#4CAF50' }
+      }
+    ]
   })
 }
+
+onMounted(() => {
+  loadOverview()
+  loadRecentBookings()
+  loadRevenueStats()
+  loadBookingStats()
+})
 </script>
 
 <style scoped lang="scss">
@@ -220,6 +346,22 @@ function initCourseChart() {
   .stat-label {
     font-size: 14px;
     color: #999;
+  }
+
+  .stat-sub {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+
+    &.positive {
+      color: #4CAF50;
+    }
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .chart-row {

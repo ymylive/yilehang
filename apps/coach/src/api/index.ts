@@ -59,24 +59,23 @@ async function request<T = any>(url: string, options: RequestOptions = {}): Prom
 // 教练信息
 export const coachApi = {
   // 获取当前教练信息
-  getProfile: () => request('/coach/profile'),
+  getProfile: () => request('/coaches/me/profile'),
 
   // 更新教练信息
-  updateProfile: (data: any) => request('/coach/profile', { method: 'PUT', data }),
+  updateProfile: (data: any) => request('/coaches/me/profile', { method: 'PUT', data }),
 
   // 获取收入统计
-  getIncomeSummary: (params?: { month?: string }) =>
-    request('/coach/income/summary', { params }),
+  getIncomeSummary: () => request('/coaches/me/income/summary'),
 
   // 获取收入明细
-  getIncomeDetails: (params?: { page?: number; page_size?: number; start_date?: string; end_date?: string }) =>
-    request('/coach/income/details', { params })
+  getIncomeDetails: (params?: { month?: string; page?: number; page_size?: number }) =>
+    request('/coaches/me/income/details', { params })
 }
 
 // 可约时段管理
 export const slotsApi = {
   // 获取可约时段列表
-  getSlots: () => request('/coach/slots'),
+  getSlots: () => request('/coaches/me/slots'),
 
   // 创建可约时段
   createSlot: (data: {
@@ -85,55 +84,55 @@ export const slotsApi = {
     end_time: string
     slot_duration?: number
     max_students?: number
-  }) => request('/coach/slots', { method: 'POST', data }),
+  }) => request('/coaches/me/slots', { method: 'POST', data }),
 
   // 更新可约时段
   updateSlot: (id: number, data: any) =>
-    request(`/coach/slots/${id}`, { method: 'PUT', data }),
+    request(`/coaches/me/slots/${id}`, { method: 'PUT', data }),
 
   // 删除可约时段
   deleteSlot: (id: number) =>
-    request(`/coach/slots/${id}`, { method: 'DELETE' })
+    request(`/coaches/me/slots/${id}`, { method: 'DELETE' })
 }
 
 // 学员管理
 export const studentsApi = {
   // 获取我的学员列表
-  getStudents: (params?: { page?: number; page_size?: number; keyword?: string }) =>
-    request('/coach/students', { params }),
+  getStudents: (params?: { page?: number; page_size?: number }) =>
+    request('/coaches/me/students', { params }),
 
   // 获取学员详情
-  getStudent: (id: number) => request(`/coach/students/${id}`),
-
-  // 获取学员上课记录
-  getStudentLessons: (id: number, params?: { page?: number; page_size?: number }) =>
-    request(`/coach/students/${id}/lessons`, { params }),
-
-  // 获取学员反馈列表
-  getStudentFeedbacks: (id: number, params?: { page?: number; page_size?: number }) =>
-    request(`/coach/students/${id}/feedbacks`, { params })
+  getStudent: (id: number) => request(`/coaches/me/students/${id}`)
 }
 
 // 课程/预约管理
 export const scheduleApi = {
   // 获取我的课表
-  getSchedule: (params?: { start_date?: string; end_date?: string }) =>
-    request('/coach/schedule', { params }),
-
-  // 获取预约详情
-  getBooking: (id: number) => request(`/coach/bookings/${id}`),
+  getSchedule: (params?: { start_date?: string; end_date?: string; status?: string }) =>
+    request('/coaches/me/schedule', { params }),
 
   // 确认预约
   confirmBooking: (id: number) =>
-    request(`/coach/bookings/${id}/confirm`, { method: 'PUT' }),
+    request(`/coaches/me/bookings/${id}/confirm`, { method: 'PUT' }),
 
   // 完成课程
-  completeBooking: (id: number) =>
-    request(`/coach/bookings/${id}/complete`, { method: 'PUT' }),
+  completeBooking: (id: number, notes?: string) =>
+    request(`/coaches/me/bookings/${id}/complete`, { method: 'PUT', params: notes ? { notes } : undefined }),
 
   // 标记未到
   markNoShow: (id: number) =>
-    request(`/coach/bookings/${id}/no-show`, { method: 'PUT' })
+    request(`/coaches/me/bookings/${id}/no-show`, { method: 'PUT' })
+}
+
+// 评价管理
+export const reviewApi = {
+  // 获取我的评价列表
+  getMyReviews: (params?: { page?: number; page_size?: number }) =>
+    request('/reviews/coach/my', { params }),
+
+  // 回复评价
+  replyReview: (id: number, reply: string) =>
+    request(`/coaches/me/reviews/${id}/reply`, { method: 'POST', data: { reply } })
 }
 
 // 反馈管理
@@ -145,18 +144,21 @@ export const feedbackApi = {
     performance_rating: number
     content: string
     suggestions?: string
-  }) => request('/coach/feedbacks', { method: 'POST', data }),
+  }) => request('/reviews/feedbacks', { method: 'POST', data }),
 
   // 获取反馈列表
   getFeedbacks: (params?: { page?: number; page_size?: number; student_id?: number }) =>
-    request('/coach/feedbacks', { params })
+    request('/reviews/feedbacks', { params })
 }
 
 // 认证
 export const authApi = {
   // 登录
   login: (data: { phone: string; password: string }) =>
-    request('/auth/coach/login', { method: 'POST', data }),
+    request('/auth/login', { method: 'POST', data }),
+
+  // 获取用户信息
+  getUserInfo: () => request('/auth/me'),
 
   // 登出
   logout: () => request('/auth/logout', { method: 'POST' })
@@ -167,6 +169,7 @@ export default {
   slots: slotsApi,
   students: studentsApi,
   schedule: scheduleApi,
+  review: reviewApi,
   feedback: feedbackApi,
   auth: authApi
 }

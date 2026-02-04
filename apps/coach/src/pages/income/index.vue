@@ -8,17 +8,36 @@
       </view>
       <view class="overview-amount">
         <text class="currency">¥</text>
-        <text class="amount">{{ monthIncome.toFixed(2) }}</text>
+        <text class="amount">{{ summary.this_month?.income?.toFixed(2) || '0.00' }}</text>
       </view>
       <view class="overview-stats">
         <view class="stat-item">
-          <text class="stat-value">{{ monthLessons }}</text>
+          <text class="stat-value">{{ summary.this_month?.lessons || 0 }}</text>
           <text class="stat-label">课时数</text>
         </view>
         <view class="stat-item">
-          <text class="stat-value">{{ monthStudents }}</text>
-          <text class="stat-label">学员数</text>
+          <text class="stat-value">¥{{ summary.hourly_rate || 0 }}</text>
+          <text class="stat-label">课时费</text>
         </view>
+        <view class="stat-item">
+          <text class="stat-value">{{ ((summary.commission_rate || 0) * 100).toFixed(0) }}%</text>
+          <text class="stat-label">提成比例</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 月份对比 -->
+    <view class="compare-card">
+      <view class="compare-item">
+        <view class="compare-label">上月收入</view>
+        <view class="compare-value">¥{{ summary.last_month?.income?.toFixed(2) || '0.00' }}</view>
+        <view class="compare-lessons">{{ summary.last_month?.lessons || 0 }}课时</view>
+      </view>
+      <view class="compare-divider"></view>
+      <view class="compare-item">
+        <view class="compare-label">累计收入</view>
+        <view class="compare-value total">¥{{ summary.total?.income?.toFixed(2) || '0.00' }}</view>
+        <view class="compare-lessons">{{ summary.total?.lessons || 0 }}课时</view>
       </view>
     </view>
 
@@ -26,70 +45,136 @@
     <view class="section">
       <view class="section-header">
         <text class="section-title">收入明细</text>
-        <view class="filter-tabs">
-          <text
-            :class="['tab', { active: currentTab === 'week' }]"
-            @click="currentTab = 'week'"
-          >本周</text>
-          <text
-            :class="['tab', { active: currentTab === 'month' }]"
-            @click="currentTab = 'month'"
-          >本月</text>
-        </view>
+        <picker mode="date" fields="month" :value="selectedMonth" @change="onMonthChange">
+          <view class="month-picker">
+            {{ selectedMonth }} <text class="arrow">▼</text>
+          </view>
+        </picker>
       </view>
 
-      <view class="income-list">
+      <view v-if="loading" class="loading-state">
+        <text>加载中...</text>
+      </view>
+
+      <view v-else class="income-list">
         <view v-for="item in incomeList" :key="item.id" class="income-item">
           <view class="item-info">
-            <view class="item-title">{{ item.student_name }} - {{ item.course_type === 'private' ? '私教课' : '小班课' }}</view>
-            <view class="item-time">{{ formatDateTime(item.created_at) }}</view>
+            <view class="item-title">{{ item.student_name }}</view>
+            <view class="item-time">{{ item.booking_date }} {{ item.start_time }}-{{ item.end_time }}</view>
           </view>
-          <view class="item-amount">+¥{{ item.amount.toFixed(2) }}</view>
+          <view class="item-amount">+¥{{ item.income.toFixed(2) }}</view>
         </view>
 
         <view v-if="incomeList.length === 0" class="empty-state">
           <text>暂无收入记录</text>
         </view>
       </view>
+
+      <view v-if="incomeList.length > 0 && hasMore" class="load-more" @click="loadMore">
+        <text>加载更多</text>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { coachApi } from '@/api/index'
+
+interface IncomeSummary {
+  this_month: { lessons: number; income: number }
+  last_month: { lessons: number; income: number }
+  total: { lessons: number; income: number }
+  hourly_rate: number
+  commission_rate: number
+}
 
 interface IncomeItem {
   id: number
+  booking_date: string
+  start_time: string
+  end_time: string
   student_name: string
-  course_type: string
-  amount: number
-  created_at: string
+  hourly_rate: number
+  commission_rate: number
+  income: number
+  completed_at: string | null
 }
 
 const currentMonth = ref(new Date().getMonth() + 1)
-const monthIncome = ref(0)
-const monthLessons = ref(0)
-const monthStudents = ref(0)
-const currentTab = ref('month')
+const selectedMonth = ref(formatMonth(new Date()))
+const summary = ref<Partial<IncomeSummary>>({})
 const incomeList = ref<IncomeItem[]>([])
+const loading = ref(false)
+const page = ref(1)
+const hasMore = ref(true)
 
-function formatDateTime(dateStr: string): string {
-  const date = new Date(dateStr)
-  return `${date.getMonth() + 1}-${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+function formatMonth(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  return `${year}-${month}`
 }
 
-onMounted(() => {
-  // 模拟数据
-  monthIncome.value = 8500
-  monthLessons.value = 42
-  monthStudents.value = 15
+async function loadSummary() {
+  try {
+    const data = await coachApi.getIncomeSummary()
+    summary.value = data
+  } catch (error: any) {
+    console.error('获取收入汇总失败:', error)
+  }
+}
 
-  incomeList.value = [
-    { id: 1, student_name: '小明', course_type: 'private', amount: 200, created_at: new Date().toISOString() },
-    { id: 2, student_name: '小红', course_type: 'private', amount: 200, created_at: new Date(Date.now() - 86400000).toISOString() },
-    { id: 3, student_name: '小刚', course_type: 'private', amount: 200, created_at: new Date(Date.now() - 172800000).toISOString() },
-    { id: 4, student_name: '小美', course_type: 'group', amount: 150, created_at: new Date(Date.now() - 259200000).toISOString() }
-  ]
+async function loadIncomeDetails(reset = false) {
+  if (reset) {
+    page.value = 1
+    incomeList.value = []
+    hasMore.value = true
+  }
+
+  if (!hasMore.value) return
+
+  loading.value = true
+  try {
+    const data = await coachApi.getIncomeDetails({
+      month: selectedMonth.value,
+      page: page.value,
+      page_size: 20
+    })
+
+    const items = data.items || []
+    if (items.length < 20) {
+      hasMore.value = false
+    }
+
+    if (reset) {
+      incomeList.value = items
+    } else {
+      incomeList.value.push(...items)
+    }
+  } catch (error: any) {
+    console.error('获取收入明细失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+function loadMore() {
+  page.value++
+  loadIncomeDetails()
+}
+
+function onMonthChange(e: any) {
+  selectedMonth.value = e.detail.value
+  loadIncomeDetails(true)
+}
+
+watch(selectedMonth, () => {
+  loadIncomeDetails(true)
+})
+
+onMounted(() => {
+  loadSummary()
+  loadIncomeDetails(true)
 })
 </script>
 
@@ -97,6 +182,7 @@ onMounted(() => {
 .income-page {
   min-height: 100vh;
   background-color: #f5f5f5;
+  padding-bottom: 40rpx;
 }
 
 .overview-card {
@@ -154,6 +240,46 @@ onMounted(() => {
   }
 }
 
+.compare-card {
+  display: flex;
+  background-color: #fff;
+  margin: 20rpx;
+  padding: 30rpx;
+  border-radius: 16rpx;
+
+  .compare-item {
+    flex: 1;
+    text-align: center;
+
+    .compare-label {
+      font-size: 26rpx;
+      color: #999;
+    }
+
+    .compare-value {
+      font-size: 36rpx;
+      font-weight: 600;
+      color: #333;
+      margin: 12rpx 0 8rpx;
+
+      &.total {
+        color: #2196F3;
+      }
+    }
+
+    .compare-lessons {
+      font-size: 24rpx;
+      color: #999;
+    }
+  }
+
+  .compare-divider {
+    width: 1rpx;
+    background-color: #f0f0f0;
+    margin: 0 20rpx;
+  }
+}
+
 .section {
   background-color: #fff;
   margin: 20rpx;
@@ -172,23 +298,26 @@ onMounted(() => {
       color: #333;
     }
 
-    .filter-tabs {
-      display: flex;
-      gap: 20rpx;
+    .month-picker {
+      font-size: 28rpx;
+      color: #666;
+      padding: 8rpx 20rpx;
+      background-color: #f5f5f5;
+      border-radius: 20rpx;
 
-      .tab {
-        font-size: 26rpx;
-        color: #999;
-        padding: 8rpx 20rpx;
-        border-radius: 20rpx;
-
-        &.active {
-          background-color: #e3f2fd;
-          color: #2196F3;
-        }
+      .arrow {
+        font-size: 20rpx;
+        margin-left: 8rpx;
       }
     }
   }
+}
+
+.loading-state {
+  text-align: center;
+  padding: 40rpx;
+  color: #999;
+  font-size: 28rpx;
 }
 
 .income-list {
@@ -229,5 +358,12 @@ onMounted(() => {
     color: #999;
     font-size: 28rpx;
   }
+}
+
+.load-more {
+  text-align: center;
+  padding: 20rpx;
+  color: #2196F3;
+  font-size: 28rpx;
 }
 </style>

@@ -18,24 +18,6 @@
         <text class="info-label">时间</text>
         <text class="info-value">{{ formatTime(startTime) }} - {{ formatTime(endTime) }}</text>
       </view>
-
-      <view class="info-row">
-        <text class="info-label">课程类型</text>
-        <view class="course-type-selector">
-          <view
-            :class="['type-option', { active: courseType === 'private' }]"
-            @click="courseType = 'private'"
-          >
-            私教课
-          </view>
-          <view
-            :class="['type-option', { active: courseType === 'group' }]"
-            @click="courseType = 'group'"
-          >
-            小班课
-          </view>
-        </view>
-      </view>
     </view>
 
     <!-- 课时卡信息 -->
@@ -43,7 +25,7 @@
       <view class="card-title">课时扣费</view>
 
       <view v-if="membership" class="membership-info">
-        <view class="membership-name">{{ membership.card?.name }}</view>
+        <view class="membership-name">{{ membership.card_name || '课时卡' }}</view>
         <view class="membership-balance">
           剩余 <text class="balance-value">{{ membership.remaining_times }}</text> 次
         </view>
@@ -51,7 +33,7 @@
 
       <view v-else class="no-membership">
         <text class="warning-text">您暂无可用课时卡</text>
-        <wd-button size="small" @click="goToPurchase">去购买</wd-button>
+        <view class="btn-purchase" @click="goToPurchase">去购买</view>
       </view>
 
       <view class="deduct-info" v-if="membership">
@@ -84,39 +66,34 @@
     <!-- 底部操作栏 -->
     <view class="bottom-bar">
       <view class="agreement">
-        <wd-checkbox v-model="agreed" />
+        <checkbox :checked="agreed" @click="agreed = !agreed" />
         <text class="agreement-text">我已阅读并同意</text>
         <text class="agreement-link" @click="viewAgreement">《预约服务协议》</text>
       </view>
-      <wd-button
-        type="primary"
-        block
+      <button
+        class="btn-submit"
         :disabled="!canSubmit"
         :loading="submitting"
         @click="submitBooking"
       >
         确认预约
-      </wd-button>
+      </button>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { bookingApi, membershipApi } from '@/api'
+import { bookingApi, membershipApi } from '@/api/index'
 
 interface Membership {
   id: number
   student_id: number
   card_id: number
+  card_name?: string
   remaining_times: number
   expire_date: string | null
   status: string
-  card?: {
-    id: number
-    name: string
-    card_type: string
-  }
 }
 
 const coachId = ref(0)
@@ -124,7 +101,6 @@ const coachName = ref('')
 const bookingDate = ref('')
 const startTime = ref('')
 const endTime = ref('')
-const courseType = ref('private')
 const remark = ref('')
 const agreed = ref(false)
 const submitting = ref(false)
@@ -149,7 +125,8 @@ function formatTime(timeStr: string): string {
 
 async function loadMembership() {
   try {
-    const list = await membershipApi.list()
+    const data = await membershipApi.getMyMemberships()
+    const list = data.items || data || []
     // 找到有效的课时卡
     membership.value = list.find((m: Membership) =>
       m.status === 'active' && m.remaining_times > 0
@@ -179,8 +156,8 @@ async function submitBooking() {
       booking_date: bookingDate.value,
       start_time: startTime.value,
       end_time: endTime.value,
-      course_type: courseType.value,
-      remark: remark.value || undefined
+      notes: remark.value || undefined,
+      membership_id: membership.value?.id
     })
 
     uni.showToast({ title: '预约成功', icon: 'success' })
@@ -260,26 +237,6 @@ onMounted(() => {
   }
 }
 
-.course-type-selector {
-  display: flex;
-  gap: 16rpx;
-
-  .type-option {
-    padding: 12rpx 24rpx;
-    background-color: #f5f5f5;
-    border-radius: 8rpx;
-    font-size: 26rpx;
-    color: #666;
-    border: 2rpx solid transparent;
-
-    &.active {
-      background-color: #e8f5e9;
-      color: #4caf50;
-      border-color: #4caf50;
-    }
-  }
-}
-
 .membership-info {
   display: flex;
   justify-content: space-between;
@@ -316,6 +273,14 @@ onMounted(() => {
   .warning-text {
     font-size: 28rpx;
     color: #ff9800;
+  }
+
+  .btn-purchase {
+    padding: 12rpx 24rpx;
+    background-color: #ff9800;
+    color: #fff;
+    font-size: 26rpx;
+    border-radius: 20rpx;
   }
 }
 
@@ -364,6 +329,10 @@ onMounted(() => {
     justify-content: center;
     margin-bottom: 16rpx;
 
+    checkbox {
+      transform: scale(0.8);
+    }
+
     .agreement-text {
       font-size: 24rpx;
       color: #666;
@@ -373,6 +342,20 @@ onMounted(() => {
     .agreement-link {
       font-size: 24rpx;
       color: #4caf50;
+    }
+  }
+
+  .btn-submit {
+    width: 100%;
+    height: 88rpx;
+    background-color: #4caf50;
+    color: #fff;
+    font-size: 32rpx;
+    border-radius: 44rpx;
+    border: none;
+
+    &[disabled] {
+      background-color: #ccc;
     }
   }
 }

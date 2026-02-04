@@ -4,7 +4,7 @@ API路由汇总
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import auth, students, schedules, training, growth
-from app.api.v1.endpoints import bookings, memberships, coaches, reviews
+from app.api.v1.endpoints import bookings, memberships, coaches, reviews, dashboard
 
 api_router = APIRouter()
 
@@ -20,4 +20,7 @@ api_router.include_router(bookings.router, prefix="/bookings", tags=["预约管�
 api_router.include_router(memberships.router, prefix="/memberships", tags=["课时卡"])
 api_router.include_router(coaches.router, prefix="/coaches", tags=["教练"])
 api_router.include_router(reviews.router, prefix="/reviews", tags=["评价"])
+
+# 管理后台路由
+api_router.include_router(dashboard.router, prefix="/dashboard", tags=["仪表盘"])
 

@@ -35,7 +35,11 @@
         <view class="section-more" @click="goToSchedule">查看全部 ></view>
       </view>
 
-      <view v-if="todayLessons.length > 0" class="lesson-list">
+      <view v-if="loading" class="loading-state">
+        <text>加载中...</text>
+      </view>
+
+      <view v-else-if="todayLessons.length > 0" class="lesson-list">
         <view
           v-for="lesson in todayLessons"
           :key="lesson.id"
@@ -43,13 +47,13 @@
           @click="goToLessonDetail(lesson.id)"
         >
           <view class="lesson-time">
-            <text class="time-text">{{ formatTime(lesson.start_time) }}</text>
+            <text class="time-text">{{ lesson.start_time }}</text>
             <text class="time-divider">-</text>
-            <text class="time-text">{{ formatTime(lesson.end_time) }}</text>
+            <text class="time-text">{{ lesson.end_time }}</text>
           </view>
           <view class="lesson-info">
             <view class="lesson-name">{{ lesson.student_name }}</view>
-            <view class="lesson-type">{{ lesson.course_type === 'private' ? '私教课' : '小班课' }}</view>
+            <view class="lesson-type">私教课</view>
           </view>
           <view :class="['lesson-status', lesson.status]">
             {{ getStatusText(lesson.status) }}
@@ -89,11 +93,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { coachApi, scheduleApi } from '@/api/index'
 
 interface CoachInfo {
   id: number
   name: string
   avatar: string | null
+  total_students: number
+  total_lessons: number
+  avg_rating: number
 }
 
 interface Lesson {
@@ -101,8 +109,8 @@ interface Lesson {
   student_name: string
   start_time: string
   end_time: string
-  course_type: string
   status: string
+  booking_date: string
 }
 
 const coachInfo = ref<CoachInfo | null>(null)
@@ -112,6 +120,7 @@ const todayStats = ref({
   totalStudents: 0
 })
 const todayLessons = ref<Lesson[]>([])
+const loading = ref(false)
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -125,19 +134,49 @@ function formatDate(date: Date): string {
   return `${date.getMonth() + 1}月${date.getDate()}日 周${weekdays[date.getDay()]}`
 }
 
-function formatTime(timeStr: string): string {
-  if (!timeStr) return ''
-  return timeStr.substring(0, 5)
-}
-
 function getStatusText(status: string): string {
   const map: Record<string, string> = {
-    pending: '待上课',
+    pending: '待确认',
     confirmed: '已确认',
     completed: '已完成',
-    cancelled: '已取消'
+    cancelled: '已取消',
+    no_show: '未到'
   }
   return map[status] || status
+}
+
+async function loadCoachInfo() {
+  try {
+    const data = await coachApi.getProfile()
+    coachInfo.value = data
+    todayStats.value.totalStudents = data.total_students || 0
+  } catch (error: any) {
+    console.error('获取教练信息失败:', error)
+  }
+}
+
+async function loadTodaySchedule() {
+  loading.value = true
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    const data = await scheduleApi.getSchedule({
+      start_date: today,
+      end_date: today
+    })
+
+    todayLessons.value = data.items || []
+
+    // 计算统计
+    todayStats.value.totalLessons = todayLessons.value.length
+    todayStats.value.completedLessons = todayLessons.value.filter(
+      l => l.status === 'completed'
+    ).length
+  } catch (error: any) {
+    console.error('获取课表失败:', error)
+    todayLessons.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 function goToSchedule() {
@@ -161,49 +200,12 @@ function goToIncome() {
 }
 
 function goToReviews() {
-  uni.showToast({ title: '功能开发中', icon: 'none' })
+  uni.navigateTo({ url: '/pages/reviews/index' })
 }
 
 onMounted(() => {
-  // 模拟数据
-  coachInfo.value = {
-    id: 1,
-    name: '张教练',
-    avatar: null
-  }
-
-  todayStats.value = {
-    totalLessons: 5,
-    completedLessons: 2,
-    totalStudents: 4
-  }
-
-  todayLessons.value = [
-    {
-      id: 1,
-      student_name: '小明',
-      start_time: '09:00:00',
-      end_time: '10:00:00',
-      course_type: 'private',
-      status: 'completed'
-    },
-    {
-      id: 2,
-      student_name: '小红',
-      start_time: '10:30:00',
-      end_time: '11:30:00',
-      course_type: 'private',
-      status: 'confirmed'
-    },
-    {
-      id: 3,
-      student_name: '小刚',
-      start_time: '14:00:00',
-      end_time: '15:00:00',
-      course_type: 'private',
-      status: 'pending'
-    }
-  ]
+  loadCoachInfo()
+  loadTodaySchedule()
 })
 </script>
 
@@ -226,6 +228,7 @@ onMounted(() => {
     height: 100rpx;
     border-radius: 50%;
     border: 4rpx solid rgba(255, 255, 255, 0.5);
+    background-color: #e0e0e0;
   }
 
   .user-info {
@@ -304,6 +307,13 @@ onMounted(() => {
   }
 }
 
+.loading-state {
+  text-align: center;
+  padding: 40rpx;
+  color: #999;
+  font-size: 28rpx;
+}
+
 .lesson-list {
   .lesson-card {
     display: flex;
@@ -356,7 +366,11 @@ onMounted(() => {
       border-radius: 20rpx;
       font-size: 24rpx;
 
-      &.pending,
+      &.pending {
+        background-color: #fff3e0;
+        color: #ff9800;
+      }
+
       &.confirmed {
         background-color: #e3f2fd;
         color: #2196F3;
@@ -370,6 +384,11 @@ onMounted(() => {
       &.cancelled {
         background-color: #ffebee;
         color: #f44336;
+      }
+
+      &.no_show {
+        background-color: #fce4ec;
+        color: #e91e63;
       }
     }
   }

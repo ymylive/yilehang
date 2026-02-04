@@ -52,21 +52,20 @@
         <text class="selected-date">{{ formatSelectedDate() }}</text>
         <text class="selected-time">{{ formatTime(selectedSlot.start_time) }} - {{ formatTime(selectedSlot.end_time) }}</text>
       </view>
-      <wd-button
-        type="primary"
-        block
+      <button
+        class="btn-next"
         :disabled="!selectedSlot"
         @click="goToConfirm"
       >
         下一步
-      </wd-button>
+      </button>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { coachApi } from '@/api'
+import { coachApi } from '@/api/index'
 
 interface Coach {
   id: number
@@ -389,6 +388,19 @@ onMounted(() => {
       font-size: 28rpx;
       color: #4caf50;
       font-weight: 600;
+    }
+  }
+  .btn-next {
+    width: 100%;
+    height: 88rpx;
+    background-color: #4caf50;
+    color: #fff;
+    font-size: 32rpx;
+    border-radius: 44rpx;
+    border: none;
+
+    &[disabled] {
+      background-color: #ccc;
     }
   }
 }

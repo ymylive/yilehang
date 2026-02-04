@@ -11,7 +11,7 @@
       <view v-for="day in weekDays" :key="day.value" class="day-section">
         <view class="day-header">
           <text class="day-name">{{ day.label }}</text>
-          <wd-button size="small" plain @click="addSlot(day.value)">+ 添加时段</wd-button>
+          <view class="add-btn" @click="addSlot(day.value)">+ 添加时段</view>
         </view>
 
         <view v-if="getSlotsByDay(day.value).length > 0" class="slot-items">
@@ -28,8 +28,8 @@
               <text>最多{{ slot.max_students }}人</text>
             </view>
             <view class="slot-actions">
-              <wd-button size="small" plain @click="editSlot(slot)">编辑</wd-button>
-              <wd-button size="small" plain type="error" @click="deleteSlot(slot.id)">删除</wd-button>
+              <text class="action-btn edit" @click="editSlot(slot)">编辑</text>
+              <text class="action-btn delete" @click="deleteSlotConfirm(slot.id)">删除</text>
             </view>
           </view>
         </view>
@@ -41,49 +41,56 @@
     </view>
 
     <!-- 添加/编辑弹窗 -->
-    <wd-popup v-model="showPopup" position="bottom" round>
-      <view class="popup-content">
+    <view v-if="showPopup" class="popup-mask" @click="showPopup = false">
+      <view class="popup-content" @click.stop>
         <view class="popup-title">{{ editingSlot ? '编辑时段' : '添加时段' }}</view>
 
         <view class="form-item">
           <text class="form-label">开始时间</text>
-          <wd-datetime-picker
-            v-model="formData.startTime"
-            type="time"
-            label=""
-          />
+          <picker mode="time" :value="formData.startTime" @change="onStartTimeChange">
+            <view class="picker-value">{{ formData.startTime }}</view>
+          </picker>
         </view>
 
         <view class="form-item">
           <text class="form-label">结束时间</text>
-          <wd-datetime-picker
-            v-model="formData.endTime"
-            type="time"
-            label=""
-          />
+          <picker mode="time" :value="formData.endTime" @change="onEndTimeChange">
+            <view class="picker-value">{{ formData.endTime }}</view>
+          </picker>
         </view>
 
         <view class="form-item">
           <text class="form-label">每节时长（分钟）</text>
-          <wd-input v-model="formData.duration" type="number" placeholder="60" />
+          <input
+            class="form-input"
+            type="number"
+            v-model="formData.duration"
+            placeholder="60"
+          />
         </view>
 
         <view class="form-item">
           <text class="form-label">最大学员数</text>
-          <wd-input v-model="formData.maxStudents" type="number" placeholder="1" />
+          <input
+            class="form-input"
+            type="number"
+            v-model="formData.maxStudents"
+            placeholder="1"
+          />
         </view>
 
         <view class="popup-buttons">
-          <wd-button plain @click="showPopup = false">取消</wd-button>
-          <wd-button type="primary" @click="saveSlot">保存</wd-button>
+          <button class="btn cancel" @click="showPopup = false">取消</button>
+          <button class="btn confirm" @click="saveSlot" :loading="saving">保存</button>
         </view>
       </view>
-    </wd-popup>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { slotsApi } from '@/api/index'
 
 interface Slot {
   id: number
@@ -109,6 +116,8 @@ const slots = ref<Slot[]>([])
 const showPopup = ref(false)
 const editingSlot = ref<Slot | null>(null)
 const currentDay = ref(0)
+const saving = ref(false)
+const loading = ref(false)
 
 const formData = ref({
   startTime: '09:00',
@@ -124,6 +133,27 @@ function getSlotsByDay(day: number): Slot[] {
 function formatTime(timeStr: string): string {
   if (!timeStr) return ''
   return timeStr.substring(0, 5)
+}
+
+function onStartTimeChange(e: any) {
+  formData.value.startTime = e.detail.value
+}
+
+function onEndTimeChange(e: any) {
+  formData.value.endTime = e.detail.value
+}
+
+async function loadSlots() {
+  loading.value = true
+  try {
+    const data = await slotsApi.getSlots()
+    slots.value = data || []
+  } catch (error: any) {
+    console.error('获取时段失败:', error)
+    uni.showToast({ title: error.message || '获取时段失败', icon: 'none' })
+  } finally {
+    loading.value = false
+  }
 }
 
 function addSlot(day: number) {
@@ -150,52 +180,67 @@ function editSlot(slot: Slot) {
   showPopup.value = true
 }
 
-function saveSlot() {
-  // TODO: 调用API保存
-  const newSlot: Slot = {
-    id: editingSlot.value?.id || Date.now(),
-    day_of_week: currentDay.value,
-    start_time: formData.value.startTime + ':00',
-    end_time: formData.value.endTime + ':00',
-    slot_duration: parseInt(formData.value.duration) || 60,
-    max_students: parseInt(formData.value.maxStudents) || 1,
-    is_active: true
+async function saveSlot() {
+  if (saving.value) return
+
+  // 验证
+  if (!formData.value.startTime || !formData.value.endTime) {
+    uni.showToast({ title: '请选择时间', icon: 'none' })
+    return
   }
 
-  if (editingSlot.value) {
-    const index = slots.value.findIndex(s => s.id === editingSlot.value!.id)
-    if (index > -1) {
-      slots.value[index] = newSlot
+  if (formData.value.startTime >= formData.value.endTime) {
+    uni.showToast({ title: '结束时间必须大于开始时间', icon: 'none' })
+    return
+  }
+
+  saving.value = true
+  try {
+    const slotData = {
+      day_of_week: currentDay.value,
+      start_time: formData.value.startTime + ':00',
+      end_time: formData.value.endTime + ':00',
+      slot_duration: parseInt(formData.value.duration) || 60,
+      max_students: parseInt(formData.value.maxStudents) || 1
     }
-  } else {
-    slots.value.push(newSlot)
-  }
 
-  showPopup.value = false
-  uni.showToast({ title: '保存成功', icon: 'success' })
+    if (editingSlot.value) {
+      await slotsApi.updateSlot(editingSlot.value.id, slotData)
+    } else {
+      await slotsApi.createSlot(slotData)
+    }
+
+    showPopup.value = false
+    uni.showToast({ title: '保存成功', icon: 'success' })
+    await loadSlots()
+  } catch (error: any) {
+    console.error('保存失败:', error)
+    uni.showToast({ title: error.message || '保存失败', icon: 'none' })
+  } finally {
+    saving.value = false
+  }
 }
 
-function deleteSlot(id: number) {
+function deleteSlotConfirm(id: number) {
   uni.showModal({
     title: '确认删除',
     content: '确定要删除这个时段吗？',
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
-        slots.value = slots.value.filter(s => s.id !== id)
-        uni.showToast({ title: '删除成功', icon: 'success' })
+        try {
+          await slotsApi.deleteSlot(id)
+          uni.showToast({ title: '删除成功', icon: 'success' })
+          await loadSlots()
+        } catch (error: any) {
+          uni.showToast({ title: error.message || '删除失败', icon: 'none' })
+        }
       }
     }
   })
 }
 
 onMounted(() => {
-  // 模拟数据
-  slots.value = [
-    { id: 1, day_of_week: 1, start_time: '09:00:00', end_time: '12:00:00', slot_duration: 60, max_students: 1, is_active: true },
-    { id: 2, day_of_week: 1, start_time: '14:00:00', end_time: '18:00:00', slot_duration: 60, max_students: 1, is_active: true },
-    { id: 3, day_of_week: 3, start_time: '09:00:00', end_time: '12:00:00', slot_duration: 60, max_students: 1, is_active: true },
-    { id: 4, day_of_week: 5, start_time: '14:00:00', end_time: '18:00:00', slot_duration: 60, max_students: 1, is_active: true }
-  ]
+  loadSlots()
 })
 </script>
 
@@ -247,6 +292,14 @@ onMounted(() => {
       font-weight: 600;
       color: #333;
     }
+
+    .add-btn {
+      font-size: 26rpx;
+      color: #2196F3;
+      padding: 8rpx 20rpx;
+      border: 1rpx solid #2196F3;
+      border-radius: 20rpx;
+    }
   }
 }
 
@@ -280,7 +333,20 @@ onMounted(() => {
 
     .slot-actions {
       display: flex;
-      gap: 12rpx;
+      gap: 20rpx;
+
+      .action-btn {
+        font-size: 26rpx;
+        padding: 8rpx 16rpx;
+
+        &.edit {
+          color: #2196F3;
+        }
+
+        &.delete {
+          color: #f44336;
+        }
+      }
     }
   }
 }
@@ -292,7 +358,22 @@ onMounted(() => {
   font-size: 26rpx;
 }
 
+.popup-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 999;
+}
+
 .popup-content {
+  width: 100%;
+  background-color: #fff;
+  border-radius: 24rpx 24rpx 0 0;
   padding: 40rpx;
 
   .popup-title {
@@ -312,6 +393,21 @@ onMounted(() => {
       color: #666;
       margin-bottom: 12rpx;
     }
+
+    .picker-value {
+      padding: 20rpx;
+      background-color: #f5f5f5;
+      border-radius: 12rpx;
+      font-size: 30rpx;
+      color: #333;
+    }
+
+    .form-input {
+      padding: 20rpx;
+      background-color: #f5f5f5;
+      border-radius: 12rpx;
+      font-size: 30rpx;
+    }
   }
 
   .popup-buttons {
@@ -319,8 +415,22 @@ onMounted(() => {
     gap: 20rpx;
     margin-top: 40rpx;
 
-    :deep(.wd-button) {
+    .btn {
       flex: 1;
+      height: 88rpx;
+      line-height: 88rpx;
+      border-radius: 44rpx;
+      font-size: 32rpx;
+
+      &.cancel {
+        background-color: #f5f5f5;
+        color: #666;
+      }
+
+      &.confirm {
+        background-color: #2196F3;
+        color: #fff;
+      }
     }
   }
 }
