@@ -5,6 +5,11 @@ from app.models.user import User, Student, Coach, ParentStudentRelation, UserRol
 from app.models.course import Course, Venue, Schedule, Attendance, CourseType, CourseCategory
 from app.models.growth import FitnessTest, FitnessMetric, TrainingSession, MetricType
 from app.models.homework import HomeworkTemplate, HomeworkAssignment, HomeworkSubmission
+from app.models.booking import (
+    MembershipCard, StudentMembership, CoachAvailableSlot, Booking,
+    Transaction, Review, CoachFeedback,
+    CardType, MembershipStatus, BookingStatus, TransactionType
+)
 
 __all__ = [
     # 用户域
@@ -30,4 +35,16 @@ __all__ = [
     "HomeworkTemplate",
     "HomeworkAssignment",
     "HomeworkSubmission",
+    # 约课系统域
+    "MembershipCard",
+    "StudentMembership",
+    "CoachAvailableSlot",
+    "Booking",
+    "Transaction",
+    "Review",
+    "CoachFeedback",
+    "CardType",
+    "MembershipStatus",
+    "BookingStatus",
+    "TransactionType",
 ]

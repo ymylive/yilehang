@@ -35,6 +35,18 @@
           <el-icon><Calendar /></el-icon>
           <span>排课管理</span>
         </el-menu-item>
+        <el-menu-item index="/bookings">
+          <el-icon><Tickets /></el-icon>
+          <span>预约管理</span>
+        </el-menu-item>
+        <el-sub-menu index="memberships">
+          <template #title>
+            <el-icon><Postcard /></el-icon>
+            <span>课时卡</span>
+          </template>
+          <el-menu-item index="/membership-cards">课时卡管理</el-menu-item>
+          <el-menu-item index="/student-cards">学员课时卡</el-menu-item>
+        </el-sub-menu>
         <el-menu-item index="/finance">
           <el-icon><Money /></el-icon>
           <span>财务管理</span>

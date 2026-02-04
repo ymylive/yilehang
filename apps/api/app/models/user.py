@@ -54,8 +54,10 @@ class Student(Base):
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"))
     student_no: Mapped[str] = mapped_column(String(20), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(50))
+    phone: Mapped[Optional[str]] = mapped_column(String(20))  # 学员手机号
     gender: Mapped[Optional[str]] = mapped_column(String(10))
     birth_date: Mapped[Optional[date]] = mapped_column(Date)
+    age: Mapped[Optional[int]] = mapped_column(Integer)  # 年龄
     height: Mapped[Optional[float]] = mapped_column(Numeric(5, 2))  # 身高cm
     weight: Mapped[Optional[float]] = mapped_column(Numeric(5, 2))  # 体重kg
     school: Mapped[Optional[str]] = mapped_column(String(100))
@@ -64,6 +66,7 @@ class Student(Base):
     coach_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("coaches.id"))
     remaining_lessons: Mapped[int] = mapped_column(Integer, default=0)  # 剩余课时
     status: Mapped[str] = mapped_column(String(20), default="active")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -72,6 +75,11 @@ class Student(Base):
     coach: Mapped[Optional["Coach"]] = relationship("Coach", back_populates="students")
     fitness_tests: Mapped[List["FitnessTest"]] = relationship("FitnessTest", back_populates="student")
     training_sessions: Mapped[List["TrainingSession"]] = relationship("TrainingSession", back_populates="student")
+    # 约课系统关系
+    memberships: Mapped[List["StudentMembership"]] = relationship("StudentMembership", back_populates="student")
+    bookings: Mapped[List["Booking"]] = relationship("Booking", back_populates="student")
+    reviews: Mapped[List["Review"]] = relationship("Review", back_populates="student")
+    coach_feedbacks: Mapped[List["CoachFeedback"]] = relationship("CoachFeedback", back_populates="student")
 
 
 class Coach(Base):
@@ -85,7 +93,13 @@ class Coach(Base):
     certification: Mapped[Optional[str]] = mapped_column(Text)  # JSON存储证书列表
     specialty: Mapped[Optional[str]] = mapped_column(Text)  # JSON存储专长列表
     hourly_rate: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
+    commission_rate: Mapped[Optional[float]] = mapped_column(Numeric(5, 2))  # 提成比例
+    introduction: Mapped[Optional[str]] = mapped_column(Text)  # 个人介绍
+    certificates: Mapped[Optional[str]] = mapped_column(Text)  # JSON存储证书图片URL
+    avatar: Mapped[Optional[str]] = mapped_column(String(500))  # 教练头像
+    years_of_experience: Mapped[Optional[int]] = mapped_column(Integer)  # 从业年限
     status: Mapped[str] = mapped_column(String(20), default="active")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -93,6 +107,11 @@ class Coach(Base):
     user: Mapped["User"] = relationship("User", back_populates="coach")
     students: Mapped[List["Student"]] = relationship("Student", back_populates="coach")
     schedules: Mapped[List["Schedule"]] = relationship("Schedule", back_populates="coach")
+    # 约课系统关系
+    available_slots: Mapped[List["CoachAvailableSlot"]] = relationship("CoachAvailableSlot", back_populates="coach")
+    bookings: Mapped[List["Booking"]] = relationship("Booking", back_populates="coach")
+    reviews: Mapped[List["Review"]] = relationship("Review", back_populates="coach")
+    feedbacks: Mapped[List["CoachFeedback"]] = relationship("CoachFeedback", back_populates="coach")
 
 
 class ParentStudentRelation(Base):

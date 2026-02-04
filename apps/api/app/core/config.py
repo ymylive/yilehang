@@ -31,9 +31,11 @@ class Settings(BaseSettings):
         "http://localhost:8080",
     ]
 
-    # 微信配置
-    WECHAT_APP_ID: str = ""
-    WECHAT_APP_SECRET: str = ""
+    # 微信小程序配置
+    WECHAT_APPID: str = "wxdbd150a0458a3c7c"  # 小程序AppID
+    WECHAT_SECRET: str = ""  # 小程序AppSecret
+    WECHAT_APP_ID: str = ""  # 公众号AppID (如有)
+    WECHAT_APP_SECRET: str = ""  # 公众号AppSecret
 
     # 阿里云OSS配置
     ALIYUN_ACCESS_KEY_ID: str = ""

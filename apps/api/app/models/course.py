@@ -78,6 +78,9 @@ class Schedule(Base):
     end_time: Mapped[datetime] = mapped_column(DateTime)
     capacity: Mapped[int] = mapped_column(Integer, default=20)
     enrolled_count: Mapped[int] = mapped_column(Integer, default=0)
+    max_capacity: Mapped[int] = mapped_column(Integer, default=20)  # 最大容量
+    booking_deadline: Mapped[int] = mapped_column(Integer, default=60)  # 预约截止（分钟）
+    cancel_deadline: Mapped[int] = mapped_column(Integer, default=120)  # 取消截止（分钟）
     status: Mapped[str] = mapped_column(String(20), default="scheduled")  # scheduled/ongoing/completed/cancelled
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -87,6 +90,7 @@ class Schedule(Base):
     coach: Mapped["Coach"] = relationship("Coach", back_populates="schedules")
     venue: Mapped[Optional["Venue"]] = relationship("Venue", back_populates="schedules")
     attendances: Mapped[List["Attendance"]] = relationship("Attendance", back_populates="schedule")
+    bookings: Mapped[List["Booking"]] = relationship("Booking", back_populates="schedule")
 
 
 class Attendance(Base):

@@ -7,6 +7,30 @@
       }
     },
     {
+      "path": "pages/booking/index",
+      "style": {
+        "navigationBarTitleText": "约课"
+      }
+    },
+    {
+      "path": "pages/booking/coach-detail",
+      "style": {
+        "navigationBarTitleText": "教练详情"
+      }
+    },
+    {
+      "path": "pages/booking/select-time",
+      "style": {
+        "navigationBarTitleText": "选择时段"
+      }
+    },
+    {
+      "path": "pages/booking/confirm",
+      "style": {
+        "navigationBarTitleText": "确认预约"
+      }
+    },
+    {
       "path": "pages/growth/index",
       "style": {
         "navigationBarTitleText": "成长档案"
@@ -34,7 +58,31 @@
     {
       "path": "pages/schedule/index",
       "style": {
-        "navigationBarTitleText": "课程表"
+        "navigationBarTitleText": "我的课表"
+      }
+    },
+    {
+      "path": "pages/schedule/detail",
+      "style": {
+        "navigationBarTitleText": "课程详情"
+      }
+    },
+    {
+      "path": "pages/membership/index",
+      "style": {
+        "navigationBarTitleText": "我的课时卡"
+      }
+    },
+    {
+      "path": "pages/membership/transactions",
+      "style": {
+        "navigationBarTitleText": "消费记录"
+      }
+    },
+    {
+      "path": "pages/review/create",
+      "style": {
+        "navigationBarTitleText": "课程评价"
       }
     },
     {
@@ -54,6 +102,18 @@
       "style": {
         "navigationBarTitleText": "登录"
       }
+    },
+    {
+      "path": "pages/user/register",
+      "style": {
+        "navigationBarTitleText": "注册"
+      }
+    },
+    {
+      "path": "pages/user/messages",
+      "style": {
+        "navigationBarTitleText": "消息通知"
+      }
     }
   ],
   "globalStyle": {
@@ -70,32 +130,22 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "iconPath": "static/tabbar/home.png",
-        "selectedIconPath": "static/tabbar/home-active.png",
         "text": "首页"
       },
       {
+        "pagePath": "pages/booking/index",
+        "text": "约课"
+      },
+      {
         "pagePath": "pages/growth/index",
-        "iconPath": "static/tabbar/growth.png",
-        "selectedIconPath": "static/tabbar/growth-active.png",
         "text": "成长"
       },
       {
-        "pagePath": "pages/training/index",
-        "iconPath": "static/tabbar/training.png",
-        "selectedIconPath": "static/tabbar/training-active.png",
-        "text": "陪练"
-      },
-      {
         "pagePath": "pages/schedule/index",
-        "iconPath": "static/tabbar/schedule.png",
-        "selectedIconPath": "static/tabbar/schedule-active.png",
-        "text": "课程"
+        "text": "课表"
       },
       {
         "pagePath": "pages/user/index",
-        "iconPath": "static/tabbar/user.png",
-        "selectedIconPath": "static/tabbar/user-active.png",
         "text": "我的"
       }
     ]

@@ -43,6 +43,17 @@
 
     <!-- 功能菜单 -->
     <view class="menu-list">
+      <view class="menu-item" @click="goTo('/pages/membership/index')">
+        <text class="icon">💳</text>
+        <text class="label">我的课时卡</text>
+        <text class="badge" v-if="userStore.currentStudent?.remaining_lessons">{{ userStore.currentStudent.remaining_lessons }}次</text>
+        <text class="arrow">></text>
+      </view>
+      <view class="menu-item" @click="goTo('/pages/user/messages')">
+        <text class="icon">🔔</text>
+        <text class="label">消息通知</text>
+        <text class="arrow">></text>
+      </view>
       <view class="menu-item" @click="goTo('/pages/user/orders')">
         <text class="icon">📋</text>
         <text class="label">我的订单</text>
@@ -316,6 +327,15 @@ function logout() {
   flex: 1;
   font-size: 30rpx;
   color: #333;
+}
+
+.menu-item .badge {
+  padding: 4rpx 16rpx;
+  background: #e8f5e9;
+  color: #4CAF50;
+  font-size: 24rpx;
+  border-radius: 20rpx;
+  margin-right: 16rpx;
 }
 
 .menu-item .arrow {

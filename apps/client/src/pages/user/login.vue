@@ -110,17 +110,31 @@ function forgotPassword() {
   uni.showToast({ title: '请联系客服重置密码', icon: 'none' })
 }
 
-function wechatLogin() {
+async function wechatLogin() {
+  if (!agreed.value) {
+    uni.showToast({ title: '请先同意用户协议', icon: 'none' })
+    return
+  }
+
   // #ifdef MP-WEIXIN
   uni.login({
     provider: 'weixin',
-    success: async (res) => {
+    success: async (loginRes) => {
       try {
-        // await userStore.wechatLogin(res.code)
-        uni.showToast({ title: '微信登录功能开发中', icon: 'none' })
-      } catch (error) {
-        uni.showToast({ title: '微信登录失败', icon: 'none' })
+        loading.value = true
+        await userStore.wechatLogin(loginRes.code)
+        uni.showToast({ title: '登录成功', icon: 'success' })
+        setTimeout(() => {
+          uni.switchTab({ url: '/pages/index/index' })
+        }, 1500)
+      } catch (error: any) {
+        uni.showToast({ title: error.message || '微信登录失败', icon: 'none' })
+      } finally {
+        loading.value = false
       }
+    },
+    fail: () => {
+      uni.showToast({ title: '获取微信授权失败', icon: 'none' })
     }
   })
   // #endif

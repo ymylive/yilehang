@@ -51,6 +51,24 @@ const router = createRouter({
           meta: { title: '排课管理', icon: 'Calendar' }
         },
         {
+          path: 'bookings',
+          name: 'Bookings',
+          component: () => import('@/views/bookings/index.vue'),
+          meta: { title: '预约管理', icon: 'Tickets' }
+        },
+        {
+          path: 'membership-cards',
+          name: 'MembershipCards',
+          component: () => import('@/views/memberships/cards.vue'),
+          meta: { title: '课时卡管理', icon: 'Postcard' }
+        },
+        {
+          path: 'student-cards',
+          name: 'StudentCards',
+          component: () => import('@/views/memberships/student-cards.vue'),
+          meta: { title: '学员课时卡', icon: 'CreditCard' }
+        },
+        {
           path: 'finance',
           name: 'Finance',
           component: () => import('@/views/finance/index.vue'),
