@@ -42,7 +42,7 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # 关系
-    student: Mapped[Optional["Student"]] = relationship("Student", back_populates="user", uselist=False)
+    student: Mapped[Optional["Student"]] = relationship("Student", back_populates="user", uselist=False, foreign_keys="[Student.user_id]")
     coach: Mapped[Optional["Coach"]] = relationship("Coach", back_populates="user", uselist=False)
 
 

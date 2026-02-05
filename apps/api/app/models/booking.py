@@ -78,6 +78,7 @@ class StudentMembership(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # 关系
+    student: Mapped["Student"] = relationship("Student", back_populates="memberships")
     card: Mapped["MembershipCard"] = relationship("MembershipCard", back_populates="student_memberships")
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="membership")
     bookings: Mapped[List["Booking"]] = relationship("Booking", back_populates="membership")
