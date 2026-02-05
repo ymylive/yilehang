@@ -134,6 +134,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { bookingApi, coachApi } from '@/api'
 
 interface Booking {
   id: number
@@ -216,30 +217,39 @@ function getStatusType(status: string): string {
 async function fetchBookings() {
   loading.value = true
   try {
-    // TODO: 调用API获取预约列表
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const params: any = {
+      page: pagination.page,
+      page_size: pagination.pageSize
+    }
+    if (filters.coachId) params.coach_id = filters.coachId
+    if (filters.status) params.status = filters.status
+    if (filters.studentName) params.student_name = filters.studentName
+    if (filters.dateRange && filters.dateRange.length === 2) {
+      params.start_date = filters.dateRange[0].toISOString().split('T')[0]
+      params.end_date = filters.dateRange[1].toISOString().split('T')[0]
+    }
 
-    // 模拟数据
-    const today = new Date().toISOString().split('T')[0]
-    bookings.value = [
-      { id: 1, student_id: 1, student_name: '小明', coach_id: 1, coach_name: '张教练', booking_date: today, start_time: '09:00:00', end_time: '10:00:00', course_type: 'private', status: 'completed', created_at: new Date().toISOString() },
-      { id: 2, student_id: 2, student_name: '小红', coach_id: 1, coach_name: '张教练', booking_date: today, start_time: '10:00:00', end_time: '11:00:00', course_type: 'private', status: 'confirmed', created_at: new Date().toISOString() },
-      { id: 3, student_id: 3, student_name: '小刚', coach_id: 2, coach_name: '李教练', booking_date: today, start_time: '14:00:00', end_time: '15:00:00', course_type: 'private', status: 'pending', created_at: new Date().toISOString() },
-      { id: 4, student_id: 4, student_name: '小美', coach_id: 2, coach_name: '李教练', booking_date: today, start_time: '15:00:00', end_time: '16:00:00', course_type: 'group', status: 'cancelled', cancel_reason: '学员临时有事', created_at: new Date().toISOString() }
-    ]
-    pagination.total = bookings.value.length
+    const res: any = await bookingApi.list(params)
+    bookings.value = res.items || res.data || res || []
+    pagination.total = res.total || bookings.value.length
+  } catch (error: any) {
+    ElMessage.error(error.message || '获取预约列表失败')
   } finally {
     loading.value = false
   }
 }
 
 async function fetchCoaches() {
-  // TODO: 调用API获取教练列表
-  coaches.value = [
-    { id: 1, name: '张教练' },
-    { id: 2, name: '李教练' },
-    { id: 3, name: '王教练' }
-  ]
+  try {
+    const res: any = await coachApi.list({ page_size: 100 })
+    const coachList = res.items || res.data || res || []
+    coaches.value = coachList.map((c: any) => ({
+      id: c.id,
+      name: c.name || c.user?.nickname || `教练${c.id}`
+    }))
+  } catch (error: any) {
+    console.error('获取教练列表失败:', error)
+  }
 }
 
 function handleSearch() {
@@ -272,11 +282,13 @@ function handleView(row: Booking) {
 async function handleConfirm(row: Booking) {
   try {
     await ElMessageBox.confirm('确定要确认此预约吗？', '确认预约')
-    // TODO: 调用API确认预约
+    await bookingApi.confirm(row.id)
     row.status = 'confirmed'
     ElMessage.success('预约已确认')
-  } catch {
-    // 用户取消
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '确认预约失败')
+    }
   }
 }
 
@@ -286,12 +298,14 @@ async function handleCancel(row: Booking) {
       inputPattern: /.+/,
       inputErrorMessage: '请输入取消原因'
     })
-    // TODO: 调用API取消预约
+    await bookingApi.cancel(row.id, value)
     row.status = 'cancelled'
     row.cancel_reason = value
     ElMessage.success('预约已取消')
-  } catch {
-    // 用户取消
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '取消预约失败')
+    }
   }
 }
 

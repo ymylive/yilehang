@@ -97,6 +97,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { membershipApi } from '@/api'
 
 interface MembershipCard {
   id: number
@@ -148,16 +149,10 @@ function getCourseTypeText(type: string): string {
 async function fetchCards() {
   loading.value = true
   try {
-    // TODO: 调用API获取课时卡列表
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    cards.value = [
-      { id: 1, name: '体验卡', card_type: 'times', total_times: 2, price: 99, original_price: 200, course_type: 'all', is_active: true },
-      { id: 2, name: '10次卡', card_type: 'times', total_times: 10, price: 1800, original_price: 2000, course_type: 'all', is_active: true },
-      { id: 3, name: '20次卡', card_type: 'times', total_times: 20, price: 3200, original_price: 4000, course_type: 'all', is_active: true },
-      { id: 4, name: '月卡', card_type: 'duration', duration_days: 30, price: 2500, original_price: 3000, course_type: 'all', is_active: true },
-      { id: 5, name: '季卡', card_type: 'duration', duration_days: 90, price: 6000, original_price: 9000, course_type: 'all', is_active: true }
-    ]
+    const res: any = await membershipApi.getCards()
+    cards.value = res.items || res.data || res || []
+  } catch (error: any) {
+    ElMessage.error(error.message || '获取课时卡列表失败')
   } finally {
     loading.value = false
   }
@@ -190,17 +185,24 @@ function handleEdit(row: MembershipCard) {
 async function handleDelete(row: MembershipCard) {
   try {
     await ElMessageBox.confirm('确定要删除此课时卡吗？', '删除确认', { type: 'warning' })
-    // TODO: 调用API删除
+    await membershipApi.deleteCard(row.id)
     cards.value = cards.value.filter(c => c.id !== row.id)
     ElMessage.success('删除成功')
-  } catch {
-    // 用户取消
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
   }
 }
 
 async function handleStatusChange(row: MembershipCard) {
-  // TODO: 调用API更新状态
-  ElMessage.success(`已${row.is_active ? '启用' : '停用'}`)
+  try {
+    await membershipApi.updateCard(row.id, { is_active: row.is_active })
+    ElMessage.success(`已${row.is_active ? '启用' : '停用'}`)
+  } catch (error: any) {
+    row.is_active = !row.is_active
+    ElMessage.error(error.message || '更新状态失败')
+  }
 }
 
 async function handleSubmit() {
@@ -208,23 +210,37 @@ async function handleSubmit() {
 
   try {
     await formRef.value.validate()
-    // TODO: 调用API保存
+    const data = {
+      name: form.name,
+      card_type: form.card_type,
+      total_times: form.card_type === 'times' ? form.total_times : undefined,
+      duration_days: form.card_type === 'duration' ? form.duration_days : undefined,
+      price: form.price,
+      original_price: form.original_price || undefined,
+      course_type: form.course_type,
+      description: form.description || undefined
+    }
+
     if (isEdit.value) {
+      await membershipApi.updateCard(form.id, data)
       const index = cards.value.findIndex(c => c.id === form.id)
       if (index !== -1) {
-        cards.value[index] = { ...form, is_active: cards.value[index].is_active }
+        cards.value[index] = { ...cards.value[index], ...data }
       }
     } else {
+      const res: any = await membershipApi.createCard(data)
       cards.value.push({
-        ...form,
-        id: Date.now(),
+        ...data,
+        id: res.id || Date.now(),
         is_active: true
-      })
+      } as MembershipCard)
     }
     dialogVisible.value = false
     ElMessage.success(isEdit.value ? '编辑成功' : '新增成功')
-  } catch {
-    // 验证失败
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '保存失败')
+    }
   }
 }
 

@@ -147,6 +147,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { membershipApi, studentApi } from '@/api'
 
 interface StudentCard {
   id: number
@@ -254,38 +255,47 @@ function isExpiringSoon(dateStr: string): boolean {
 async function fetchStudentCards() {
   loading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const params: any = {
+      page: pagination.page,
+      page_size: pagination.pageSize
+    }
+    if (filters.status) params.status = filters.status
 
-    studentCards.value = [
-      { id: 1, student_id: 1, student_name: '小明', card_id: 2, card_name: '10次卡', remaining_times: 8, total_times: 10, expire_date: '2026-06-30', status: 'active', purchase_date: '2026-01-15 10:30' },
-      { id: 2, student_id: 2, student_name: '小红', card_id: 2, card_name: '10次卡', remaining_times: 2, total_times: 10, expire_date: '2026-02-10', status: 'active', purchase_date: '2026-01-10 14:20' },
-      { id: 3, student_id: 3, student_name: '小刚', card_id: 3, card_name: '20次卡', remaining_times: 15, total_times: 20, expire_date: '2026-08-15', status: 'active', purchase_date: '2026-01-20 09:00' },
-      { id: 4, student_id: 4, student_name: '小美', card_id: 4, card_name: '月卡', remaining_times: 0, total_times: 0, expire_date: '2026-01-31', status: 'expired', purchase_date: '2025-12-31 16:00' }
-    ]
-    pagination.total = studentCards.value.length
+    const res: any = await membershipApi.getStudentCards(params)
+    studentCards.value = res.items || res.data || res || []
+    pagination.total = res.total || studentCards.value.length
+  } catch (error: any) {
+    ElMessage.error(error.message || '获取学员课时卡列表失败')
   } finally {
     loading.value = false
   }
 }
 
 async function fetchStudents() {
-  students.value = [
-    { id: 1, name: '小明' },
-    { id: 2, name: '小红' },
-    { id: 3, name: '小刚' },
-    { id: 4, name: '小美' },
-    { id: 5, name: '小强' }
-  ]
+  try {
+    const res: any = await studentApi.list({ page_size: 100 })
+    const studentList = res.items || res.data || res || []
+    students.value = studentList.map((s: any) => ({
+      id: s.id,
+      name: s.name || s.nickname || `学员${s.id}`
+    }))
+  } catch (error: any) {
+    console.error('获取学员列表失败:', error)
+  }
 }
 
 async function fetchAvailableCards() {
-  availableCards.value = [
-    { id: 1, name: '体验卡', price: 99 },
-    { id: 2, name: '10次卡', price: 1800 },
-    { id: 3, name: '20次卡', price: 3200 },
-    { id: 4, name: '月卡', price: 2500 },
-    { id: 5, name: '季卡', price: 6000 }
-  ]
+  try {
+    const res: any = await membershipApi.getCards({ is_active: true })
+    const cardList = res.items || res.data || res || []
+    availableCards.value = cardList.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      price: c.price
+    }))
+  } catch (error: any) {
+    console.error('获取课时卡列表失败:', error)
+  }
 }
 
 function handleSearch() {
@@ -320,12 +330,18 @@ async function handleRechargeSubmit() {
 
   try {
     await rechargeFormRef.value.validate()
-    // TODO: 调用API充值
+    await membershipApi.recharge({
+      student_id: rechargeForm.student_id!,
+      card_id: rechargeForm.card_id!,
+      remark: rechargeForm.remark || undefined
+    })
     rechargeVisible.value = false
     ElMessage.success('充值成功')
     fetchStudentCards()
-  } catch {
-    // 验证失败
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '充值失败')
+    }
   }
 }
 
@@ -342,24 +358,35 @@ async function handleAddTimesSubmit() {
 
   try {
     await addTimesFormRef.value.validate()
-    // TODO: 调用API增加课时
+    await membershipApi.recharge({
+      student_id: currentCard.value.student_id,
+      card_id: currentCard.value.card_id,
+      times: addTimesForm.times,
+      reason: addTimesForm.reason,
+      remark: addTimesForm.remark || undefined
+    })
     currentCard.value.remaining_times += addTimesForm.times
     addTimesVisible.value = false
     ElMessage.success('课时增加成功')
-  } catch {
-    // 验证失败
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '增加课时失败')
+    }
   }
 }
 
-function handleViewTransactions(row: StudentCard) {
+async function handleViewTransactions(row: StudentCard) {
   currentCard.value = row
-  // TODO: 调用API获取消费记录
-  transactions.value = [
-    { id: 1, created_at: '2026-02-04 09:30', type: 'consume', times_change: -1, description: '私教课消费' },
-    { id: 2, created_at: '2026-02-01 10:00', type: 'consume', times_change: -1, description: '私教课消费' },
-    { id: 3, created_at: '2026-01-28 14:30', type: 'gift', times_change: 2, description: '活动赠送' },
-    { id: 4, created_at: '2026-01-15 10:30', type: 'purchase', times_change: 10, description: '购买10次卡' }
-  ]
+  try {
+    const res: any = await membershipApi.getTransactions({
+      membership_id: row.id,
+      page_size: 50
+    })
+    transactions.value = res.items || res.data || res || []
+  } catch (error: any) {
+    ElMessage.error(error.message || '获取消费记录失败')
+    transactions.value = []
+  }
   transactionsVisible.value = true
 }
 

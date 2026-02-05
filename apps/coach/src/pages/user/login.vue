@@ -41,6 +41,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { authApi } from '@/api'
 
 const phone = ref('')
 const password = ref('')
@@ -55,11 +56,19 @@ async function handleLogin() {
 
   loading.value = true
   try {
-    // TODO: 调用登录API
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const res: any = await authApi.login({
+      phone: phone.value,
+      password: password.value
+    })
 
-    // 模拟登录成功
-    uni.setStorageSync('token', 'mock_coach_token')
+    // 验证用户角色
+    if (res.user && res.user.role !== 'coach') {
+      uni.showToast({ title: '仅限教练登录', icon: 'none' })
+      return
+    }
+
+    // 保存token
+    uni.setStorageSync('token', res.access_token || res.token)
     uni.showToast({ title: '登录成功', icon: 'success' })
 
     setTimeout(() => {
