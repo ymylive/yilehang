@@ -82,6 +82,17 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // 邮箱验证码登录
+  async function emailLogin(email: string, code: string) {
+    try {
+      const res = await authApi.emailLogin(email, code)
+      saveLoginState(res.access_token, res.user)
+      return res
+    } catch (error: any) {
+      throw new Error(error.message || '登录失败')
+    }
+  }
+
   // 短信验证码登录
   async function loginWithSms(phone: string, code: string) {
     try {
@@ -217,6 +228,7 @@ export const useUserStore = defineStore('user', () => {
     // 方法
     initFromStorage,
     login,
+    emailLogin,
     loginWithSms,
     wechatLogin,
     wechatPhoneLogin,

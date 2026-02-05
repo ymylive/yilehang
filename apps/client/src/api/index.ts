@@ -81,6 +81,10 @@ export const authApi = {
   login: (phone: string, password: string) =>
     api.post('/auth/login', { phone, password }),
 
+  // 邮箱验证码登录
+  emailLogin: (email: string, code: string) =>
+    api.post('/auth/login/email', { phone: email, code }),
+
   // 短信验证码登录
   loginWithSms: (phone: string, code: string) =>
     api.post('/auth/login/sms', { phone, code }),

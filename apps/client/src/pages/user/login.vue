@@ -7,18 +7,23 @@
     </view>
 
     <view class="form-area">
-      <view class="input-group">
-        <text class="label">手机号</text>
-        <input
-          class="input"
-          type="number"
-          v-model="phone"
-          placeholder="请输入手机号"
-          maxlength="11"
-        />
+      <view class="tabs">
+        <text :class="['tab', { active: loginMode === 'password' }]" @click="loginMode = 'password'">密码登录</text>
+        <text :class="['tab', { active: loginMode === 'code' }]" @click="loginMode = 'code'">验证码登录</text>
       </view>
 
       <view class="input-group">
+        <text class="label">{{ loginMode === 'password' ? '手机号' : '邮箱' }}</text>
+        <input
+          class="input"
+          :type="loginMode === 'password' ? 'number' : 'text'"
+          v-model="phone"
+          :placeholder="loginMode === 'password' ? '请输入手机号' : '请输入邮箱'"
+          :maxlength="loginMode === 'password' ? 11 : 50"
+        />
+      </view>
+
+      <view v-if="loginMode === 'password'" class="input-group">
         <text class="label">密码</text>
         <input
           class="input"
@@ -31,13 +36,25 @@
         </text>
       </view>
 
+      <view v-else class="input-group code-group">
+        <input
+          class="input code-input"
+          v-model="code"
+          placeholder="请输入验证码"
+          maxlength="6"
+        />
+        <button class="btn-send-code" @click="sendCode" :disabled="codeSending || codeCountdown > 0">
+          {{ codeCountdown > 0 ? `${codeCountdown}s` : '发送验证码' }}
+        </button>
+      </view>
+
       <button class="btn-login" @click="handleLogin" :loading="loading">
-        登录
+        {{ loginMode === 'password' ? '登录' : '验证码登录' }}
       </button>
 
       <view class="links">
         <text class="link" @click="goRegister">注册账号</text>
-        <text class="link" @click="forgotPassword">忘记密码</text>
+        <text v-if="loginMode === 'password'" class="link" @click="forgotPassword">忘记密码</text>
       </view>
     </view>
 
@@ -68,21 +85,63 @@ import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
 
+const loginMode = ref<'password' | 'code'>('password')
 const phone = ref('')
 const password = ref('')
+const code = ref('')
 const showPassword = ref(false)
 const loading = ref(false)
 const agreed = ref(false)
+const codeSending = ref(false)
+const codeCountdown = ref(0)
+
+async function sendCode() {
+  if (!phone.value) {
+    uni.showToast({ title: '请输入邮箱', icon: 'none' })
+    return
+  }
+
+  codeSending.value = true
+  try {
+    const response = await uni.request({
+      url: `${import.meta.env.VITE_API_BASE_URL || '/api/v1'}/auth/login/email/send`,
+      method: 'POST',
+      data: { phone: phone.value }
+    })
+
+    if (response[1]?.statusCode === 200) {
+      uni.showToast({ title: '验证码已发送', icon: 'success' })
+      codeCountdown.value = 60
+      const timer = setInterval(() => {
+        codeCountdown.value--
+        if (codeCountdown.value <= 0) clearInterval(timer)
+      }, 1000)
+    } else {
+      uni.showToast({ title: '发送失败', icon: 'none' })
+    }
+  } catch (error) {
+    uni.showToast({ title: '发送失败', icon: 'none' })
+  } finally {
+    codeSending.value = false
+  }
+}
 
 async function handleLogin() {
   if (!phone.value) {
-    uni.showToast({ title: '请输入手机号', icon: 'none' })
+    uni.showToast({ title: `请输入${loginMode.value === 'password' ? '手机号' : '邮箱'}`, icon: 'none' })
     return
   }
-  if (!password.value) {
+
+  if (loginMode.value === 'password' && !password.value) {
     uni.showToast({ title: '请输入密码', icon: 'none' })
     return
   }
+
+  if (loginMode.value === 'code' && !code.value) {
+    uni.showToast({ title: '请输入验证码', icon: 'none' })
+    return
+  }
+
   if (!agreed.value) {
     uni.showToast({ title: '请先同意用户协议', icon: 'none' })
     return
@@ -90,7 +149,11 @@ async function handleLogin() {
 
   loading.value = true
   try {
-    await userStore.login(phone.value, password.value)
+    if (loginMode.value === 'password') {
+      await userStore.login(phone.value, password.value)
+    } else {
+      await userStore.emailLogin(phone.value, code.value)
+    }
     uni.showToast({ title: '登录成功', icon: 'success' })
     setTimeout(() => {
       uni.switchTab({ url: '/pages/index/index' })
@@ -186,6 +249,28 @@ function viewAgreement(type: string) {
   flex: 1;
 }
 
+.tabs {
+  display: flex;
+  gap: 30rpx;
+  margin-bottom: 40rpx;
+  border-bottom: 2rpx solid #e0e0e0;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  font-size: 28rpx;
+  color: #999;
+  border-bottom: 4rpx solid transparent;
+  transition: all 0.3s;
+
+  &.active {
+    color: #4CAF50;
+    border-bottom-color: #4CAF50;
+  }
+}
+
 .input-group {
   margin-bottom: 30rpx;
 }
@@ -218,6 +303,30 @@ function viewAgreement(type: string) {
 
 .input-group {
   position: relative;
+}
+
+.code-group {
+  display: flex;
+  gap: 20rpx;
+}
+
+.code-input {
+  flex: 1;
+}
+
+.btn-send-code {
+  width: 200rpx;
+  height: 100rpx;
+  background: #f5f5f5;
+  color: #4CAF50;
+  font-size: 24rpx;
+  border-radius: 16rpx;
+  border: none;
+  white-space: nowrap;
+
+  &:disabled {
+    color: #999;
+  }
 }
 
 .btn-login {
