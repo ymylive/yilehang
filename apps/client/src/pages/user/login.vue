@@ -1,80 +1,131 @@
-<template>
+﻿<template>
   <view class="page">
-    <view class="logo-area">
-      <image class="logo" src="/static/logo.png" mode="aspectFit" />
-      <text class="title">易乐航</text>
-      <text class="subtitle">ITS智慧体教云平台</text>
+    <!-- 椤堕儴瑁呴グ鑳屾櫙 -->
+    <view class="top-bg">
+      <view class="deco-circle c1"></view>
+      <view class="deco-circle c2"></view>
+      <view class="deco-circle c3"></view>
     </view>
 
-    <view class="form-area">
-      <view class="tabs">
-        <text :class="['tab', { active: loginMode === 'password' }]" @click="loginMode = 'password'">密码登录</text>
-        <text :class="['tab', { active: loginMode === 'code' }]" @click="loginMode = 'code'">验证码登录</text>
+    <!-- 鍝佺墝鍖哄煙 -->
+    <view class="brand-area">
+      <view class="logo-box">
+        <image class="logo-img" src="/static/logo.png" mode="aspectFit" />
+      </view>
+      <text class="app-name">鏄撲箰鑸?/text>
+      <text class="app-slogan">璁╄繍鍔ㄦ洿蹇箰</text>
+    </view>
+
+    <!-- 鐧诲綍鍗＄墖 -->
+    <view class="login-card">
+      <!-- 鐧诲綍鏂瑰紡鍒囨崲 -->
+      <view class="tab-bar">
+        <view
+          :class="['tab-item', { active: loginMode === 'password' }]"
+          @click="loginMode = 'password'"
+        >
+          <text class="tab-text">瀵嗙爜鐧诲綍</text>
+        </view>
+        <view
+          :class="['tab-item', { active: loginMode === 'code' }]"
+          @click="loginMode = 'code'"
+        >
+          <text class="tab-text">楠岃瘉鐮佺櫥褰?/text>
+        </view>
+        <view class="tab-indicator" :style="{ left: loginMode === 'password' ? '0' : '50%' }"></view>
       </view>
 
-      <view class="input-group">
-        <text class="label">{{ loginMode === 'password' ? '手机号' : '邮箱' }}</text>
-        <input
-          class="input"
-          :type="loginMode === 'password' ? 'number' : 'text'"
-          v-model="phone"
-          :placeholder="loginMode === 'password' ? '请输入手机号' : '请输入邮箱'"
-          :maxlength="loginMode === 'password' ? 11 : 50"
-        />
-      </view>
+      <!-- 琛ㄥ崟鍖哄煙 -->
+      <view class="form-area">
+        <view class="input-group">
+          <text class="input-label">鎵嬫満鍙?/text>
+          <view class="input-wrapper">
+            <input
+              class="input-field"
+              type="number"
+              v-model="phone"
+              placeholder="璇疯緭鍏ユ墜鏈哄彿"
+              :maxlength="11"
+              placeholder-class="placeholder"
+            />
+          </view>
+        </view>
 
-      <view v-if="loginMode === 'password'" class="input-group">
-        <text class="label">密码</text>
-        <input
-          class="input"
-          :type="showPassword ? 'text' : 'password'"
-          v-model="password"
-          placeholder="请输入密码"
-        />
-        <text class="toggle" @click="showPassword = !showPassword">
-          {{ showPassword ? '隐藏' : '显示' }}
-        </text>
-      </view>
+        <view v-if="loginMode === 'password'" class="input-group">
+          <text class="input-label">瀵嗙爜</text>
+          <view class="input-wrapper">
+            <input
+              class="input-field"
+              :type="showPassword ? 'text' : 'password'"
+              v-model="password"
+              placeholder="璇疯緭鍏ュ瘑鐮?
+              placeholder-class="placeholder"
+            />
+            <view class="input-suffix" @click="showPassword = !showPassword">
+              <text>{{ showPassword ? '闅愯棌' : '鏄剧ず' }}</text>
+            </view>
+          </view>
+        </view>
 
-      <view v-else class="input-group code-group">
-        <input
-          class="input code-input"
-          v-model="code"
-          placeholder="请输入验证码"
-          maxlength="6"
-        />
-        <button class="btn-send-code" @click="sendCode" :disabled="codeSending || codeCountdown > 0">
-          {{ codeCountdown > 0 ? `${codeCountdown}s` : '发送验证码' }}
+        <view v-else class="input-group">
+          <text class="input-label">楠岃瘉鐮?/text>
+          <view class="input-wrapper code-wrapper">
+            <input
+              class="input-field"
+              v-model="code"
+              placeholder="璇疯緭鍏ラ獙璇佺爜"
+              maxlength="6"
+              placeholder-class="placeholder"
+            />
+            <button
+              class="code-btn"
+              :class="{ disabled: codeSending || codeCountdown > 0 }"
+              @click="sendCode"
+              :disabled="codeSending || codeCountdown > 0"
+            >
+              {{ codeCountdown > 0 ? `${codeCountdown}s` : '鑾峰彇楠岃瘉鐮? }}
+            </button>
+          </view>
+        </view>
+
+        <!-- 鐧诲綍鎸夐挳 -->
+        <button class="login-btn" @click="handleLogin" :loading="loading">
+          {{ loading ? '鐧诲綍涓?..' : '鐧?褰? }}
         </button>
-      </view>
 
-      <button class="btn-login" @click="handleLogin" :loading="loading">
-        {{ loginMode === 'password' ? '登录' : '验证码登录' }}
-      </button>
-
-      <view class="links">
-        <text class="link" @click="goRegister">注册账号</text>
-        <text v-if="loginMode === 'password'" class="link" @click="forgotPassword">忘记密码</text>
-      </view>
-    </view>
-
-    <view class="other-login">
-      <view class="divider">
-        <text>其他登录方式</text>
-      </view>
-      <view class="login-icons">
-        <view class="login-icon wechat" @click="wechatLogin">
-          <text>微信</text>
+        <!-- 蹇嵎閾炬帴 -->
+        <view class="quick-links">
+          <text class="link-text" @click="goRegister">鏂扮敤鎴锋敞鍐?/text>
+          <text v-if="loginMode === 'password'" class="link-text" @click="forgotPassword">蹇樿瀵嗙爜锛?/text>
         </view>
       </view>
     </view>
 
+    <!-- 鍏朵粬鐧诲綍鏂瑰紡 -->
+    <view class="other-login">
+      <view class="divider">
+        <view class="line"></view>
+        <text class="divider-text">鍏朵粬鐧诲綍鏂瑰紡</text>
+        <view class="line"></view>
+      </view>
+      <view class="social-login">
+        <view class="social-btn wechat" @click="wechatLogin">
+          <text class="social-icon">寰俊</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 鐢ㄦ埛鍗忚 -->
     <view class="agreement">
-      <checkbox :checked="agreed" @click="agreed = !agreed" />
-      <text>我已阅读并同意</text>
-      <text class="link" @click="viewAgreement('user')">《用户协议》</text>
-      <text>和</text>
-      <text class="link" @click="viewAgreement('privacy')">《隐私政策》</text>
+      <view class="checkbox-area" @click="agreed = !agreed">
+        <view :class="['checkbox', { checked: agreed }]">
+          <text v-if="agreed" class="check-icon">鉁?/text>
+        </view>
+      </view>
+      <text class="agree-text">鎴戝凡闃呰骞跺悓鎰?/text>
+      <text class="agree-link" @click="viewAgreement('user')">銆婄敤鎴峰崗璁€?/text>
+      <text class="agree-text">鍜?/text>
+      <text class="agree-link" @click="viewAgreement('privacy')">銆婇殣绉佹斂绛栥€?/text>
     </view>
   </view>
 </template>
@@ -97,30 +148,27 @@ const codeCountdown = ref(0)
 
 async function sendCode() {
   if (!phone.value) {
-    uni.showToast({ title: '请输入邮箱', icon: 'none' })
+    uni.showToast({ title: '璇疯緭鍏ユ墜鏈哄彿', icon: 'none' })
+    return
+  }
+
+  // 楠岃瘉鎵嬫満鍙锋牸寮?  const phoneRegex = /^1[3-9]\d{9}$/
+  if (!phoneRegex.test(phone.value)) {
+    uni.showToast({ title: '璇疯緭鍏ユ纭殑鎵嬫満鍙?, icon: 'none' })
     return
   }
 
   codeSending.value = true
   try {
-    const response = await uni.request({
-      url: `${import.meta.env.VITE_API_BASE_URL || '/api/v1'}/auth/login/email/send`,
-      method: 'POST',
-      data: { phone: phone.value }
-    })
-
-    if (response[1]?.statusCode === 200) {
-      uni.showToast({ title: '验证码已发送', icon: 'success' })
-      codeCountdown.value = 60
-      const timer = setInterval(() => {
-        codeCountdown.value--
-        if (codeCountdown.value <= 0) clearInterval(timer)
-      }, 1000)
-    } else {
-      uni.showToast({ title: '发送失败', icon: 'none' })
-    }
+    await userStore.sendSmsCode(phone.value)
+    uni.showToast({ title: '楠岃瘉鐮佸凡鍙戦€?, icon: 'success' })
+    codeCountdown.value = 60
+    const timer = setInterval(() => {
+      codeCountdown.value--
+      if (codeCountdown.value <= 0) clearInterval(timer)
+    }, 1000)
   } catch (error) {
-    uni.showToast({ title: '发送失败', icon: 'none' })
+    uni.showToast({ title: '鍙戦€佸け璐?, icon: 'none' })
   } finally {
     codeSending.value = false
   }
@@ -128,22 +176,22 @@ async function sendCode() {
 
 async function handleLogin() {
   if (!phone.value) {
-    uni.showToast({ title: `请输入${loginMode.value === 'password' ? '手机号' : '邮箱'}`, icon: 'none' })
+    uni.showToast({ title: '璇疯緭鍏ユ墜鏈哄彿', icon: 'none' })
     return
   }
 
   if (loginMode.value === 'password' && !password.value) {
-    uni.showToast({ title: '请输入密码', icon: 'none' })
+    uni.showToast({ title: '璇疯緭鍏ュ瘑鐮?, icon: 'none' })
     return
   }
 
   if (loginMode.value === 'code' && !code.value) {
-    uni.showToast({ title: '请输入验证码', icon: 'none' })
+    uni.showToast({ title: '璇疯緭鍏ラ獙璇佺爜', icon: 'none' })
     return
   }
 
   if (!agreed.value) {
-    uni.showToast({ title: '请先同意用户协议', icon: 'none' })
+    uni.showToast({ title: '璇峰厛鍚屾剰鐢ㄦ埛鍗忚', icon: 'none' })
     return
   }
 
@@ -152,14 +200,14 @@ async function handleLogin() {
     if (loginMode.value === 'password') {
       await userStore.login(phone.value, password.value)
     } else {
-      await userStore.emailLogin(phone.value, code.value)
+      await userStore.loginWithSms(phone.value, code.value)
     }
-    uni.showToast({ title: '登录成功', icon: 'success' })
+    uni.showToast({ title: '鐧诲綍鎴愬姛', icon: 'success' })
     setTimeout(() => {
       uni.switchTab({ url: '/pages/index/index' })
     }, 1500)
   } catch (error: any) {
-    uni.showToast({ title: error.message || '登录失败', icon: 'none' })
+    uni.showToast({ title: error.message || '鐧诲綍澶辫触', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -170,12 +218,12 @@ function goRegister() {
 }
 
 function forgotPassword() {
-  uni.showToast({ title: '请联系客服重置密码', icon: 'none' })
+  uni.showToast({ title: '璇疯仈绯诲鏈嶉噸缃瘑鐮?, icon: 'none' })
 }
 
 async function wechatLogin() {
   if (!agreed.value) {
-    uni.showToast({ title: '请先同意用户协议', icon: 'none' })
+    uni.showToast({ title: '璇峰厛鍚屾剰鐢ㄦ埛鍗忚', icon: 'none' })
     return
   }
 
@@ -186,24 +234,24 @@ async function wechatLogin() {
       try {
         loading.value = true
         await userStore.wechatLogin(loginRes.code)
-        uni.showToast({ title: '登录成功', icon: 'success' })
+        uni.showToast({ title: '鐧诲綍鎴愬姛', icon: 'success' })
         setTimeout(() => {
           uni.switchTab({ url: '/pages/index/index' })
         }, 1500)
       } catch (error: any) {
-        uni.showToast({ title: error.message || '微信登录失败', icon: 'none' })
+        uni.showToast({ title: error.message || '寰俊鐧诲綍澶辫触', icon: 'none' })
       } finally {
         loading.value = false
       }
     },
     fail: () => {
-      uni.showToast({ title: '获取微信授权失败', icon: 'none' })
+      uni.showToast({ title: '鑾峰彇寰俊鎺堟潈澶辫触', icon: 'none' })
     }
   })
   // #endif
 
   // #ifndef MP-WEIXIN
-  uni.showToast({ title: '请在微信小程序中使用', icon: 'none' })
+  uni.showToast({ title: '璇峰湪寰俊灏忕▼搴忎腑浣跨敤', icon: 'none' })
   // #endif
 }
 
@@ -213,205 +261,351 @@ function viewAgreement(type: string) {
 </script>
 
 <style scoped>
+/* 璁捐鍙橀噺 */
+page {
+  --c-primary: #FF8800;
+  --c-secondary: #FFB347;
+  --c-accent: #4FA4F3;
+  --c-bg-body: #FFFBF5;
+  --c-bg-card: #FFFFFF;
+  --c-bg-input: #F5F5F5;
+  --c-text-main: #2D2D2D;
+  --c-text-sub: #666666;
+  --c-text-light: #999999;
+  --radius-sm: 24rpx;
+  --radius-md: 40rpx;
+  --radius-lg: 60rpx;
+}
+
 .page {
   min-height: 100vh;
-  background: #fff;
-  padding: 60rpx 40rpx;
+  background: var(--c-bg-body);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 椤堕儴瑁呴グ鑳屾櫙 */
+.top-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 500rpx;
+  background: linear-gradient(135deg, #FFB347 0%, #FF8800 100%);
+  border-radius: 0 0 80rpx 80rpx;
+}
+
+.deco-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.c1 {
+  width: 300rpx;
+  height: 300rpx;
+  top: -100rpx;
+  right: -80rpx;
+}
+
+.c2 {
+  width: 200rpx;
+  height: 200rpx;
+  top: 150rpx;
+  left: -60rpx;
+}
+
+.c3 {
+  width: 120rpx;
+  height: 120rpx;
+  top: 80rpx;
+  right: 150rpx;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* 鍝佺墝鍖哄煙 */
+.brand-area {
+  position: relative;
+  z-index: 10;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  padding-top: 100rpx;
+  padding-bottom: 60rpx;
 }
 
-.logo-area {
-  text-align: center;
-  padding: 60rpx 0;
-}
-
-.logo {
+.logo-box {
   width: 160rpx;
   height: 160rpx;
+  background: #FFFFFF;
+  border-radius: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 20rpx 60rpx rgba(255, 136, 0, 0.3);
 }
 
-.title {
-  font-size: 48rpx;
-  font-weight: bold;
-  color: #4CAF50;
-  display: block;
-  margin-top: 20rpx;
+.logo-img {
+  width: 100rpx;
+  height: 100rpx;
 }
 
-.subtitle {
-  font-size: 26rpx;
-  color: #999;
+.app-name {
+  font-size: 52rpx;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin-top: 30rpx;
+  letter-spacing: 4rpx;
+}
+
+.app-slogan {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.9);
   margin-top: 10rpx;
 }
 
-.form-area {
-  flex: 1;
-}
-
-.tabs {
-  display: flex;
-  gap: 30rpx;
-  margin-bottom: 40rpx;
-  border-bottom: 2rpx solid #e0e0e0;
-}
-
-.tab {
-  flex: 1;
-  text-align: center;
-  padding: 20rpx 0;
-  font-size: 28rpx;
-  color: #999;
-  border-bottom: 4rpx solid transparent;
-  transition: all 0.3s;
-
-  &.active {
-    color: #4CAF50;
-    border-bottom-color: #4CAF50;
-  }
-}
-
-.input-group {
-  margin-bottom: 30rpx;
-}
-
-.input-group .label {
-  font-size: 28rpx;
-  color: #333;
-  margin-bottom: 16rpx;
-  display: block;
-}
-
-.input-group .input {
-  width: 100%;
-  height: 100rpx;
-  background: #f5f5f5;
-  border-radius: 16rpx;
-  padding: 0 30rpx;
-  font-size: 30rpx;
-  box-sizing: border-box;
-}
-
-.input-group .toggle {
-  position: absolute;
-  right: 30rpx;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 26rpx;
-  color: #4CAF50;
-}
-
-.input-group {
+/* 鐧诲綍鍗＄墖 */
+.login-card {
   position: relative;
+  z-index: 10;
+  margin: 0 40rpx;
+  background: #FFFFFF;
+  border-radius: var(--radius-md);
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 
-.code-group {
+/* Tab鍒囨崲 */
+.tab-bar {
   display: flex;
-  gap: 20rpx;
+  position: relative;
+  background: #F8F8F8;
 }
 
-.code-input {
+.tab-item {
   flex: 1;
+  height: 100rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.btn-send-code {
-  width: 200rpx;
-  height: 100rpx;
-  background: #f5f5f5;
-  color: #4CAF50;
-  font-size: 24rpx;
-  border-radius: 16rpx;
-  border: none;
-  white-space: nowrap;
-
-  &:disabled {
-    color: #999;
-  }
+.tab-text {
+  font-size: 30rpx;
+  color: var(--c-text-sub);
+  font-weight: 500;
+  transition: all 0.3s;
 }
 
-.btn-login {
-  width: 100%;
-  height: 100rpx;
-  background: #4CAF50;
-  color: #fff;
+.tab-item.active .tab-text {
+  color: var(--c-primary);
+  font-weight: 600;
+}
+
+.tab-indicator {
+  position: absolute;
+  bottom: 0;
+  width: 50%;
+  height: 6rpx;
+  background: linear-gradient(90deg, #FFB347, #FF8800);
+  border-radius: 3rpx;
+  transition: left 0.3s ease;
+}
+
+/* 琛ㄥ崟鍖哄煙 */
+.form-area {
+  padding: 50rpx 40rpx;
+}
+
+.input-group {
+  margin-bottom: 36rpx;
+}
+
+.input-label {
+  display: block;
+  font-size: 28rpx;
+  color: var(--c-text-sub);
+  font-weight: 600;
+  margin-bottom: 16rpx;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--c-bg-input);
+  border-radius: var(--radius-sm);
+  padding: 0 30rpx;
+  height: 110rpx;
+  border: 3rpx solid transparent;
+  transition: all 0.3s;
+}
+
+.input-wrapper:focus-within {
+  background: #FFFFFF;
+  border-color: var(--c-secondary);
+  box-shadow: 0 0 0 8rpx rgba(255, 179, 71, 0.15);
+}
+
+.input-field {
+  flex: 1;
+  height: 100%;
   font-size: 32rpx;
-  border-radius: 50rpx;
-  margin-top: 40rpx;
-  border: none;
+  color: var(--c-text-main);
 }
 
-.links {
+.placeholder {
+  color: var(--c-text-light);
+}
+
+.input-suffix {
+  font-size: 26rpx;
+  color: var(--c-primary);
+  padding: 10rpx;
+}
+
+/* 楠岃瘉鐮佽緭鍏?*/
+.code-wrapper {
+  padding-right: 16rpx;
+}
+
+.code-btn {
+  min-width: 180rpx;
+  height: 76rpx;
+  background: linear-gradient(135deg, #FFB347, #FF8800);
+  color: #FFFFFF;
+  font-size: 26rpx;
+  font-weight: 600;
+  border-radius: 38rpx;
+  border: none;
+  padding: 0 24rpx;
+}
+
+.code-btn.disabled {
+  background: #E0E0E0;
+  color: #999;
+}
+
+/* 鐧诲綍鎸夐挳 */
+.login-btn {
+  width: 100%;
+  height: 110rpx;
+  background: linear-gradient(135deg, #FFB347, #FF8800);
+  color: #FFFFFF;
+  font-size: 34rpx;
+  font-weight: 700;
+  border-radius: var(--radius-lg);
+  border: none;
+  margin-top: 20rpx;
+  box-shadow: 0 16rpx 40rpx rgba(255, 136, 0, 0.35);
+  letter-spacing: 8rpx;
+}
+
+.login-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 8rpx 20rpx rgba(255, 136, 0, 0.25);
+}
+
+/* 蹇嵎閾炬帴 */
+.quick-links {
   display: flex;
   justify-content: space-between;
   margin-top: 30rpx;
 }
 
-.links .link {
-  font-size: 26rpx;
-  color: #4CAF50;
+.link-text {
+  font-size: 28rpx;
+  color: var(--c-primary);
 }
 
+/* 鍏朵粬鐧诲綍鏂瑰紡 */
 .other-login {
-  margin-top: 60rpx;
+  padding: 50rpx 40rpx 30rpx;
 }
 
 .divider {
   display: flex;
   align-items: center;
-  justify-content: center;
   margin-bottom: 40rpx;
 }
 
-.divider::before,
-.divider::after {
-  content: '';
+.line {
   flex: 1;
-  height: 1rpx;
-  background: #e0e0e0;
+  height: 2rpx;
+  background: #E8E8E8;
 }
 
-.divider text {
+.divider-text {
   padding: 0 30rpx;
   font-size: 26rpx;
-  color: #999;
+  color: var(--c-text-light);
 }
 
-.login-icons {
+.social-login {
   display: flex;
   justify-content: center;
-  gap: 60rpx;
 }
 
-.login-icon {
-  width: 100rpx;
-  height: 100rpx;
-  border-radius: 50%;
+.social-btn {
+  width: 200rpx;
+  height: 90rpx;
+  border-radius: 45rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 26rpx;
-  color: #fff;
 }
 
-.login-icon.wechat {
-  background: #07C160;
+.social-btn.wechat {
+  background: #333333;
 }
 
+.social-icon {
+  font-size: 28rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+/* 鐢ㄦ埛鍗忚 */
 .agreement {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
+  padding: 30rpx 40rpx 60rpx;
+}
+
+.checkbox-area {
+  padding: 10rpx;
+}
+
+.checkbox {
+  width: 40rpx;
+  height: 40rpx;
+  border: 3rpx solid #DDD;
+  border-radius: 10rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.checkbox.checked {
+  background: linear-gradient(135deg, #FFB347, #FF8800);
+  border-color: var(--c-primary);
+}
+
+.check-icon {
+  color: #FFFFFF;
   font-size: 24rpx;
-  color: #999;
-  margin-top: 40rpx;
+  font-weight: bold;
 }
 
-.agreement .link {
-  color: #4CAF50;
+.agree-text {
+  font-size: 26rpx;
+  color: var(--c-text-light);
 }
 
-checkbox {
-  transform: scale(0.7);
+.agree-link {
+  font-size: 26rpx;
+  color: var(--c-primary);
 }
 </style>

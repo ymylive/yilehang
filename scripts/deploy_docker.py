@@ -1,7 +1,5 @@
-"""
-Docker方式部署脚本 - 将项目部署到VPS服务器
-使用独立端口8088，不影响服务器其他服务
-"""
+﻿"""
+Docker鏂瑰紡閮ㄧ讲鑴氭湰 - 灏嗛」鐩儴缃插埌VPS鏈嶅姟鍣?浣跨敤鐙珛绔彛8088锛屼笉褰卞搷鏈嶅姟鍣ㄥ叾浠栨湇鍔?"""
 import os
 import sys
 import subprocess
@@ -12,30 +10,30 @@ from pathlib import Path
 try:
     import paramiko
 except ImportError:
-    print("正在安装 paramiko...")
+    print("姝ｅ湪瀹夎 paramiko...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "paramiko"])
     import paramiko
 
 
 # 服务器配置
-SERVER_HOST = "8.134.33.19"
+SERVER_HOST = "82.158.88.34"
 SERVER_USER = "root"
 SERVER_PASSWORD = "Qq159741"
 SERVER_PORT = 22
 
-# 项目路径
+# 椤圭洰璺緞
 PROJECT_ROOT = Path(__file__).parent.parent
 APPS_DIR = PROJECT_ROOT / "apps"
 
-# 远程路径
+# 杩滅▼璺緞
 REMOTE_BASE = "/opt/yilehang"
 
 
 def create_ssh_client() -> paramiko.SSHClient:
-    """创建SSH客户端"""
+    """鍒涘缓SSH瀹㈡埛绔?""
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    print(f"[SSH] 连接到 {SERVER_USER}@{SERVER_HOST}:{SERVER_PORT}")
+    print(f"[SSH] 杩炴帴鍒?{SERVER_USER}@{SERVER_HOST}:{SERVER_PORT}")
     client.connect(
         hostname=SERVER_HOST,
         port=SERVER_PORT,
@@ -43,13 +41,13 @@ def create_ssh_client() -> paramiko.SSHClient:
         password=SERVER_PASSWORD,
         timeout=30
     )
-    print("[SSH] 连接成功")
+    print("[SSH] 杩炴帴鎴愬姛")
     return client
 
 
 def exec_remote(client: paramiko.SSHClient, cmd: str, check: bool = True) -> tuple:
-    """执行远程命令"""
-    print(f"[远程] {cmd[:100]}..." if len(cmd) > 100 else f"[远程] {cmd}")
+    """鎵ц杩滅▼鍛戒护"""
+    print(f"[杩滅▼] {cmd[:100]}..." if len(cmd) > 100 else f"[杩滅▼] {cmd}")
     stdin, stdout, stderr = client.exec_command(cmd, timeout=600)
     exit_code = stdout.channel.recv_exit_status()
     out = stdout.read().decode('utf-8', errors='ignore')
@@ -58,17 +56,17 @@ def exec_remote(client: paramiko.SSHClient, cmd: str, check: bool = True) -> tup
     if out and len(out) < 2000:
         print(out)
     if err and exit_code != 0:
-        print(f"[错误] {err[:500]}")
+        print(f"[閿欒] {err[:500]}")
 
     if check and exit_code != 0:
-        raise Exception(f"命令执行失败 (exit={exit_code}): {cmd[:100]}")
+        raise Exception(f"鍛戒护鎵ц澶辫触 (exit={exit_code}): {cmd[:100]}")
 
     return exit_code, out, err
 
 
 def upload_with_tar(client: paramiko.SSHClient, local_path: Path, remote_path: str, name: str):
-    """使用tar压缩上传"""
-    print(f"[打包上传] {local_path.name} -> {remote_path}")
+    """浣跨敤tar鍘嬬缉涓婁紶"""
+    print(f"[鎵撳寘涓婁紶] {local_path.name} -> {remote_path}")
 
     with tempfile.NamedTemporaryFile(suffix='.tar.gz', delete=False) as tmp:
         tar_path = tmp.name
@@ -79,14 +77,14 @@ def upload_with_tar(client: paramiko.SSHClient, local_path: Path, remote_path: s
 
         sftp = client.open_sftp()
         remote_tar = f"/tmp/{name}.tar.gz"
-        print(f"  上传中...")
+        print(f"  涓婁紶涓?..")
         sftp.put(tar_path, remote_tar)
         sftp.close()
 
         exec_remote(client, f"mkdir -p {remote_path}")
         exec_remote(client, f"tar -xzf {remote_tar} -C {remote_path} --strip-components=1")
         exec_remote(client, f"rm -f {remote_tar}")
-        print(f"  完成")
+        print(f"  瀹屾垚")
 
     finally:
         if os.path.exists(tar_path):
@@ -94,55 +92,55 @@ def upload_with_tar(client: paramiko.SSHClient, local_path: Path, remote_path: s
 
 
 def cleanup_old_deployment(client: paramiko.SSHClient):
-    """清理旧的部署残留"""
+    """娓呯悊鏃х殑閮ㄧ讲娈嬬暀"""
     print("\n" + "=" * 50)
-    print("步骤 0: 清理旧部署残留")
+    print("姝ラ 0: 娓呯悊鏃ч儴缃叉畫鐣?)
     print("=" * 50)
 
-    # 停止并删除旧容器
-    print("\n[清理] 停止旧的Docker容器...")
-    exec_remote(client, "docker stop yilehang-nginx yilehang-api yilehang-postgres yilehang-redis 2>/dev/null || true", check=False)
-    exec_remote(client, "docker rm yilehang-nginx yilehang-api yilehang-postgres yilehang-redis 2>/dev/null || true", check=False)
+    # 鍋滄骞跺垹闄ゆ棫瀹瑰櫒
+    print("\n[娓呯悊] 鍋滄鏃х殑Docker瀹瑰櫒...")
+    exec_remote(client, "docker stop yilehang-nginx yilehang-api yilehang-postgres 2>/dev/null || true", check=False)
+    exec_remote(client, "docker rm yilehang-nginx yilehang-api yilehang-postgres 2>/dev/null || true", check=False)
 
-    # 删除旧的项目目录
-    print("\n[清理] 删除旧的项目目录...")
+    # 鍒犻櫎鏃х殑椤圭洰鐩綍
+    print("\n[娓呯悊] 鍒犻櫎鏃х殑椤圭洰鐩綍...")
     exec_remote(client, f"rm -rf {REMOTE_BASE}", check=False)
 
-    print("[清理] 清理完成")
+    print("[娓呯悊] 娓呯悊瀹屾垚")
 
 
 def setup_docker(client: paramiko.SSHClient):
-    """配置Docker环境"""
+    """閰嶇疆Docker鐜"""
     print("\n" + "=" * 50)
-    print("步骤 1: 配置Docker环境")
+    print("姝ラ 1: 閰嶇疆Docker鐜")
     print("=" * 50)
 
-    # 检查Docker是否安装
-    print("\n[Docker] 检查Docker安装...")
+    # 妫€鏌ocker鏄惁瀹夎
+    print("\n[Docker] 妫€鏌ocker瀹夎...")
     exit_code, _, _ = exec_remote(client, "docker --version", check=False)
     if exit_code != 0:
-        print("[Docker] Docker未安装，正在安装...")
+        print("[Docker] Docker鏈畨瑁咃紝姝ｅ湪瀹夎...")
         exec_remote(client, "apt-get update -y")
         exec_remote(client, "apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release")
         exec_remote(client, "curl -fsSL https://get.docker.com | sh")
         exec_remote(client, "systemctl start docker")
         exec_remote(client, "systemctl enable docker")
-        print("[Docker] Docker安装完成")
+        print("[Docker] Docker瀹夎瀹屾垚")
     else:
-        print("[Docker] Docker已安装")
+        print("[Docker] Docker宸插畨瑁?)
 
-    # 安装docker-compose独立版本
-    print("\n[Docker] 安装docker-compose...")
+    # 瀹夎docker-compose鐙珛鐗堟湰
+    print("\n[Docker] 瀹夎docker-compose...")
     exec_remote(client, "apt-get update -y && apt-get install -y docker-compose", check=False)
 
-    # 安装buildx插件
-    print("\n[Docker] 安装Docker Buildx插件...")
+    # 瀹夎buildx鎻掍欢
+    print("\n[Docker] 瀹夎Docker Buildx鎻掍欢...")
     exec_remote(client, "mkdir -p ~/.docker/cli-plugins", check=False)
     exec_remote(client, "curl -SL https://github.com/docker/buildx/releases/download/v0.12.1/buildx-v0.12.1.linux-amd64 -o ~/.docker/cli-plugins/docker-buildx", check=False)
     exec_remote(client, "chmod +x ~/.docker/cli-plugins/docker-buildx", check=False)
 
-    # 创建项目目录
-    print("\n[目录] 创建项目目录...")
+    # 鍒涘缓椤圭洰鐩綍
+    print("\n[鐩綍] 鍒涘缓椤圭洰鐩綍...")
     exec_remote(client, f"mkdir -p {REMOTE_BASE}/apps/admin/dist")
     exec_remote(client, f"mkdir -p {REMOTE_BASE}/apps/client/dist")
     exec_remote(client, f"mkdir -p {REMOTE_BASE}/apps/api")
@@ -150,9 +148,9 @@ def setup_docker(client: paramiko.SSHClient):
 
 
 def deploy_api(client: paramiko.SSHClient):
-    """部署API代码"""
+    """閮ㄧ讲API浠ｇ爜"""
     print("\n" + "=" * 50)
-    print("步骤 2: 部署API代码")
+    print("姝ラ 2: 閮ㄧ讲API浠ｇ爜")
     print("=" * 50)
 
     api_dir = APPS_DIR / "api"
@@ -161,18 +159,17 @@ def deploy_api(client: paramiko.SSHClient):
 
 
 def create_docker_configs(client: paramiko.SSHClient):
-    """创建Docker配置文件"""
+    """鍒涘缓Docker閰嶇疆鏂囦欢"""
     print("\n" + "=" * 50)
-    print("步骤 3: 创建Docker配置")
+    print("姝ラ 3: 鍒涘缓Docker閰嶇疆")
     print("=" * 50)
 
-    # Dockerfile for API - 使用国内镜像源
-    print("\n[配置] 创建API Dockerfile...")
+    # Dockerfile for API - 浣跨敤鍥藉唴闀滃儚婧?    print("\n[閰嶇疆] 鍒涘缓API Dockerfile...")
     dockerfile = '''FROM python:3.11-slim
 
 WORKDIR /app
 
-# 使用阿里云镜像源
+# 浣跨敤闃块噷浜戦暅鍍忔簮
 RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
 
 RUN apt-get update && apt-get install -y \\
@@ -180,7 +177,7 @@ RUN apt-get update && apt-get install -y \\
     libpq-dev \\
     && rm -rf /var/lib/apt/lists/*
 
-# 使用国内pip镜像
+# 浣跨敤鍥藉唴pip闀滃儚
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 COPY pyproject.toml .
@@ -196,8 +193,8 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 '''
     exec_remote(client, f"cat > {REMOTE_BASE}/docker/Dockerfile.api << 'EOF'\n{dockerfile}\nEOF")
 
-    # Nginx配置
-    print("\n[配置] 创建Nginx配置...")
+    # Nginx閰嶇疆
+    print("\n[閰嶇疆] 鍒涘缓Nginx閰嶇疆...")
     nginx_config = '''events {
     worker_connections 1024;
 }
@@ -256,8 +253,8 @@ http {
 }'''
     exec_remote(client, f"cat > {REMOTE_BASE}/docker/nginx/nginx.conf << 'EOF'\n{nginx_config}\nEOF")
 
-    # Docker Compose配置 - 使用8088端口
-    print("\n[配置] 创建Docker Compose配置...")
+    # Docker Compose閰嶇疆 - 浣跨敤8088绔彛
+    print("\n[閰嶇疆] 鍒涘缓Docker Compose閰嶇疆...")
     compose_config = '''version: '3.8'
 
 services:
@@ -279,20 +276,6 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: yilehang-redis
-    volumes:
-      - yilehang_redis_data:/data
-    networks:
-      - yilehang_network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   api:
     build:
       context: ../apps/api
@@ -300,15 +283,12 @@ services:
     container_name: yilehang-api
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres123@postgres:5432/yilehang
-      REDIS_URL: redis://redis:6379/0
       DEBUG: "false"
       SECRET_KEY: yilehang-secret-key-2024-prod
     networks:
       - yilehang_network
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     restart: unless-stopped
 
@@ -333,20 +313,20 @@ networks:
 
 volumes:
   yilehang_postgres_data:
-  yilehang_redis_data:'''
+'''
     exec_remote(client, f"cat > {REMOTE_BASE}/docker/docker-compose.yml << 'EOF'\n{compose_config}\nEOF")
 
 
 def create_placeholder_pages(client: paramiko.SSHClient):
-    """创建占位页面"""
-    print("\n[配置] 创建前端占位页面...")
+    """鍒涘缓鍗犱綅椤甸潰"""
+    print("\n[閰嶇疆] 鍒涘缓鍓嶇鍗犱綅椤甸潰...")
 
     client_html = '''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>易乐航·乐航成长</title>
+    <title>鏄撲箰鑸蜂箰鑸垚闀?/title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -366,10 +346,10 @@ def create_placeholder_pages(client: paramiko.SSHClient):
 </head>
 <body>
     <div class="container">
-        <div class="logo">🏃</div>
-        <h1>易乐航·乐航成长</h1>
-        <p class="subtitle">ITS智慧体教云平台 - 学员/家长端</p>
-        <div class="status">✅ 后端服务已部署</div>
+        <div class="logo">馃弮</div>
+        <h1>鏄撲箰鑸蜂箰鑸垚闀?/h1>
+        <p class="subtitle">ITS鏅烘収浣撴暀浜戝钩鍙?- 瀛﹀憳/瀹堕暱绔?/p>
+        <div class="status">鉁?鍚庣鏈嶅姟宸查儴缃?/div>
     </div>
 </body>
 </html>'''
@@ -379,7 +359,7 @@ def create_placeholder_pages(client: paramiko.SSHClient):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>易乐航·管理后台</title>
+    <title>鏄撲箰鑸风鐞嗗悗鍙?/title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -399,10 +379,10 @@ def create_placeholder_pages(client: paramiko.SSHClient):
 </head>
 <body>
     <div class="container">
-        <div class="logo">⚙️</div>
-        <h1>易乐航·管理后台</h1>
-        <p class="subtitle">ITS智慧体教云平台 - 运营管理系统</p>
-        <div class="status">✅ 后端服务已部署</div>
+        <div class="logo">鈿欙笍</div>
+        <h1>鏄撲箰鑸风鐞嗗悗鍙?/h1>
+        <p class="subtitle">ITS鏅烘収浣撴暀浜戝钩鍙?- 杩愯惀绠＄悊绯荤粺</p>
+        <div class="status">鉁?鍚庣鏈嶅姟宸查儴缃?/div>
     </div>
 </body>
 </html>'''
@@ -412,40 +392,38 @@ def create_placeholder_pages(client: paramiko.SSHClient):
 
 
 def start_services(client: paramiko.SSHClient):
-    """启动Docker服务"""
+    """鍚姩Docker鏈嶅姟"""
     print("\n" + "=" * 50)
-    print("步骤 4: 启动Docker服务")
+    print("姝ラ 4: 鍚姩Docker鏈嶅姟")
     print("=" * 50)
 
-    # 检测docker compose命令格式
+    # 妫€娴媎ocker compose鍛戒护鏍煎紡
     exit_code, _, _ = exec_remote(client, "docker compose version", check=False)
     compose_cmd = "docker compose" if exit_code == 0 else "docker-compose"
 
-    # 启动服务
-    print("\n[服务] 构建并启动服务 (这可能需要几分钟)...")
+    # 鍚姩鏈嶅姟
+    print("\n[鏈嶅姟] 鏋勫缓骞跺惎鍔ㄦ湇鍔?(杩欏彲鑳介渶瑕佸嚑鍒嗛挓)...")
     exec_remote(client, f"cd {REMOTE_BASE}/docker && {compose_cmd} up -d --build")
 
-    # 等待服务启动
-    print("\n[服务] 等待服务启动...")
+    # 绛夊緟鏈嶅姟鍚姩
+    print("\n[鏈嶅姟] 绛夊緟鏈嶅姟鍚姩...")
     import time
     time.sleep(20)
 
-    # 检查服务状态
-    print("\n[服务] 检查服务状态...")
+    # 妫€鏌ユ湇鍔＄姸鎬?    print("\n[鏈嶅姟] 妫€鏌ユ湇鍔＄姸鎬?..")
     exec_remote(client, f"cd {REMOTE_BASE}/docker && {compose_cmd} ps")
 
-    # 检查API健康状态
-    print("\n[服务] 检查API健康状态...")
-    exec_remote(client, "curl -s http://localhost:8088/docs > /dev/null && echo 'API服务正常' || echo 'API服务异常'", check=False)
+    # 妫€鏌PI鍋ュ悍鐘舵€?    print("\n[鏈嶅姟] 妫€鏌PI鍋ュ悍鐘舵€?..")
+    exec_remote(client, "curl -s http://localhost:8088/docs > /dev/null && echo 'API鏈嶅姟姝ｅ父' || echo 'API鏈嶅姟寮傚父'", check=False)
 
 
 def main():
-    """主函数"""
+    """涓诲嚱鏁?""
     print("=" * 50)
-    print("易乐航·ITS智慧体教云平台 - Docker部署")
+    print("鏄撲箰鑸稩TS鏅烘収浣撴暀浜戝钩鍙?- Docker閮ㄧ讲")
     print("=" * 50)
-    print(f"目标服务器: {SERVER_USER}@{SERVER_HOST}")
-    print(f"服务端口: 8088 (不影响其他服务)")
+    print(f"鐩爣鏈嶅姟鍣? {SERVER_USER}@{SERVER_HOST}")
+    print(f"鏈嶅姟绔彛: 8088 (涓嶅奖鍝嶅叾浠栨湇鍔?")
 
     client = None
     try:
@@ -459,15 +437,15 @@ def main():
         start_services(client)
 
         print("\n" + "=" * 50)
-        print("🎉 部署完成!")
+        print("馃帀 閮ㄧ讲瀹屾垚!")
         print("=" * 50)
-        print(f"访问地址:")
-        print(f"  - 客户端: http://{SERVER_HOST}:8088/")
-        print(f"  - 管理后台: http://{SERVER_HOST}:8088/admin")
-        print(f"  - API文档: http://{SERVER_HOST}:8088/docs")
+        print(f"璁块棶鍦板潃:")
+        print(f"  - 瀹㈡埛绔? http://{SERVER_HOST}:8088/")
+        print(f"  - 绠＄悊鍚庡彴: http://{SERVER_HOST}:8088/admin")
+        print(f"  - API鏂囨。: http://{SERVER_HOST}:8088/docs")
 
     except Exception as e:
-        print(f"\n[错误] 部署失败: {e}")
+        print(f"\n[閿欒] 閮ㄧ讲澶辫触: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

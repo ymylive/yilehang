@@ -1,9 +1,8 @@
-"""
-Schema汇总
-"""
+﻿"""Schema exports."""
 from app.schemas.user import (
     UserBase, UserCreate, UserLogin, WechatLogin, WechatPhoneLogin,
-    SmsCodeRequest, SmsCodeLogin, PasswordReset, PasswordChange,
+    SmsCodeRequest, SmsCodeLogin, SmsRegister,
+    PasswordReset, PasswordChange,
     UserUpdate, UserResponse, UserDetailResponse, Token, TokenRefresh,
     StudentBase, StudentCreate, StudentRegister, StudentUpdate, StudentResponse, StudentDetailResponse,
     CoachBase, CoachCreate, CoachRegister, CoachResponse, CoachProfileResponse,
@@ -32,25 +31,31 @@ from app.schemas.booking import (
     CoachDetailResponse, CoachAvailableTimeSlot, CoachAvailableSlotsResponse,
     DashboardOverview, AttendanceStats, RevenueStats, AlertInfo,
 )
+from app.schemas.ai import (
+    JumpRopeAnalyzeRequest, JumpRopeAnalyzeResponse,
+    AiAdviceRequest, AiAdviceResponse,
+    AiChatRequest, AiChatResponse,
+)
 
 __all__ = [
-    # 用户
+    # User
     "UserBase", "UserCreate", "UserLogin", "WechatLogin", "WechatPhoneLogin",
-    "SmsCodeRequest", "SmsCodeLogin", "PasswordReset", "PasswordChange",
+    "SmsCodeRequest", "SmsCodeLogin", "SmsRegister",
+    "PasswordReset", "PasswordChange",
     "UserUpdate", "UserResponse", "UserDetailResponse", "Token", "TokenRefresh",
     "StudentBase", "StudentCreate", "StudentRegister", "StudentUpdate", "StudentResponse", "StudentDetailResponse",
     "CoachBase", "CoachCreate", "CoachRegister", "CoachResponse", "CoachProfileResponse",
-    # 成长档案
+    # Growth
     "FitnessMetricBase", "FitnessMetricCreate", "FitnessMetricResponse",
     "FitnessTestBase", "FitnessTestCreate", "FitnessTestResponse",
     "RadarChartData", "GrowthProfile",
     "TrainingSessionBase", "TrainingSessionCreate", "TrainingSessionResponse",
-    # 课程
+    # Courses
     "CourseBase", "CourseCreate", "CourseUpdate", "CourseResponse",
     "VenueBase", "VenueCreate", "VenueResponse",
     "ScheduleBase", "ScheduleCreate", "ScheduleUpdate", "ScheduleResponse",
     "AttendanceBase", "AttendanceCreate", "CheckInRequest", "AttendanceResponse",
-    # 约课系统
+    # Booking
     "MembershipCardBase", "MembershipCardCreate", "MembershipCardUpdate", "MembershipCardResponse",
     "StudentMembershipBase", "StudentMembershipCreate", "StudentMembershipResponse", "MembershipRechargeRequest",
     "CoachSlotBase", "CoachSlotCreate", "CoachSlotUpdate", "CoachSlotResponse",
@@ -61,4 +66,8 @@ __all__ = [
     "CoachFeedbackBase", "CoachFeedbackCreate", "CoachFeedbackResponse",
     "CoachDetailResponse", "CoachAvailableTimeSlot", "CoachAvailableSlotsResponse",
     "DashboardOverview", "AttendanceStats", "RevenueStats", "AlertInfo",
+    # AI
+    "JumpRopeAnalyzeRequest", "JumpRopeAnalyzeResponse",
+    "AiAdviceRequest", "AiAdviceResponse",
+    "AiChatRequest", "AiChatResponse",
 ]

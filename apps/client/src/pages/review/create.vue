@@ -1,20 +1,20 @@
-<template>
+﻿<template>
   <view class="review-page">
-    <!-- 课程信息 -->
+    <!-- 璇剧▼淇℃伅 -->
     <view class="course-info">
       <view class="info-row">
-        <text class="label">教练</text>
+        <text class="label">鏁欑粌</text>
         <text class="value">{{ coachName }}</text>
       </view>
       <view class="info-row">
-        <text class="label">课程时间</text>
+        <text class="label">璇剧▼鏃堕棿</text>
         <text class="value">{{ courseTime }}</text>
       </view>
     </view>
 
-    <!-- 评分 -->
+    <!-- 璇勫垎 -->
     <view class="rating-section">
-      <view class="section-title">课程评分</view>
+      <view class="section-title">璇剧▼璇勫垎</view>
       <view class="rating-stars">
         <view
           v-for="i in 5"
@@ -22,15 +22,15 @@
           class="star-wrapper"
           @click="rating = i"
         >
-          <text :class="['star', { active: i <= rating }]">★</text>
+          <text :class="['star', { active: i <= rating }]">鈽?/text>
         </view>
       </view>
       <view class="rating-text">{{ getRatingText(rating) }}</view>
     </view>
 
-    <!-- 标签选择 -->
+    <!-- 鏍囩閫夋嫨 -->
     <view class="tags-section">
-      <view class="section-title">选择标签</view>
+      <view class="section-title">閫夋嫨鏍囩</view>
       <view class="tags-list">
         <view
           v-for="tag in availableTags"
@@ -43,25 +43,25 @@
       </view>
     </view>
 
-    <!-- 评价内容 -->
+    <!-- 璇勪环鍐呭 -->
     <view class="content-section">
-      <view class="section-title">评价内容（选填）</view>
+      <view class="section-title">璇勪环鍐呭锛堥€夊～锛?/view>
       <textarea
         v-model="content"
-        placeholder="分享您的上课体验，帮助其他学员了解教练..."
+        placeholder="鍒嗕韩鎮ㄧ殑涓婅浣撻獙锛屽府鍔╁叾浠栧鍛樹簡瑙ｆ暀缁?.."
         class="content-input"
         :maxlength="500"
       />
       <view class="word-count">{{ content.length }}/500</view>
     </view>
 
-    <!-- 匿名选项 -->
+    <!-- 鍖垮悕閫夐」 -->
     <view class="anonymous-section">
-      <wd-checkbox v-model="isAnonymous">匿名评价</wd-checkbox>
-      <text class="anonymous-tip">匿名后教练将看不到您的姓名</text>
+      <wd-checkbox v-model="isAnonymous">鍖垮悕璇勪环</wd-checkbox>
+      <text class="anonymous-tip">鍖垮悕鍚庢暀缁冨皢鐪嬩笉鍒版偍鐨勫鍚?/text>
     </view>
 
-    <!-- 提交按钮 -->
+    <!-- 鎻愪氦鎸夐挳 -->
     <view class="submit-section">
       <wd-button
         type="primary"
@@ -70,7 +70,7 @@
         :loading="submitting"
         @click="submitReview"
       >
-        提交评价
+        鎻愪氦璇勪环
       </wd-button>
     </view>
   </view>
@@ -91,18 +91,18 @@ const isAnonymous = ref(false)
 const submitting = ref(false)
 
 const availableTags = [
-  '专业',
-  '耐心',
-  '准时',
-  '有趣',
-  '认真负责',
-  '讲解清晰',
-  '因材施教',
-  '氛围好'
+  '涓撲笟',
+  '鑰愬績',
+  '鍑嗘椂',
+  '鏈夎叮',
+  '璁ょ湡璐熻矗',
+  '璁茶В娓呮櫚',
+  '鍥犳潗鏂芥暀',
+  '姘涘洿濂?
 ]
 
 function getRatingText(r: number): string {
-  const texts = ['', '很差', '较差', '一般', '满意', '非常满意']
+  const texts = ['', '寰堝樊', '杈冨樊', '涓€鑸?, '婊℃剰', '闈炲父婊℃剰']
   return texts[r] || ''
 }
 
@@ -122,16 +122,16 @@ async function loadBookingInfo() {
     const booking = await bookingApi.get(bookingId.value)
     coachName.value = booking.coach_name || ''
     const date = new Date(booking.booking_date)
-    const weekdays = ['日', '一', '二', '三', '四', '五', '六']
-    courseTime.value = `${date.getMonth() + 1}月${date.getDate()}日 周${weekdays[date.getDay()]} ${booking.start_time.substring(0, 5)}-${booking.end_time.substring(0, 5)}`
+    const weekdays = ['鏃?, '涓€', '浜?, '涓?, '鍥?, '浜?, '鍏?]
+    courseTime.value = `${date.getMonth() + 1}鏈?{date.getDate()}鏃?鍛?{weekdays[date.getDay()]} ${booking.start_time.substring(0, 5)}-${booking.end_time.substring(0, 5)}`
   } catch (error) {
-    console.error('加载预约信息失败', error)
+    console.error('鍔犺浇棰勭害淇℃伅澶辫触', error)
   }
 }
 
 async function submitReview() {
   if (rating.value === 0) {
-    uni.showToast({ title: '请选择评分', icon: 'none' })
+    uni.showToast({ title: '璇烽€夋嫨璇勫垎', icon: 'none' })
     return
   }
 
@@ -145,13 +145,13 @@ async function submitReview() {
       is_anonymous: isAnonymous.value
     })
 
-    uni.showToast({ title: '评价成功', icon: 'success' })
+    uni.showToast({ title: '璇勪环鎴愬姛', icon: 'success' })
 
     setTimeout(() => {
       uni.navigateBack()
     }, 1500)
   } catch (error: any) {
-    uni.showToast({ title: error.message || '评价失败', icon: 'none' })
+    uni.showToast({ title: error.message || '璇勪环澶辫触', icon: 'none' })
   } finally {
     submitting.value = false
   }
@@ -257,8 +257,8 @@ onMounted(() => {
 
     &.active {
       background-color: #e8f5e9;
-      color: #4caf50;
-      border-color: #4caf50;
+      color: #FF8800;
+      border-color: #FF8800;
     }
   }
 }

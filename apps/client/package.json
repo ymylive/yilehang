@@ -16,9 +16,6 @@
     "@dcloudio/uni-mp-weixin": "3.0.0-alpha-5000020260131001",
     "vue": "^3.4.21",
     "pinia": "^2.1.7",
-    "@mediapipe/pose": "^0.5.1675469404",
-    "@mediapipe/camera_utils": "^0.3.1675466862",
-    "@mediapipe/drawing_utils": "^0.3.1675466124",
     "wot-design-uni": "^1.2.0"
   },
   "devDependencies": {

@@ -153,46 +153,6 @@ CREATE TABLE IF NOT EXISTS training_sessions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 作业模板表
-CREATE TABLE IF NOT EXISTS homework_templates (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(100) NOT NULL,
-    description TEXT,
-    exercise_type VARCHAR(50) NOT NULL,
-    target_reps INTEGER NOT NULL,
-    points INTEGER DEFAULT 10,
-    difficulty VARCHAR(20) DEFAULT 'normal',
-    video_demo_url VARCHAR(500),
-    status VARCHAR(20) DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 作业分配表
-CREATE TABLE IF NOT EXISTS homework_assignments (
-    id SERIAL PRIMARY KEY,
-    template_id INTEGER REFERENCES homework_templates(id),
-    student_id INTEGER REFERENCES students(id),
-    coach_id INTEGER REFERENCES coaches(id),
-    due_date DATE NOT NULL,
-    status VARCHAR(20) DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 作业提交表
-CREATE TABLE IF NOT EXISTS homework_submissions (
-    id SERIAL PRIMARY KEY,
-    assignment_id INTEGER REFERENCES homework_assignments(id) UNIQUE,
-    video_url VARCHAR(500) NOT NULL,
-    reps_completed INTEGER DEFAULT 0,
-    ai_score DECIMAL(5, 2),
-    coach_score DECIMAL(5, 2),
-    feedback TEXT,
-    points_earned INTEGER DEFAULT 0,
-    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    graded_at TIMESTAMP
-);
-
 -- 创建索引
 CREATE INDEX idx_students_parent_id ON students(parent_id);
 CREATE INDEX idx_students_coach_id ON students(coach_id);
@@ -200,4 +160,3 @@ CREATE INDEX idx_schedules_start_time ON schedules(start_time);
 CREATE INDEX idx_schedules_coach_id ON schedules(coach_id);
 CREATE INDEX idx_fitness_tests_student_id ON fitness_tests(student_id);
 CREATE INDEX idx_training_sessions_student_id ON training_sessions(student_id);
-CREATE INDEX idx_homework_assignments_student_id ON homework_assignments(student_id);

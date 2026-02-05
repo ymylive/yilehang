@@ -1,74 +1,72 @@
-<template>
+﻿<template>
   <view class="confirm-page">
-    <!-- 预约信息卡片 -->
+    <!-- 棰勭害淇℃伅鍗＄墖 -->
     <view class="booking-card">
-      <view class="card-title">预约信息</view>
+      <view class="card-title">棰勭害淇℃伅</view>
 
       <view class="info-row">
-        <text class="info-label">教练</text>
+        <text class="info-label">鏁欑粌</text>
         <text class="info-value">{{ coachName }}</text>
       </view>
 
       <view class="info-row">
-        <text class="info-label">日期</text>
+        <text class="info-label">鏃ユ湡</text>
         <text class="info-value">{{ formatDate(bookingDate) }}</text>
       </view>
 
       <view class="info-row">
-        <text class="info-label">时间</text>
+        <text class="info-label">鏃堕棿</text>
         <text class="info-value">{{ formatTime(startTime) }} - {{ formatTime(endTime) }}</text>
       </view>
     </view>
 
-    <!-- 课时卡信息 -->
+    <!-- 璇炬椂鍗′俊鎭?-->
     <view class="membership-card">
-      <view class="card-title">课时扣费</view>
+      <view class="card-title">璇炬椂鎵ｈ垂</view>
 
       <view v-if="membership" class="membership-info">
-        <view class="membership-name">{{ membership.card_name || '课时卡' }}</view>
+        <view class="membership-name">{{ membership.card_name || '璇炬椂鍗? }}</view>
         <view class="membership-balance">
-          剩余 <text class="balance-value">{{ membership.remaining_times }}</text> 次
-        </view>
+          鍓╀綑 <text class="balance-value">{{ membership.remaining_times }}</text> 娆?        </view>
       </view>
 
       <view v-else class="no-membership">
-        <text class="warning-text">您暂无可用课时卡</text>
-        <view class="btn-purchase" @click="goToPurchase">去购买</view>
+        <text class="warning-text">鎮ㄦ殏鏃犲彲鐢ㄨ鏃跺崱</text>
+        <view class="btn-purchase" @click="goToPurchase">鍘昏喘涔?/view>
       </view>
 
       <view class="deduct-info" v-if="membership">
-        本次预约将扣除 <text class="deduct-value">1</text> 次课时
-      </view>
+        鏈棰勭害灏嗘墸闄?<text class="deduct-value">1</text> 娆¤鏃?      </view>
     </view>
 
-    <!-- 备注 -->
+    <!-- 澶囨敞 -->
     <view class="remark-card">
-      <view class="card-title">备注（选填）</view>
+      <view class="card-title">澶囨敞锛堥€夊～锛?/view>
       <textarea
         v-model="remark"
-        placeholder="请输入备注信息"
+        placeholder="璇疯緭鍏ュ娉ㄤ俊鎭?
         class="remark-input"
         :maxlength="200"
       />
     </view>
 
-    <!-- 预约须知 -->
+    <!-- 棰勭害椤荤煡 -->
     <view class="notice-card">
-      <view class="card-title">预约须知</view>
+      <view class="card-title">棰勭害椤荤煡</view>
       <view class="notice-list">
-        <view class="notice-item">1. 预约成功后将自动扣除1次课时</view>
-        <view class="notice-item">2. 开课前2小时可免费取消，取消后课时自动退还</view>
-        <view class="notice-item">3. 开课前2小时内取消将扣除课时</view>
-        <view class="notice-item">4. 如需改期请提前联系教练</view>
+        <view class="notice-item">1. 棰勭害鎴愬姛鍚庡皢鑷姩鎵ｉ櫎1娆¤鏃?/view>
+        <view class="notice-item">2. 寮€璇惧墠2灏忔椂鍙厤璐瑰彇娑堬紝鍙栨秷鍚庤鏃惰嚜鍔ㄩ€€杩?/view>
+        <view class="notice-item">3. 寮€璇惧墠2灏忔椂鍐呭彇娑堝皢鎵ｉ櫎璇炬椂</view>
+        <view class="notice-item">4. 濡傞渶鏀规湡璇锋彁鍓嶈仈绯绘暀缁?/view>
       </view>
     </view>
 
-    <!-- 底部操作栏 -->
+    <!-- 搴曢儴鎿嶄綔鏍?-->
     <view class="bottom-bar">
       <view class="agreement">
         <checkbox :checked="agreed" @click="agreed = !agreed" />
-        <text class="agreement-text">我已阅读并同意</text>
-        <text class="agreement-link" @click="viewAgreement">《预约服务协议》</text>
+        <text class="agreement-text">鎴戝凡闃呰骞跺悓鎰?/text>
+        <text class="agreement-link" @click="viewAgreement">銆婇绾︽湇鍔″崗璁€?/text>
       </view>
       <button
         class="btn-submit"
@@ -76,7 +74,7 @@
         :loading="submitting"
         @click="submitBooking"
       >
-        确认预约
+        纭棰勭害
       </button>
     </view>
   </view>
@@ -106,7 +104,7 @@ const agreed = ref(false)
 const submitting = ref(false)
 const membership = ref<Membership | null>(null)
 
-const weekdays = ['日', '一', '二', '三', '四', '五', '六']
+const weekdays = ['鏃?, '涓€', '浜?, '涓?, '鍥?, '浜?, '鍏?]
 
 const canSubmit = computed(() => {
   return agreed.value && membership.value && membership.value.remaining_times > 0
@@ -115,7 +113,7 @@ const canSubmit = computed(() => {
 function formatDate(dateStr: string): string {
   if (!dateStr) return ''
   const date = new Date(dateStr)
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 周${weekdays[date.getDay()]}`
+  return `${date.getFullYear()}骞?{date.getMonth() + 1}鏈?{date.getDate()}鏃?鍛?{weekdays[date.getDay()]}`
 }
 
 function formatTime(timeStr: string): string {
@@ -127,12 +125,12 @@ async function loadMembership() {
   try {
     const data = await membershipApi.getMyMemberships()
     const list = data.items || data || []
-    // 找到有效的课时卡
+    // 鎵惧埌鏈夋晥鐨勮鏃跺崱
     membership.value = list.find((m: Membership) =>
       m.status === 'active' && m.remaining_times > 0
     ) || null
   } catch (error) {
-    console.error('加载课时卡失败', error)
+    console.error('鍔犺浇璇炬椂鍗″け璐?, error)
   }
 }
 
@@ -143,7 +141,7 @@ function goToPurchase() {
 }
 
 function viewAgreement() {
-  uni.showToast({ title: '功能开发中', icon: 'none' })
+  uni.showToast({ title: '鍔熻兘寮€鍙戜腑', icon: 'none' })
 }
 
 async function submitBooking() {
@@ -160,16 +158,15 @@ async function submitBooking() {
       membership_id: membership.value?.id
     })
 
-    uni.showToast({ title: '预约成功', icon: 'success' })
+    uni.showToast({ title: '棰勭害鎴愬姛', icon: 'success' })
 
-    // 跳转到课表页面
-    setTimeout(() => {
+    // 璺宠浆鍒拌琛ㄩ〉闈?    setTimeout(() => {
       uni.switchTab({
         url: '/pages/schedule/index'
       })
     }, 1500)
   } catch (error: any) {
-    uni.showToast({ title: error.message || '预约失败', icon: 'none' })
+    uni.showToast({ title: error.message || '棰勭害澶辫触', icon: 'none' })
   } finally {
     submitting.value = false
   }
@@ -257,7 +254,7 @@ onMounted(() => {
     .balance-value {
       font-size: 36rpx;
       font-weight: 600;
-      color: #4caf50;
+      color: #FF8800;
     }
   }
 }
@@ -341,14 +338,14 @@ onMounted(() => {
 
     .agreement-link {
       font-size: 24rpx;
-      color: #4caf50;
+      color: #FF8800;
     }
   }
 
   .btn-submit {
     width: 100%;
     height: 88rpx;
-    background-color: #4caf50;
+    background-color: #FF8800;
     color: #fff;
     font-size: 32rpx;
     border-radius: 44rpx;

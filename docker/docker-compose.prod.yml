@@ -18,34 +18,20 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis缓存
-  redis:
-    image: redis:7-alpine
-    container_name: yilehang-redis
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # FastAPI后端
   api:
     build:
       context: ../apps/api
       dockerfile: ../../docker/Dockerfile.api
     container_name: yilehang-api
+    ports:
+      - "8001:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/yilehang
-      REDIS_URL: redis://redis:6379/0
       DEBUG: "false"
       SECRET_KEY: ${SECRET_KEY:-change-this-in-production}
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     restart: unless-stopped
 
@@ -67,4 +53,3 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:

@@ -1,16 +1,16 @@
-<template>
+﻿<template>
   <view class="page">
     <view class="header">
-      <text class="title">精彩瞬间</text>
-      <text class="desc">记录成长的每一刻</text>
+      <text class="title">绮惧僵鐬棿</text>
+      <text class="desc">璁板綍鎴愰暱鐨勬瘡涓€鍒?/text>
     </view>
 
-    <!-- 相册列表 -->
+    <!-- 鐩稿唽鍒楄〃 -->
     <view class="album-grid">
       <view class="album-item" v-for="item in moments" :key="item.id" @click="viewMoment(item)">
         <image class="thumbnail" :src="item.thumbnail" mode="aspectFill" />
         <view class="overlay" v-if="item.type === 'video'">
-          <text class="play-icon">▶</text>
+          <text class="play-icon">鈻?/text>
         </view>
         <view class="info">
           <text class="date">{{ formatDate(item.created_at) }}</text>
@@ -18,11 +18,11 @@
       </view>
     </view>
 
-    <!-- 空状态 -->
+    <!-- 绌虹姸鎬?-->
     <view class="empty" v-if="!moments.length">
-      <text class="icon">📸</text>
-      <text class="text">暂无精彩瞬间</text>
-      <text class="hint">完成训练后会自动生成精彩片段</text>
+      <text class="icon">馃摳</text>
+      <text class="text">鏆傛棤绮惧僵鐬棿</text>
+      <text class="hint">瀹屾垚璁粌鍚庝細鑷姩鐢熸垚绮惧僵鐗囨</text>
     </view>
   </view>
 </template>
@@ -37,7 +37,7 @@ onMounted(() => {
 })
 
 function loadMoments() {
-  // 模拟数据
+  // 妯℃嫙鏁版嵁
   moments.value = [
     { id: 1, type: 'image', thumbnail: '/static/demo/moment1.jpg', created_at: '2024-02-01' },
     { id: 2, type: 'video', thumbnail: '/static/demo/moment2.jpg', created_at: '2024-01-28' },
@@ -47,7 +47,7 @@ function loadMoments() {
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr)
-  return `${date.getMonth() + 1}月${date.getDate()}日`
+  return `${date.getMonth() + 1}鏈?{date.getDate()}鏃
 }
 
 function viewMoment(item: any) {

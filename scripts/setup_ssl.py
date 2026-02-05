@@ -1,10 +1,17 @@
-"""配置域名和SSL证书 - 修复版"""
+﻿"""Configure domain and SSL via acme.sh, update nginx + compose."""
 import paramiko
 import time
+import sys
+
+SERVER = "82.158.88.34"
+USER = "root"
+PASSWORD = "Qq159741"
+DOMAIN = "yilehang.cornna.xyz"
 
 client = paramiko.SSHClient()
 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-client.connect("8.134.33.19", username="root", password="Qq159741", timeout=30)
+client.connect(SERVER, username=USER, password=PASSWORD, timeout=30)
+
 
 def run(cmd, check=True):
     print(f">>> {cmd[:100]}...")
@@ -20,40 +27,95 @@ def run(cmd, check=True):
         raise Exception(f"Command failed: {cmd[:50]}")
     return exit_code, out
 
-DOMAIN = "yilehang.cornna.xyz"
 
-print("=== 1. 停止所有占用80端口的进程 ===")
+def ensure_docker():
+    run("command -v curl >/dev/null 2>&1 || (apt-get update -y && apt-get install -y curl)", check=False)
+    code, _ = run("command -v docker", check=False)
+    if code != 0:
+        run("curl -fsSL https://get.docker.com | sh")
+    run("systemctl enable --now docker", check=False)
+
+
+def install_compose():
+    run("command -v curl >/dev/null 2>&1 || (apt-get update -y && apt-get install -y curl)", check=False)
+    if run("command -v apt-get", check=False)[0] == 0:
+        run("apt-get update -y && apt-get install -y docker-compose-plugin", check=False)
+    elif run("command -v yum", check=False)[0] == 0:
+        run("yum install -y docker-compose-plugin", check=False)
+    elif run("command -v dnf", check=False)[0] == 0:
+        run("dnf install -y docker-compose-plugin", check=False)
+    elif run("command -v apk", check=False)[0] == 0:
+        run("apk add --no-cache docker-cli-compose", check=False)
+
+    run(
+        "curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) "
+        "-o /usr/local/bin/docker-compose",
+        check=False,
+    )
+    run("chmod +x /usr/local/bin/docker-compose", check=False)
+
+
+def get_compose_cmd() -> str:
+    if run("docker compose version", check=False)[0] == 0:
+        return "docker compose"
+    if run("docker-compose --version", check=False)[0] == 0:
+        return "docker-compose"
+    install_compose()
+    if run("docker compose version", check=False)[0] == 0:
+        return "docker compose"
+    if run("docker-compose --version", check=False)[0] == 0:
+        return "docker-compose"
+    raise Exception("Docker Compose not available")
+
+
+ensure_docker()
+compose_cmd = get_compose_cmd()
+
+print("=== 0. DNS check ===")
+_, dns_ip = run(f"getent hosts {DOMAIN} | awk '{{print $1}}' | head -n 1", check=False)
+if SERVER not in dns_ip:
+    print(f"[WARN] DNS for {DOMAIN} -> {dns_ip.strip()} (expected {SERVER}).")
+    print("Update DNS first, then re-run this script.")
+    client.close()
+    sys.exit(1)
+
+print("=== 1. Install acme.sh (if missing) ===")
+exit_code, _ = run("~/.acme.sh/acme.sh --version", check=False)
+if exit_code != 0:
+    run("apt-get update -y", check=False)
+    run("apt-get install -y curl socat", check=False)
+    run("curl https://get.acme.sh | sh", check=False)
+
+print("=== 2. Stop services on port 80 ===")
 run("docker stop yilehang-nginx 2>/dev/null; echo done", check=False)
 run("systemctl stop nginx 2>/dev/null; echo done", check=False)
 run("pkill -f 'nginx' 2>/dev/null; echo done", check=False)
 time.sleep(2)
 
-print("\n=== 2. 检查80端口是否释放 ===")
+print("\n=== 3. Check port 80 ===")
 run("netstat -tlnp | grep ':80' || echo 'Port 80 is free'", check=False)
 
-print("\n=== 3. 申请SSL证书 ===")
+print("\n=== 4. Issue SSL certificate ===")
 exit_code, out = run(f"~/.acme.sh/acme.sh --issue -d {DOMAIN} --standalone --httpport 80 --force", check=False)
 
 if exit_code != 0 and "already" not in out.lower():
-    print("尝试使用webroot模式...")
+    print("Try webroot mode...")
     run("mkdir -p /var/www/acme", check=False)
     run(f"~/.acme.sh/acme.sh --issue -d {DOMAIN} --webroot /var/www/acme --force", check=False)
 
-print("\n=== 4. 检查证书是否存在 ===")
+print("\n=== 5. Verify cert files ===")
 run(f"ls -la ~/.acme.sh/{DOMAIN}_ecc/ 2>/dev/null || ls -la ~/.acme.sh/{DOMAIN}/ 2>/dev/null || echo 'No cert found'", check=False)
 
-print("\n=== 5. 安装证书 ===")
+print("\n=== 6. Install cert ===")
 run("mkdir -p /opt/yilehang/ssl")
-# 尝试ECC证书
 exit_code, _ = run(f"~/.acme.sh/acme.sh --install-cert -d {DOMAIN} --ecc --key-file /opt/yilehang/ssl/key.pem --fullchain-file /opt/yilehang/ssl/cert.pem", check=False)
 if exit_code != 0:
-    # 尝试RSA证书
     run(f"~/.acme.sh/acme.sh --install-cert -d {DOMAIN} --key-file /opt/yilehang/ssl/key.pem --fullchain-file /opt/yilehang/ssl/cert.pem", check=False)
 
-print("\n=== 6. 检查证书文件 ===")
+print("\n=== 7. Check cert files ===")
 run("ls -la /opt/yilehang/ssl/", check=False)
 
-print("\n=== 7. 更新nginx配置 ===")
+print("\n=== 8. Update nginx config ===")
 nginx_conf = f'''events {{ worker_connections 1024; }}
 http {{
     include /etc/nginx/mime.types;
@@ -92,7 +154,7 @@ http {{
 
 run(f"cat > /opt/yilehang/docker/nginx/nginx.conf << 'EOFNGINX'\n{nginx_conf}\nEOFNGINX")
 
-print("\n=== 8. 更新docker-compose.yml ===")
+print("\n=== 9. Update docker-compose.yml ===")
 compose = '''version: "3.8"
 services:
   postgres:
@@ -113,23 +175,15 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: yilehang-redis
-    networks:
-      - yilehang
-    restart: unless-stopped
-
   api:
     image: python:3.11-slim
     container_name: yilehang-api
     working_dir: /app
-    command: sh -c "pip install -i https://pypi.tuna.tsinghua.edu.cn/simple fastapi uvicorn sqlalchemy asyncpg pydantic pydantic-settings python-jose passlib python-multipart redis httpx aiofiles bcrypt -q && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    command: sh -c "pip install -i https://pypi.tuna.tsinghua.edu.cn/simple fastapi uvicorn sqlalchemy asyncpg pydantic pydantic-settings python-jose passlib httpx bcrypt -q && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     volumes:
       - /opt/yilehang/apps/api:/app
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres123@postgres:5432/yilehang
-      REDIS_URL: redis://redis:6379/0
       SECRET_KEY: yilehang-secret-2024
     networks:
       - yilehang
@@ -165,25 +219,25 @@ volumes:
 
 run(f"cat > /opt/yilehang/docker/docker-compose.yml << 'EOFCOMPOSE'\n{compose}\nEOFCOMPOSE")
 
-print("\n=== 9. 启动Docker服务 ===")
-run("cd /opt/yilehang/docker && docker-compose up -d", check=False)
+print("\n=== 10. Start Docker services ===")
+run(f"cd /opt/yilehang/docker && {compose_cmd} up -d", check=False)
 
-print("\n=== 10. 等待服务启动 ===")
+print("\n=== 11. Wait for services ===")
 time.sleep(10)
 
-print("\n=== 11. 检查服务状态 ===")
+print("\n=== 12. Check status ===")
 run("docker ps", check=False)
 run("docker logs yilehang-nginx --tail 15 2>&1", check=False)
 
 client.close()
 
 print("\n" + "=" * 50)
-print("SSL配置完成!")
+print("SSL setup done")
 print("=" * 50)
-print(f"访问地址:")
+print("Access:")
 print(f"  - HTTPS: https://{DOMAIN}/")
-print(f"  - 管理后台: https://{DOMAIN}/admin")
-print(f"  - API文档: https://{DOMAIN}/docs")
-print("\n注意事项:")
-print(f"1. 确保域名 {DOMAIN} 已解析到 8.134.33.19")
-print("2. 确保阿里云安全组已开放 80 和 443 端口")
+print(f"  - Admin: https://{DOMAIN}/admin")
+print(f"  - API docs: https://{DOMAIN}/docs")
+print("\nNotes:")
+print(f"1. Ensure domain {DOMAIN} resolves to {SERVER}")
+print("2. Ensure firewall allows 80/443")

@@ -1,12 +1,12 @@
-<template>
+﻿<template>
   <view class="page">
-    <!-- 顶部介绍 -->
+    <!-- 椤堕儴浠嬬粛 -->
     <view class="header">
-      <text class="title">AI智能陪练</text>
-      <text class="desc">选择运动类型，开始你的训练吧！</text>
+      <text class="title">AI鏅鸿兘闄粌</text>
+      <text class="desc">閫夋嫨杩愬姩绫诲瀷锛屽紑濮嬩綘鐨勮缁冨惂锛?/text>
     </view>
 
-    <!-- 运动类型列表 -->
+    <!-- 杩愬姩绫诲瀷鍒楄〃 -->
     <view class="exercise-grid">
       <view
         class="exercise-card"
@@ -25,10 +25,10 @@
       </view>
     </view>
 
-    <!-- 最近训练 -->
+    <!-- 鏈€杩戣缁?-->
     <view class="section" v-if="recentSessions.length">
       <view class="section-header">
-        <text class="title">最近训练</text>
+        <text class="title">鏈€杩戣缁?/text>
       </view>
       <view class="session-list">
         <view class="session-item" v-for="session in recentSessions" :key="session.id">
@@ -38,20 +38,20 @@
             <text class="time">{{ formatTime(session.created_at) }}</text>
           </view>
           <view class="session-stats">
-            <text class="reps">{{ session.reps_count }}次</text>
-            <text class="calories">{{ session.calories_burned?.toFixed(0) || 0 }}卡</text>
+            <text class="reps">{{ session.reps_count }}娆?/text>
+            <text class="calories">{{ session.calories_burned?.toFixed(0) || 0 }}鍗?/text>
           </view>
         </view>
       </view>
     </view>
 
-    <!-- 训练提示 -->
+    <!-- 璁粌鎻愮ず -->
     <view class="tips">
-      <view class="tip-title">训练小贴士</view>
-      <view class="tip-item">1. 确保摄像头能拍摄到全身</view>
-      <view class="tip-item">2. 保持2-3米的适当距离</view>
-      <view class="tip-item">3. 确保光线充足</view>
-      <view class="tip-item">4. 穿着舒适的运动服装</view>
+      <view class="tip-title">璁粌灏忚创澹?/view>
+      <view class="tip-item">1. 纭繚鎽勫儚澶磋兘鎷嶆憚鍒板叏韬?/view>
+      <view class="tip-item">2. 淇濇寔2-3绫崇殑閫傚綋璺濈</view>
+      <view class="tip-item">3. 纭繚鍏夌嚎鍏呰冻</view>
+      <view class="tip-item">4. 绌跨潃鑸掗€傜殑杩愬姩鏈嶈</view>
     </view>
   </view>
 </template>
@@ -63,18 +63,18 @@ import { trainingApi } from '@/api'
 
 const userStore = useUserStore()
 
-// 运动类型
+// 杩愬姩绫诲瀷
 const exercises = ref([
-  { id: 'squat', name: '深蹲', description: '标准深蹲动作', emoji: '🏋️', difficulty: 'normal' },
-  { id: 'jumping_jack', name: '开合跳', description: '全身有氧运动', emoji: '🤸', difficulty: 'easy' },
-  { id: 'high_knees', name: '高抬腿', description: '原地高抬腿跑', emoji: '🏃', difficulty: 'normal' },
-  { id: 'pushup', name: '俯卧撑', description: '标准俯卧撑', emoji: '💪', difficulty: 'hard' },
-  { id: 'lunge', name: '弓步蹲', description: '交替弓步蹲', emoji: '🦵', difficulty: 'normal' },
-  { id: 'plank', name: '平板支撑', description: '核心力量训练', emoji: '🧘', difficulty: 'hard' }
+  { id: 'jump_rope', name: '跳绳', description: '节奏训练 + 心肺提升', emoji: '跳', difficulty: 'normal' },
+  { id: 'squat', name: '娣辫共', description: '鏍囧噯娣辫共鍔ㄤ綔', emoji: '馃弸锔?, difficulty: 'normal' },
+  { id: 'jumping_jack', name: '寮€鍚堣烦', description: '鍏ㄨ韩鏈夋哀杩愬姩', emoji: '馃じ', difficulty: 'easy' },
+  { id: 'high_knees', name: '楂樻姮鑵?, description: '鍘熷湴楂樻姮鑵胯窇', emoji: '馃弮', difficulty: 'normal' },
+  { id: 'pushup', name: '淇崸鎾?, description: '鏍囧噯淇崸鎾?, emoji: '馃挭', difficulty: 'hard' },
+  { id: 'lunge', name: '寮撴韫?, description: '浜ゆ浛寮撴韫?, emoji: '馃Φ', difficulty: 'normal' },
+  { id: 'plank', name: '骞虫澘鏀拺', description: '鏍稿績鍔涢噺璁粌', emoji: '馃', difficulty: 'hard' }
 ])
 
-// 最近训练记录
-const recentSessions = ref<any[]>([])
+// 鏈€杩戣缁冭褰?const recentSessions = ref<any[]>([])
 
 onMounted(async () => {
   await loadRecentSessions()
@@ -87,13 +87,13 @@ async function loadRecentSessions() {
     const res = await trainingApi.getHistory(userStore.currentStudent.id, 0, 5)
     recentSessions.value = res || []
   } catch (error) {
-    console.error('加载训练记录失败', error)
+    console.error('鍔犺浇璁粌璁板綍澶辫触', error)
   }
 }
 
 function selectExercise(exercise: any) {
   if (!userStore.currentStudent) {
-    uni.showToast({ title: '请先绑定学员', icon: 'none' })
+    uni.showToast({ title: '璇峰厛缁戝畾瀛﹀憳', icon: 'none' })
     return
   }
 
@@ -104,16 +104,16 @@ function selectExercise(exercise: any) {
 
 function getDifficultyText(difficulty: string) {
   const map: Record<string, string> = {
-    easy: '简单',
-    normal: '中等',
-    hard: '困难'
+    easy: '绠€鍗?,
+    normal: '涓瓑',
+    hard: '鍥伴毦'
   }
   return map[difficulty] || difficulty
 }
 
 function getExerciseEmoji(type: string) {
   const exercise = exercises.value.find(e => e.id === type)
-  return exercise?.emoji || '🏃'
+  return exercise?.emoji || '馃弮'
 }
 
 function getExerciseName(type: string) {
@@ -129,9 +129,9 @@ function formatTime(dateStr: string) {
   const hours = Math.floor(diff / 3600000)
   const days = Math.floor(diff / 86400000)
 
-  if (minutes < 60) return `${minutes}分钟前`
-  if (hours < 24) return `${hours}小时前`
-  if (days < 7) return `${days}天前`
+  if (minutes < 60) return `${minutes}鍒嗛挓鍓峘
+  if (hours < 24) return `${hours}灏忔椂鍓峘
+  if (days < 7) return `${days}澶╁墠`
   return `${date.getMonth() + 1}/${date.getDate()}`
 }
 </script>
@@ -145,7 +145,7 @@ function formatTime(dateStr: string) {
 
 .header {
   padding: 60rpx 30rpx 40rpx;
-  background: linear-gradient(135deg, #4CAF50, #81C784);
+  background: linear-gradient(135deg, #FFB347, #FF8800);
   color: #fff;
 }
 
@@ -183,7 +183,7 @@ function formatTime(dateStr: string) {
   align-items: center;
   justify-content: center;
   font-size: 50rpx;
-  background: #E8F5E9;
+  background: #FFF3E0;
 }
 
 .exercise-card .info {
@@ -211,18 +211,18 @@ function formatTime(dateStr: string) {
 }
 
 .difficulty.easy {
-  background: #E8F5E9;
-  color: #4CAF50;
+  background: #FFF3E0;
+  color: #FF8800;
 }
 
 .difficulty.normal {
-  background: #FFF3E0;
-  color: #FF9800;
+  background: #FFE0B2;
+  color: #FF7A18;
 }
 
 .difficulty.hard {
-  background: #FFEBEE;
-  color: #F44336;
+  background: #FFD7CC;
+  color: #E65100;
 }
 
 .section {
@@ -286,7 +286,7 @@ function formatTime(dateStr: string) {
 
 .session-stats .reps {
   font-size: 28rpx;
-  color: #4CAF50;
+  color: #FF8800;
   font-weight: bold;
   display: block;
 }
@@ -306,7 +306,7 @@ function formatTime(dateStr: string) {
 .tip-title {
   font-size: 28rpx;
   font-weight: bold;
-  color: #FF9800;
+  color: #FF8800;
   margin-bottom: 16rpx;
 }
 

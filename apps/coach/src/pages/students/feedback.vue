@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { request } from '@/api'
+import api from '@/api'
 
 const studentId = ref(0)
 const bookingId = ref(0)
@@ -86,15 +86,12 @@ async function submitFeedback() {
 
   submitting.value = true
   try {
-    await request('/coach-feedbacks', {
-      method: 'POST',
-      data: {
-        booking_id: bookingId.value,
-        student_id: studentId.value,
-        performance_rating: rating.value || null,
-        content: content.value,
-        suggestions: suggestions.value || null
-      }
+    await api.feedback.createFeedback({
+      booking_id: bookingId.value,
+      student_id: studentId.value,
+      performance_rating: rating.value || null,
+      content: content.value,
+      suggestions: suggestions.value || null
     })
 
     uni.showToast({ title: '提交成功', icon: 'success' })

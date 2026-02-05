@@ -1,15 +1,15 @@
-<template>
+﻿<template>
   <view class="booking-page">
-    <!-- 搜索栏 -->
+    <!-- 鎼滅储鏍?-->
     <view class="search-bar">
       <wd-search
         v-model="searchKeyword"
-        placeholder="搜索教练"
+        placeholder="鎼滅储鏁欑粌"
         @search="handleSearch"
       />
     </view>
 
-    <!-- 筛选标签 -->
+    <!-- 绛涢€夋爣绛?-->
     <view class="filter-tags">
       <scroll-view scroll-x class="tags-scroll">
         <view
@@ -23,7 +23,7 @@
       </scroll-view>
     </view>
 
-    <!-- 教练列表 -->
+    <!-- 鏁欑粌鍒楄〃 -->
     <view class="coach-list">
       <view
         v-for="coach in coaches"
@@ -47,39 +47,39 @@
           <view class="coach-stats">
             <view class="stat-item">
               <text class="stat-value">{{ coach.avg_rating.toFixed(1) }}</text>
-              <text class="stat-label">评分</text>
+              <text class="stat-label">璇勫垎</text>
             </view>
             <view class="stat-item">
               <text class="stat-value">{{ coach.total_lessons }}</text>
-              <text class="stat-label">课时</text>
+              <text class="stat-label">璇炬椂</text>
             </view>
             <view class="stat-item">
               <text class="stat-value">{{ coach.total_students }}</text>
-              <text class="stat-label">学员</text>
+              <text class="stat-label">瀛﹀憳</text>
             </view>
           </view>
         </view>
         <view class="coach-action">
           <view class="price" v-if="coach.hourly_rate">
             <text class="price-value">{{ coach.hourly_rate }}</text>
-            <text class="price-unit">元/课时</text>
+            <text class="price-unit">鍏?璇炬椂</text>
           </view>
           <wd-button size="small" type="primary" @click.stop="goToSelectTime(coach.id)">
-            立即约课
+            绔嬪嵆绾﹁
           </wd-button>
         </view>
       </view>
 
-      <!-- 空状态 -->
+      <!-- 绌虹姸鎬?-->
       <view v-if="coaches.length === 0 && !loading" class="empty-state">
         <image src="/static/empty.png" mode="aspectFit" class="empty-image" />
-        <text class="empty-text">暂无教练</text>
+        <text class="empty-text">鏆傛棤鏁欑粌</text>
       </view>
 
-      <!-- 加载更多 -->
+      <!-- 鍔犺浇鏇村 -->
       <view v-if="loading" class="loading-more">
         <wd-loading />
-        <text>加载中...</text>
+        <text>鍔犺浇涓?..</text>
       </view>
     </view>
   </view>
@@ -112,13 +112,13 @@ const page = ref(1)
 const pageSize = 20
 
 const specialtyTags = [
-  { label: '全部', value: '' },
-  { label: '篮球', value: 'basketball' },
-  { label: '足球', value: 'football' },
-  { label: '游泳', value: 'swimming' },
-  { label: '跆拳道', value: 'taekwondo' },
-  { label: '舞蹈', value: 'dance' },
-  { label: '体操', value: 'gymnastics' }
+  { label: '鍏ㄩ儴', value: '' },
+  { label: '绡悆', value: 'basketball' },
+  { label: '瓒崇悆', value: 'football' },
+  { label: '娓告吵', value: 'swimming' },
+  { label: '璺嗘嫵閬?, value: 'taekwondo' },
+  { label: '鑸炶箞', value: 'dance' },
+  { label: '浣撴搷', value: 'gymnastics' }
 ]
 
 async function loadCoaches() {
@@ -141,7 +141,7 @@ async function loadCoaches() {
       coaches.value = [...coaches.value, ...data]
     }
   } catch (error: any) {
-    uni.showToast({ title: error.message || '加载失败', icon: 'none' })
+    uni.showToast({ title: error.message || '鍔犺浇澶辫触', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -204,8 +204,8 @@ onMounted(() => {
     color: #666;
 
     &.active {
-      background-color: #e8f5e9;
-      color: #4caf50;
+      background-color: #FFF3E0;
+      color: #FF8800;
     }
   }
 }
@@ -255,7 +255,7 @@ onMounted(() => {
         padding: 4rpx 12rpx;
         margin-right: 8rpx;
         background-color: #fff3e0;
-        color: #ff9800;
+        color: #FF8800;
         font-size: 22rpx;
         border-radius: 4rpx;
       }
@@ -295,7 +295,7 @@ onMounted(() => {
       .price-value {
         font-size: 36rpx;
         font-weight: 600;
-        color: #f44336;
+        color: #FF7A18;
       }
 
       .price-unit {

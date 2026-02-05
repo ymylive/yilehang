@@ -1,17 +1,17 @@
-<template>
+﻿<template>
   <view class="page">
-    <!-- 自定义导航栏 -->
+    <!-- 鑷畾涔夊鑸爮 -->
     <view class="nav-bar">
       <view class="back" @click="goBack">
-        <text>返回</text>
+        <text>杩斿洖</text>
       </view>
       <text class="title">{{ exerciseName }}</text>
       <view class="timer">{{ formatDuration(duration) }}</view>
     </view>
 
-    <!-- 视频区域 -->
+    <!-- 瑙嗛鍖哄煙 -->
     <view class="video-container">
-      <!-- H5使用video标签 -->
+      <!-- H5浣跨敤video鏍囩 -->
       <!-- #ifdef H5 -->
       <video
         ref="videoRef"
@@ -23,7 +23,7 @@
       />
       <!-- #endif -->
 
-      <!-- 小程序使用camera组件 -->
+      <!-- 灏忕▼搴忎娇鐢╟amera缁勪欢 -->
       <!-- #ifndef H5 -->
       <camera
         class="camera"
@@ -33,73 +33,72 @@
       />
       <!-- #endif -->
 
-      <!-- 骨骼绘制层 -->
+      <!-- 楠ㄩ缁樺埗灞?-->
       <canvas canvas-id="poseCanvas" class="pose-canvas" />
 
-      <!-- 计数显示 -->
+      <!-- 璁℃暟鏄剧ず -->
       <view class="count-display">
         <text class="count">{{ count }}</text>
-        <text class="label">次</text>
+        <text class="label">娆?/text>
       </view>
 
-      <!-- 反馈提示 -->
+      <!-- 鍙嶉鎻愮ず -->
       <view class="feedback" :class="{ show: feedback }">
         <text>{{ feedback }}</text>
       </view>
     </view>
 
-    <!-- 控制区域 -->
+    <!-- 鎺у埗鍖哄煙 -->
     <view class="controls">
       <view class="stats">
         <view class="stat-item">
           <text class="value">{{ accuracy.toFixed(0) }}%</text>
-          <text class="label">准确率</text>
+          <text class="label">鍑嗙‘鐜?/text>
         </view>
         <view class="stat-item">
           <text class="value">{{ calories.toFixed(0) }}</text>
-          <text class="label">卡路里</text>
+          <text class="label">鍗¤矾閲?/text>
         </view>
       </view>
 
       <view class="buttons">
         <button class="btn-pause" @click="togglePause" v-if="isTraining">
-          {{ isPaused ? '继续' : '暂停' }}
+          {{ isPaused ? '缁х画' : '鏆傚仠' }}
         </button>
         <button class="btn-start" @click="startTraining" v-else>
-          开始训练
-        </button>
+          寮€濮嬭缁?        </button>
         <button class="btn-stop" @click="stopTraining" v-if="isTraining">
-          结束训练
+          缁撴潫璁粌
         </button>
       </view>
     </view>
 
-    <!-- 结果弹窗 -->
+    <!-- 缁撴灉寮圭獥 -->
     <view class="result-modal" v-if="showResult">
       <view class="result-content">
-        <view class="result-icon">🎉</view>
-        <text class="result-title">训练完成！</text>
+        <view class="result-icon">馃帀</view>
+        <text class="result-title">璁粌瀹屾垚锛?/text>
         <view class="result-stats">
           <view class="result-item">
             <text class="value">{{ count }}</text>
-            <text class="label">完成次数</text>
+            <text class="label">瀹屾垚娆℃暟</text>
           </view>
           <view class="result-item">
             <text class="value">{{ formatDuration(duration) }}</text>
-            <text class="label">训练时长</text>
+            <text class="label">璁粌鏃堕暱</text>
           </view>
           <view class="result-item">
             <text class="value">{{ calories.toFixed(0) }}</text>
-            <text class="label">消耗卡路里</text>
+            <text class="label">娑堣€楀崱璺噷</text>
           </view>
           <view class="result-item">
             <text class="value">{{ accuracy.toFixed(0) }}%</text>
-            <text class="label">动作准确率</text>
+            <text class="label">鍔ㄤ綔鍑嗙‘鐜?/text>
           </view>
         </view>
         <view class="result-buttons">
-          <button class="btn-again" @click="resetTraining">再来一次</button>
-          <button class="btn-done" @click="saveAndExit">保存退出</button>
+          <button class="btn-again" @click="resetTraining">鍐嶆潵涓€娆?/button>
+          <button class="btn-done" @click="saveAndExit">淇濆瓨閫€鍑?/button>
         </view>
       </view>
     </view>
@@ -113,29 +112,27 @@ import { trainingApi } from '@/api'
 
 const userStore = useUserStore()
 
-// 路由参数
+// 璺敱鍙傛暟
 const exerciseType = ref('')
 const exerciseName = ref('')
 
-// 训练状态
-const isTraining = ref(false)
+// 璁粌鐘舵€?const isTraining = ref(false)
 const isPaused = ref(false)
 const showResult = ref(false)
 
-// 训练数据
+// 璁粌鏁版嵁
 const count = ref(0)
 const duration = ref(0)
 const accuracy = ref(100)
 const calories = ref(0)
 const feedback = ref('')
 
-// 计时器
-let durationTimer: any = null
+// 璁℃椂鍣?let durationTimer: any = null
 
-// 卡路里系数
-const caloriesPerRep: Record<string, number> = {
+// 鍗¤矾閲岀郴鏁?const caloriesPerRep: Record<string, number> = {
   squat: 0.32,
   jumping_jack: 0.2,
+  jump_rope: 0.1,
   high_knees: 0.15,
   pushup: 0.5,
   lunge: 0.35,
@@ -143,15 +140,15 @@ const caloriesPerRep: Record<string, number> = {
 }
 
 onMounted(() => {
-  // 获取路由参数
+  // 鑾峰彇璺敱鍙傛暟
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1] as any
   const options = currentPage.$page?.options || currentPage.options || {}
 
   exerciseType.value = options.type || 'squat'
-  exerciseName.value = options.name || '深蹲'
+  exerciseName.value = options.name || '娣辫共'
 
-  // 初始化摄像头
+  // 鍒濆鍖栨憚鍍忓ご
   initCamera()
 })
 
@@ -160,7 +157,7 @@ onUnmounted(() => {
   stopCamera()
 })
 
-// 初始化摄像头
+// 鍒濆鍖栨憚鍍忓ご
 async function initCamera() {
   // #ifdef H5
   try {
@@ -172,14 +169,13 @@ async function initCamera() {
       video.srcObject = stream
     }
   } catch (error) {
-    console.error('摄像头初始化失败', error)
-    uni.showToast({ title: '无法访问摄像头', icon: 'none' })
+    console.error('鎽勫儚澶村垵濮嬪寲澶辫触', error)
+    uni.showToast({ title: '鏃犳硶璁块棶鎽勫儚澶?, icon: 'none' })
   }
   // #endif
 }
 
-// 停止摄像头
-function stopCamera() {
+// 鍋滄鎽勫儚澶?function stopCamera() {
   // #ifdef H5
   const video = document.getElementById('camera-video') as HTMLVideoElement
   if (video && video.srcObject) {
@@ -189,17 +185,16 @@ function stopCamera() {
   // #endif
 }
 
-// 开始训练
-function startTraining() {
+// 寮€濮嬭缁?function startTraining() {
   isTraining.value = true
   isPaused.value = false
   startTimer()
   startPoseDetection()
-  feedback.value = '开始训练！'
+  feedback.value = '寮€濮嬭缁冿紒'
   setTimeout(() => { feedback.value = '' }, 2000)
 }
 
-// 暂停/继续
+// 鏆傚仠/缁х画
 function togglePause() {
   isPaused.value = !isPaused.value
   if (isPaused.value) {
@@ -209,7 +204,7 @@ function togglePause() {
   }
 }
 
-// 停止训练
+// 鍋滄璁粌
 function stopTraining() {
   isTraining.value = false
   stopTimer()
@@ -217,14 +212,13 @@ function stopTraining() {
   showResult.value = true
 }
 
-// 开始计时
-function startTimer() {
+// 寮€濮嬭鏃?function startTimer() {
   durationTimer = setInterval(() => {
     duration.value++
   }, 1000)
 }
 
-// 停止计时
+// 鍋滄璁℃椂
 function stopTimer() {
   if (durationTimer) {
     clearInterval(durationTimer)
@@ -232,48 +226,42 @@ function stopTimer() {
   }
 }
 
-// 开始姿态检测
-function startPoseDetection() {
-  // 这里应该集成MediaPipe进行实时姿态检测
-  // 由于UniApp的限制，完整的MediaPipe集成需要在H5端实现
-  // 这里使用模拟数据演示
+// 寮€濮嬪Э鎬佹娴?function startPoseDetection() {
+  // 棰勭暀濮挎€佹娴嬫帴鍏ヤ綅
+  // 鐢变簬UniApp鐨勯檺鍒讹紝瀹屾暣濮挎€佹娴嬪缓璁湪H5绔疄鐜?  // 杩欓噷浣跨敤妯℃嫙鏁版嵁婕旂ず
 
   // #ifdef H5
   simulateTraining()
   // #endif
 }
 
-// 停止姿态检测
-function stopPoseDetection() {
-  // 停止检测
-}
+// 鍋滄濮挎€佹娴?function stopPoseDetection() {
+  // 鍋滄妫€娴?}
 
-// 模拟训练（演示用）
-function simulateTraining() {
+// 妯℃嫙璁粌锛堟紨绀虹敤锛?function simulateTraining() {
   const interval = setInterval(() => {
     if (!isTraining.value || isPaused.value) {
       clearInterval(interval)
       return
     }
 
-    // 模拟计数增加
+    // 妯℃嫙璁℃暟澧炲姞
     if (Math.random() > 0.7) {
       count.value++
       calories.value = count.value * (caloriesPerRep[exerciseType.value] || 0.3)
-      feedback.value = `完成第${count.value}个！`
+      feedback.value = `瀹屾垚绗?{count.value}涓紒`
       setTimeout(() => { feedback.value = '' }, 1500)
     }
   }, 2000)
 }
 
-// 格式化时长
-function formatDuration(seconds: number) {
+// 鏍煎紡鍖栨椂闀?function formatDuration(seconds: number) {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
-// 重置训练
+// 閲嶇疆璁粌
 function resetTraining() {
   count.value = 0
   duration.value = 0
@@ -283,8 +271,7 @@ function resetTraining() {
   isTraining.value = false
 }
 
-// 保存并退出
-async function saveAndExit() {
+// 淇濆瓨骞堕€€鍑?async function saveAndExit() {
   if (!userStore.currentStudent) {
     uni.navigateBack()
     return
@@ -300,22 +287,22 @@ async function saveAndExit() {
       calories_burned: calories.value
     })
 
-    uni.showToast({ title: '训练记录已保存', icon: 'success' })
+    uni.showToast({ title: '璁粌璁板綍宸蹭繚瀛?, icon: 'success' })
     setTimeout(() => {
       uni.navigateBack()
     }, 1500)
   } catch (error) {
-    console.error('保存失败', error)
-    uni.showToast({ title: '保存失败', icon: 'none' })
+    console.error('淇濆瓨澶辫触', error)
+    uni.showToast({ title: '淇濆瓨澶辫触', icon: 'none' })
   }
 }
 
-// 返回
+// 杩斿洖
 function goBack() {
   if (isTraining.value) {
     uni.showModal({
-      title: '提示',
-      content: '训练进行中，确定要退出吗？',
+      title: '鎻愮ず',
+      content: '璁粌杩涜涓紝纭畾瑕侀€€鍑哄悧锛?,
       success: (res) => {
         if (res.confirm) {
           stopTraining()
@@ -328,10 +315,9 @@ function goBack() {
   }
 }
 
-// 摄像头错误
-function onCameraError(e: any) {
-  console.error('摄像头错误', e)
-  uni.showToast({ title: '摄像头启动失败', icon: 'none' })
+// 鎽勫儚澶撮敊璇?function onCameraError(e: any) {
+  console.error('鎽勫儚澶撮敊璇?, e)
+  uni.showToast({ title: '鎽勫儚澶村惎鍔ㄥけ璐?, icon: 'none' })
 }
 </script>
 
@@ -455,7 +441,7 @@ function onCameraError(e: any) {
 .stat-item .value {
   font-size: 48rpx;
   font-weight: bold;
-  color: #4CAF50;
+  color: #FF8800;
   display: block;
 }
 
@@ -480,12 +466,12 @@ function onCameraError(e: any) {
 }
 
 .btn-start {
-  background: #4CAF50;
+  background: #FF8800;
   color: #fff;
 }
 
 .btn-pause {
-  background: #FF9800;
+  background: #FF7A18;
   color: #fff;
 }
 
@@ -494,7 +480,7 @@ function onCameraError(e: any) {
   color: #666;
 }
 
-/* 结果弹窗 */
+/* 缁撴灉寮圭獥 */
 .result-modal {
   position: fixed;
   top: 0;
@@ -542,7 +528,7 @@ function onCameraError(e: any) {
 .result-item .value {
   font-size: 44rpx;
   font-weight: bold;
-  color: #4CAF50;
+  color: #FF8800;
   display: block;
 }
 
@@ -572,7 +558,7 @@ function onCameraError(e: any) {
 }
 
 .btn-done {
-  background: #4CAF50;
+  background: #FF8800;
   color: #fff;
 }
 </style>

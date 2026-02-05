@@ -1,9 +1,9 @@
-<template>
+﻿<template>
   <view class="detail-page">
-    <!-- 课程信息卡片 -->
+    <!-- 璇剧▼淇℃伅鍗＄墖 -->
     <view class="course-card">
       <view class="course-header">
-        <view class="course-name">{{ booking?.course_name || '私教课' }}</view>
+        <view class="course-name">{{ booking?.course_name || '绉佹暀璇? }}</view>
         <view :class="['course-status', booking?.status]">
           {{ getStatusText(booking?.status) }}
         </view>
@@ -11,80 +11,80 @@
 
       <view class="info-list">
         <view class="info-item">
-          <text class="info-label">教练</text>
+          <text class="info-label">鏁欑粌</text>
           <text class="info-value">{{ booking?.coach_name }}</text>
         </view>
         <view class="info-item">
-          <text class="info-label">日期</text>
+          <text class="info-label">鏃ユ湡</text>
           <text class="info-value">{{ formatDate(booking?.booking_date) }}</text>
         </view>
         <view class="info-item">
-          <text class="info-label">时间</text>
+          <text class="info-label">鏃堕棿</text>
           <text class="info-value">{{ formatTime(booking?.start_time) }} - {{ formatTime(booking?.end_time) }}</text>
         </view>
         <view class="info-item">
-          <text class="info-label">类型</text>
-          <text class="info-value">{{ booking?.course_type === 'private' ? '私教课' : '小班课' }}</text>
+          <text class="info-label">绫诲瀷</text>
+          <text class="info-value">{{ booking?.course_type === 'private' ? '绉佹暀璇? : '灏忕彮璇? }}</text>
         </view>
         <view class="info-item" v-if="booking?.remark">
-          <text class="info-label">备注</text>
+          <text class="info-label">澶囨敞</text>
           <text class="info-value">{{ booking.remark }}</text>
         </view>
       </view>
     </view>
 
-    <!-- 教练反馈 -->
+    <!-- 鏁欑粌鍙嶉 -->
     <view class="feedback-card" v-if="feedback">
-      <view class="card-title">教练反馈</view>
+      <view class="card-title">鏁欑粌鍙嶉</view>
       <view class="feedback-content">
         <view class="rating-row" v-if="feedback.performance_rating">
-          <text class="rating-label">表现评分</text>
+          <text class="rating-label">琛ㄧ幇璇勫垎</text>
           <view class="rating-stars">
-            <text v-for="i in 5" :key="i" :class="['star', { active: i <= feedback.performance_rating }]">★</text>
+            <text v-for="i in 5" :key="i" :class="['star', { active: i <= feedback.performance_rating }]">鈽?/text>
           </view>
         </view>
         <view class="feedback-text">{{ feedback.content }}</view>
         <view class="suggestions" v-if="feedback.suggestions">
-          <text class="suggestions-label">改进建议：</text>
+          <text class="suggestions-label">鏀硅繘寤鸿锛?/text>
           <text class="suggestions-text">{{ feedback.suggestions }}</text>
         </view>
       </view>
     </view>
 
-    <!-- 操作按钮 -->
+    <!-- 鎿嶄綔鎸夐挳 -->
     <view class="action-buttons">
-      <!-- 待上课状态 -->
+      <!-- 寰呬笂璇剧姸鎬?-->
       <template v-if="booking?.status === 'confirmed' || booking?.status === 'pending'">
         <wd-button type="warning" block @click="handleReschedule" v-if="canReschedule">
-          改期
+          鏀规湡
         </wd-button>
         <wd-button type="error" block plain @click="handleCancel" v-if="canCancel">
-          取消预约
+          鍙栨秷棰勭害
         </wd-button>
       </template>
 
-      <!-- 已完成状态 -->
+      <!-- 宸插畬鎴愮姸鎬?-->
       <template v-if="booking?.status === 'completed'">
         <wd-button type="primary" block @click="goToReview" v-if="!hasReviewed">
-          评价课程
+          璇勪环璇剧▼
         </wd-button>
-        <view v-else class="reviewed-tip">您已评价此课程</view>
+        <view v-else class="reviewed-tip">鎮ㄥ凡璇勪环姝よ绋?/view>
       </template>
     </view>
 
-    <!-- 取消确认弹窗 -->
+    <!-- 鍙栨秷纭寮圭獥 -->
     <wd-popup v-model="showCancelPopup" position="bottom" round>
       <view class="cancel-popup">
-        <view class="popup-title">取消预约</view>
-        <view class="popup-tip">取消后课时将自动退还</view>
+        <view class="popup-title">鍙栨秷棰勭害</view>
+        <view class="popup-tip">鍙栨秷鍚庤鏃跺皢鑷姩閫€杩?/view>
         <textarea
           v-model="cancelReason"
-          placeholder="请输入取消原因（选填）"
+          placeholder="璇疯緭鍏ュ彇娑堝師鍥狅紙閫夊～锛?
           class="cancel-input"
         />
         <view class="popup-buttons">
-          <wd-button plain @click="showCancelPopup = false">再想想</wd-button>
-          <wd-button type="error" @click="confirmCancel" :loading="cancelling">确认取消</wd-button>
+          <wd-button plain @click="showCancelPopup = false">鍐嶆兂鎯?/wd-button>
+          <wd-button type="error" @click="confirmCancel" :loading="cancelling">纭鍙栨秷</wd-button>
         </view>
       </view>
     </wd-popup>
@@ -132,10 +132,9 @@ const showCancelPopup = ref(false)
 const cancelReason = ref('')
 const cancelling = ref(false)
 
-const weekdays = ['日', '一', '二', '三', '四', '五', '六']
+const weekdays = ['鏃?, '涓€', '浜?, '涓?, '鍥?, '浜?, '鍏?]
 
-// 是否可以取消（开课前2小时）
-const canCancel = computed(() => {
+// 鏄惁鍙互鍙栨秷锛堝紑璇惧墠2灏忔椂锛?const canCancel = computed(() => {
   if (!booking.value) return false
   const bookingDateTime = new Date(`${booking.value.booking_date}T${booking.value.start_time}`)
   const now = new Date()
@@ -143,7 +142,7 @@ const canCancel = computed(() => {
   return diff > 2 * 60 * 60 * 1000
 })
 
-// 是否可以改期
+// 鏄惁鍙互鏀规湡
 const canReschedule = computed(() => {
   return canCancel.value
 })
@@ -151,11 +150,11 @@ const canReschedule = computed(() => {
 function getStatusText(status: string | undefined): string {
   if (!status) return ''
   const map: Record<string, string> = {
-    pending: '待确认',
-    confirmed: '已确认',
-    cancelled: '已取消',
-    completed: '已完成',
-    no_show: '未到'
+    pending: '寰呯‘璁?,
+    confirmed: '宸茬‘璁?,
+    cancelled: '宸插彇娑?,
+    completed: '宸插畬鎴?,
+    no_show: '鏈埌'
   }
   return map[status] || status
 }
@@ -163,7 +162,7 @@ function getStatusText(status: string | undefined): string {
 function formatDate(dateStr: string | undefined): string {
   if (!dateStr) return ''
   const date = new Date(dateStr)
-  return `${date.getMonth() + 1}月${date.getDate()}日 周${weekdays[date.getDay()]}`
+  return `${date.getMonth() + 1}鏈?{date.getDate()}鏃?鍛?{weekdays[date.getDay()]}`
 }
 
 function formatTime(timeStr: string | undefined): string {
@@ -176,7 +175,7 @@ async function loadBookingDetail() {
   try {
     booking.value = await bookingApi.get(bookingId.value)
   } catch (error: any) {
-    uni.showToast({ title: error.message || '加载失败', icon: 'none' })
+    uni.showToast({ title: error.message || '鍔犺浇澶辫触', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -192,13 +191,13 @@ async function confirmCancel() {
 
   try {
     await bookingApi.cancel(bookingId.value, cancelReason.value || undefined)
-    uni.showToast({ title: '取消成功', icon: 'success' })
+    uni.showToast({ title: '鍙栨秷鎴愬姛', icon: 'success' })
     showCancelPopup.value = false
 
-    // 刷新数据
+    // 鍒锋柊鏁版嵁
     await loadBookingDetail()
   } catch (error: any) {
-    uni.showToast({ title: error.message || '取消失败', icon: 'none' })
+    uni.showToast({ title: error.message || '鍙栨秷澶辫触', icon: 'none' })
   } finally {
     cancelling.value = false
   }
@@ -267,7 +266,7 @@ onMounted(() => {
     &.pending,
     &.confirmed {
       background-color: #e8f5e9;
-      color: #4caf50;
+      color: #FF8800;
     }
 
     &.completed {

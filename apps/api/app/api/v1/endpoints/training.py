@@ -1,5 +1,5 @@
 """
-AI训练相关API
+训练相关API
 """
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException

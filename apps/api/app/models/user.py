@@ -32,6 +32,7 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     phone: Mapped[Optional[str]] = mapped_column(String(20), unique=True, index=True)
+    email: Mapped[Optional[str]] = mapped_column(String(100), unique=True, index=True)
     password_hash: Mapped[Optional[str]] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(20), default=UserRole.PARENT.value)
     wechat_openid: Mapped[Optional[str]] = mapped_column(String(100), unique=True, index=True)

@@ -1,6 +1,6 @@
-"""
-微信小程序上传脚本 - 上传测试版本
-需要配置微信小程序上传密钥
+﻿"""
+寰俊灏忕▼搴忎笂浼犺剼鏈?- 涓婁紶娴嬭瘯鐗堟湰
+闇€瑕侀厤缃井淇″皬绋嬪簭涓婁紶瀵嗛挜
 """
 import os
 import sys
@@ -8,57 +8,56 @@ import json
 import subprocess
 from pathlib import Path
 
-# 小程序配置
-APPS = {
+# 灏忕▼搴忛厤缃?APPS = {
     'client': {
-        'name': '乐航成长',
+        'name': '涔愯埅鎴愰暱',
         'appid': 'wxdbd150a0458a3c7c',
         'build_dir': 'apps/client/dist/build/mp-weixin',
         'version': '1.0.0',
-        'desc': '易乐航·ITS智慧体教云平台 - 学员/家长端'
+        'desc': '鏄撲箰鑸稩TS鏅烘収浣撴暀浜戝钩鍙?- 瀛﹀憳/瀹堕暱绔?
     },
     'coach': {
-        'name': '易乐航教练端',
+        'name': '鏄撲箰鑸暀缁冪',
         'appid': 'wxdbd150a0458a3c7c',
         'build_dir': 'apps/coach/dist/build/mp-weixin',
         'version': '1.0.0',
-        'desc': '易乐航·ITS智慧体教云平台 - 教练端'
+        'desc': '鏄撲箰鑸稩TS鏅烘収浣撴暀浜戝钩鍙?- 鏁欑粌绔?
     }
 }
 
 PROJECT_ROOT = Path(__file__).parent.parent
 
 def check_wechat_cli():
-    """检查微信开发者工具CLI是否安装"""
+    """妫€鏌ュ井淇″紑鍙戣€呭伐鍏稢LI鏄惁瀹夎"""
     try:
         result = subprocess.run(['wechatdevtools', '--version'], capture_output=True, text=True)
         if result.returncode == 0:
-            print(f"[微信工具] 已安装: {result.stdout.strip()}")
+            print(f"[寰俊宸ュ叿] 宸插畨瑁? {result.stdout.strip()}")
             return True
     except FileNotFoundError:
         pass
 
-    print("[微信工具] 未找到微信开发者工具CLI")
-    print("请按以下步骤操作:")
-    print("1. 下载微信开发者工具: https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html")
-    print("2. 安装后配置CLI环境变量")
-    print("3. 或者手动在微信开发者工具中上传")
+    print("[寰俊宸ュ叿] 鏈壘鍒板井淇″紑鍙戣€呭伐鍏稢LI")
+    print("璇锋寜浠ヤ笅姝ラ鎿嶄綔:")
+    print("1. 涓嬭浇寰俊寮€鍙戣€呭伐鍏? https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html")
+    print("2. 瀹夎鍚庨厤缃瓹LI鐜鍙橀噺")
+    print("3. 鎴栬€呮墜鍔ㄥ湪寰俊寮€鍙戣€呭伐鍏蜂腑涓婁紶")
     return False
 
 def upload_with_cli(app_name, app_config):
-    """使用微信CLI上传"""
+    """浣跨敤寰俊CLI涓婁紶"""
     build_dir = PROJECT_ROOT / app_config['build_dir']
 
     if not build_dir.exists():
-        print(f"[错误] 构建目录不存在: {build_dir}")
+        print(f"[閿欒] 鏋勫缓鐩綍涓嶅瓨鍦? {build_dir}")
         return False
 
-    print(f"\n[上传] {app_config['name']} ({app_name})")
-    print(f"  构建目录: {build_dir}")
-    print(f"  版本: {app_config['version']}")
-    print(f"  描述: {app_config['desc']}")
+    print(f"\n[涓婁紶] {app_config['name']} ({app_name})")
+    print(f"  鏋勫缓鐩綍: {build_dir}")
+    print(f"  鐗堟湰: {app_config['version']}")
+    print(f"  鎻忚堪: {app_config['desc']}")
 
-    # 使用微信开发者工具CLI上传
+    # 浣跨敤寰俊寮€鍙戣€呭伐鍏稢LI涓婁紶
     cmd = [
         'wechatdevtools',
         'upload',
@@ -70,108 +69,100 @@ def upload_with_cli(app_name, app_config):
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
         if result.returncode == 0:
-            print(f"[成功] {app_config['name']} 上传成功")
+            print(f"[鎴愬姛] {app_config['name']} 涓婁紶鎴愬姛")
             return True
         else:
-            print(f"[错误] 上传失败: {result.stderr}")
+            print(f"[閿欒] 涓婁紶澶辫触: {result.stderr}")
             return False
     except subprocess.TimeoutExpired:
-        print(f"[错误] 上传超时")
+        print(f"[閿欒] 涓婁紶瓒呮椂")
         return False
     except Exception as e:
-        print(f"[错误] {e}")
+        print(f"[閿欒] {e}")
         return False
 
 def generate_upload_guide():
-    """生成手动上传指南"""
+    """鐢熸垚鎵嬪姩涓婁紶鎸囧崡"""
     guide = """
-=== 微信小程序手动上传指南 ===
+=== 寰俊灏忕▼搴忔墜鍔ㄤ笂浼犳寚鍗?===
 
-由于微信开发者工具CLI需要特殊配置，建议使用以下方式上传:
+鐢变簬寰俊寮€鍙戣€呭伐鍏稢LI闇€瑕佺壒娈婇厤缃紝寤鸿浣跨敤浠ヤ笅鏂瑰紡涓婁紶:
 
-1. 打开微信开发者工具
-2. 选择"导入项目"
-3. 选择以下目录之一:
-   - 学员端: apps/client/dist/build/mp-weixin
-   - 教练端: apps/coach/dist/build/mp-weixin
-4. 点击"上传"按钮
-5. 填写版本号和更新说明
-6. 点击"上传"
+1. 鎵撳紑寰俊寮€鍙戣€呭伐鍏?2. 閫夋嫨"瀵煎叆椤圭洰"
+3. 閫夋嫨浠ヤ笅鐩綍涔嬩竴:
+   - 瀛﹀憳绔? apps/client/dist/build/mp-weixin
+   - 鏁欑粌绔? apps/coach/dist/build/mp-weixin
+4. 鐐瑰嚮"涓婁紶"鎸夐挳
+5. 濉啓鐗堟湰鍙峰拰鏇存柊璇存槑
+6. 鐐瑰嚮"涓婁紶"
 
-上传后的版本将显示在微信小程序后台的"测试版本"中。
+涓婁紶鍚庣殑鐗堟湰灏嗘樉绀哄湪寰俊灏忕▼搴忓悗鍙扮殑"娴嬭瘯鐗堟湰"涓€?
+=== 鐗堟湰淇℃伅 ===
 
-=== 版本信息 ===
+瀛﹀憳绔?(涔愯埅鎴愰暱):
+- 鐗堟湰: 1.0.0
+- 鎻忚堪: 鏄撲箰鑸稩TS鏅烘収浣撴暀浜戝钩鍙?- 瀛﹀憳/瀹堕暱绔?- 璺緞: apps/client/dist/build/mp-weixin
 
-学员端 (乐航成长):
-- 版本: 1.0.0
-- 描述: 易乐航·ITS智慧体教云平台 - 学员/家长端
-- 路径: apps/client/dist/build/mp-weixin
+鏁欑粌绔?(鏄撲箰鑸暀缁冪):
+- 鐗堟湰: 1.0.0
+- 鎻忚堪: 鏄撲箰鑸稩TS鏅烘収浣撴暀浜戝钩鍙?- 鏁欑粌绔?- 璺緞: apps/coach/dist/build/mp-weixin
 
-教练端 (易乐航教练端):
-- 版本: 1.0.0
-- 描述: 易乐航·ITS智慧体教云平台 - 教练端
-- 路径: apps/coach/dist/build/mp-weixin
+=== 娴嬭瘯姝ラ ===
 
-=== 测试步骤 ===
+1. 鍦ㄥ井淇″皬绋嬪簭鍚庡彴璁剧疆娴嬭瘯璐﹀彿
+2. 浣跨敤娴嬭瘯璐﹀彿鎵弿浜岀淮鐮佽繘鍏ユ祴璇曠増鏈?3. 娴嬭瘯浠ヤ笅鍔熻兘:
+   - 鐧诲綍/娉ㄥ唽
+   - 棰勭害璇剧▼
+   - 鏌ョ湅璇炬椂鍗?   - 娑堣垂璁板綍
+   - 鏁欑粌璇勪环
 
-1. 在微信小程序后台设置测试账号
-2. 使用测试账号扫描二维码进入测试版本
-3. 测试以下功能:
-   - 登录/注册
-   - 预约课程
-   - 查看课时卡
-   - 消费记录
-   - 教练评价
+=== 鍙戝竷姝ラ ===
 
-=== 发布步骤 ===
-
-1. 在微信小程序后台提交审核
-2. 等待审核通过 (通常1-3天)
-3. 审核通过后点击"发布"
-4. 小程序将在微信中上线
+1. 鍦ㄥ井淇″皬绋嬪簭鍚庡彴鎻愪氦瀹℃牳
+2. 绛夊緟瀹℃牳閫氳繃 (閫氬父1-3澶?
+3. 瀹℃牳閫氳繃鍚庣偣鍑?鍙戝竷"
+4. 灏忕▼搴忓皢鍦ㄥ井淇′腑涓婄嚎
 """
     return guide
 
 def main():
     print("=" * 50)
-    print("微信小程序上传工具")
+    print("寰俊灏忕▼搴忎笂浼犲伐鍏?)
     print("=" * 50)
 
-    # 检查构建文件
-    print("\n[检查] 验证构建文件...")
+    # 妫€鏌ユ瀯寤烘枃浠?    print("\n[妫€鏌 楠岃瘉鏋勫缓鏂囦欢...")
     all_built = True
     for app_name, app_config in APPS.items():
         build_dir = PROJECT_ROOT / app_config['build_dir']
         if build_dir.exists():
             print(f"  [OK] {app_config['name']}: {build_dir}")
         else:
-            print(f"  [FAIL] {app_config['name']}: 未找到")
+            print(f"  [FAIL] {app_config['name']}: 鏈壘鍒?)
             all_built = False
 
     if not all_built:
-        print("\n[错误] 部分小程序未构建，请先运行:")
+        print("\n[閿欒] 閮ㄥ垎灏忕▼搴忔湭鏋勫缓锛岃鍏堣繍琛?")
         print("  cd apps/client && pnpm build:mp-weixin")
         print("  cd apps/coach && pnpm build:mp-weixin")
         sys.exit(1)
 
-    # 检查微信工具
-    print("\n[检查] 微信开发者工具...")
+    # 妫€鏌ュ井淇″伐鍏?    print("\n[妫€鏌 寰俊寮€鍙戣€呭伐鍏?..")
     has_cli = check_wechat_cli()
 
     if has_cli:
-        # 尝试使用CLI上传
-        print("\n[上传] 开始上传...")
+        # 灏濊瘯浣跨敤CLI涓婁紶
+        print("\n[涓婁紶] 寮€濮嬩笂浼?..")
         success_count = 0
         for app_name, app_config in APPS.items():
             if upload_with_cli(app_name, app_config):
                 success_count += 1
 
-        print(f"\n[完成] 成功上传 {success_count}/{len(APPS)} 个小程序")
+        print(f"\n[瀹屾垚] 鎴愬姛涓婁紶 {success_count}/{len(APPS)} 涓皬绋嬪簭")
     else:
-        # 生成手动上传指南
+        # 鐢熸垚鎵嬪姩涓婁紶鎸囧崡
         print("\n" + generate_upload_guide())
 
-    # 生成上传信息文件
+    # 鐢熸垚涓婁紶淇℃伅鏂囦欢
     upload_info = {
         'timestamp': __import__('datetime').datetime.now().isoformat(),
         'apps': APPS,
@@ -185,7 +176,7 @@ def main():
     with open(info_file, 'w', encoding='utf-8') as f:
         json.dump(upload_info, f, ensure_ascii=False, indent=2)
 
-    print(f"\n[信息] 上传信息已保存到: {info_file}")
+    print(f"\n[淇℃伅] 涓婁紶淇℃伅宸蹭繚瀛樺埌: {info_file}")
 
 if __name__ == "__main__":
     main()

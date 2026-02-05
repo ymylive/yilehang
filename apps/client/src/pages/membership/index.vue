@@ -1,20 +1,20 @@
-<template>
+﻿<template>
   <view class="membership-page">
-    <!-- 课时余额卡片 -->
+    <!-- 璇炬椂浣欓鍗＄墖 -->
     <view class="balance-card">
       <view class="balance-header">
-        <text class="balance-title">课时余额</text>
-        <text class="balance-link" @click="goToTransactions">消费记录 ></text>
+        <text class="balance-title">璇炬椂浣欓</text>
+        <text class="balance-link" @click="goToTransactions">娑堣垂璁板綍 ></text>
       </view>
       <view class="balance-value">
         <text class="value">{{ totalRemaining }}</text>
-        <text class="unit">次</text>
+        <text class="unit">娆?/text>
       </view>
     </view>
 
-    <!-- 我的课时卡列表 -->
+    <!-- 鎴戠殑璇炬椂鍗″垪琛?-->
     <view class="section">
-      <view class="section-title">我的课时卡</view>
+      <view class="section-title">鎴戠殑璇炬椂鍗?/view>
 
       <view v-if="memberships.length > 0" class="card-list">
         <view
@@ -31,33 +31,33 @@
           <view class="item-body">
             <view class="remaining">
               <text class="remaining-value">{{ item.remaining_times }}</text>
-              <text class="remaining-label">剩余次数</text>
+              <text class="remaining-label">鍓╀綑娆℃暟</text>
             </view>
             <view class="expire" v-if="item.expire_date">
-              <text class="expire-label">有效期至</text>
+              <text class="expire-label">鏈夋晥鏈熻嚦</text>
               <text class="expire-value">{{ formatDate(item.expire_date) }}</text>
             </view>
             <view class="expire" v-else>
-              <text class="expire-label">有效期</text>
-              <text class="expire-value">永久有效</text>
+              <text class="expire-label">鏈夋晥鏈?/text>
+              <text class="expire-value">姘镐箙鏈夋晥</text>
             </view>
           </view>
           <view class="item-footer">
-            <text class="purchase-date">购买时间：{{ formatDateTime(item.purchase_date) }}</text>
+            <text class="purchase-date">璐拱鏃堕棿锛歿{ formatDateTime(item.purchase_date) }}</text>
           </view>
         </view>
       </view>
 
       <view v-else class="empty-state">
         <image src="/static/empty.png" mode="aspectFit" class="empty-image" />
-        <text class="empty-text">暂无课时卡</text>
+        <text class="empty-text">鏆傛棤璇炬椂鍗?/text>
       </view>
     </view>
 
-    <!-- 可购买的课时卡 -->
+    <!-- 鍙喘涔扮殑璇炬椂鍗?-->
     <view class="section">
-      <view class="section-title">购买课时卡</view>
-      <view class="section-subtitle">线下付款后，管理员将为您充值</view>
+      <view class="section-title">璐拱璇炬椂鍗?/view>
+      <view class="section-subtitle">绾夸笅浠樻鍚庯紝绠＄悊鍛樺皢涓烘偍鍏呭€?/view>
 
       <view class="purchase-list">
         <view
@@ -71,11 +71,11 @@
           </view>
           <view class="card-price">
             <view class="price-current">
-              <text class="currency">¥</text>
+              <text class="currency">楼</text>
               <text class="amount">{{ card.price }}</text>
             </view>
             <view class="price-original" v-if="card.original_price && card.original_price > card.price">
-              ¥{{ card.original_price }}
+              楼{{ card.original_price }}
             </view>
           </view>
         </view>
@@ -83,7 +83,7 @@
 
       <view class="contact-tip">
         <wd-icon name="phone" size="32rpx" />
-        <text>如需购买请联系客服或到店咨询</text>
+        <text>濡傞渶璐拱璇疯仈绯诲鏈嶆垨鍒板簵鍜ㄨ</text>
       </view>
     </view>
   </view>
@@ -128,19 +128,19 @@ const totalRemaining = computed(() => {
 
 function getStatusText(status: string): string {
   const map: Record<string, string> = {
-    active: '使用中',
-    expired: '已过期',
-    exhausted: '已用完'
+    active: '浣跨敤涓?,
+    expired: '宸茶繃鏈?,
+    exhausted: '宸茬敤瀹?
   }
   return map[status] || status
 }
 
 function getCardDesc(card: MembershipCard): string {
   if (card.card_type === 'times' && card.total_times) {
-    return `${card.total_times}次课时`
+    return `${card.total_times}娆¤鏃禶
   }
   if (card.card_type === 'duration' && card.duration_days) {
-    return `${card.duration_days}天有效期`
+    return `${card.duration_days}澶╂湁鏁堟湡`
   }
   return ''
 }
@@ -167,7 +167,7 @@ async function loadMemberships() {
   try {
     memberships.value = await membershipApi.list()
   } catch (error: any) {
-    uni.showToast({ title: error.message || '加载失败', icon: 'none' })
+    uni.showToast({ title: error.message || '鍔犺浇澶辫触', icon: 'none' })
   }
 }
 
@@ -175,7 +175,7 @@ async function loadAvailableCards() {
   try {
     availableCards.value = await membershipApi.getCards()
   } catch (error) {
-    console.error('加载课时卡类型失败', error)
+    console.error('鍔犺浇璇炬椂鍗＄被鍨嬪け璐?, error)
   }
 }
 
@@ -193,7 +193,7 @@ onMounted(() => {
 }
 
 .balance-card {
-  background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);
+  background: linear-gradient(135deg, #FF8800 0%, #FFB347 100%);
   margin: 20rpx;
   padding: 40rpx;
   border-radius: 20rpx;
@@ -279,7 +279,7 @@ onMounted(() => {
 
         &.active {
           background-color: #e8f5e9;
-          color: #4caf50;
+          color: #FF8800;
         }
 
         &.expired {
@@ -306,7 +306,7 @@ onMounted(() => {
         .remaining-value {
           font-size: 48rpx;
           font-weight: 600;
-          color: #4caf50;
+          color: #FF8800;
         }
 
         .remaining-label {

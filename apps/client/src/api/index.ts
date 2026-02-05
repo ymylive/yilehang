@@ -1,5 +1,5 @@
-/**
- * API请求封装
+﻿/**
+ * API request wrapper
  */
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
 
@@ -9,18 +9,11 @@ interface RequestOptions {
   header?: Record<string, string>
 }
 
-interface ApiResponse<T = any> {
-  data: T
-  statusCode: number
-  errMsg: string
-}
-
-// 获取存储的token
+// get stored token
 function getToken(): string {
   return uni.getStorageSync('token') || ''
 }
 
-// 请求封装
 export async function request<T = any>(
   url: string,
   options: RequestOptions = {}
@@ -45,22 +38,20 @@ export async function request<T = any>(
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data as T)
         } else if (res.statusCode === 401) {
-          // Token过期，跳转登录
           uni.removeStorageSync('token')
           uni.navigateTo({ url: '/pages/user/login' })
-          reject(new Error('登录已过期'))
+          reject(new Error('Session expired'))
         } else {
-          reject(new Error(res.data?.detail || '请求失败'))
+          reject(new Error(res.data?.detail || 'Request failed'))
         }
       },
       fail: (err) => {
-        reject(new Error(err.errMsg || '网络错误'))
+        reject(new Error(err.errMsg || 'Network error'))
       }
     })
   })
 }
 
-// 便捷方法
 export const api = {
   get: <T = any>(url: string, params?: any) =>
     request<T>(url, { method: 'GET', data: params }),
@@ -75,66 +66,66 @@ export const api = {
     request<T>(url, { method: 'DELETE' })
 }
 
-// 认证API
+// Auth API
 export const authApi = {
-  // 手机号密码登录
+  // phone + password login
   login: (phone: string, password: string) =>
     api.post('/auth/login', { phone, password }),
 
-  // 邮箱验证码登录
-  emailLogin: (email: string, code: string) =>
-    api.post('/auth/login/email', { phone: email, code }),
-
-  // 短信验证码登录
+  // SMS code login
   loginWithSms: (phone: string, code: string) =>
     api.post('/auth/login/sms', { phone, code }),
 
-  // 发送短信验证码
+  // send SMS code
   sendSmsCode: (phone: string) =>
     api.post('/auth/login/sms/send', { phone }),
 
-  // 微信登录
+  // WeChat login
   wechatLogin: (code: string, userInfo?: any) =>
     api.post('/auth/login/wechat', { code, user_info: userInfo }),
 
-  // 微信手机号登录
+  // WeChat phone login
   wechatPhoneLogin: (code: string, phoneCode: string) =>
     api.post('/auth/login/wechat-phone', { code, phone_code: phoneCode }),
 
-  // 注册
+  // registration
   register: (phone: string, password: string, role: string = 'parent', nickname?: string) =>
     api.post('/auth/register', { phone, password, role, nickname }),
 
-  // 教练注册
+  // SMS registration
+  registerWithSms: (phone: string, code: string, password: string, role: string = 'parent', nickname?: string) =>
+    api.post('/auth/register/sms', { phone, code, password, role, nickname }),
+
+  // coach registration
   registerCoach: (data: { phone: string; password: string; name: string; specialty?: string[]; introduction?: string }) =>
     api.post('/auth/register/coach', data),
 
-  // 重置密码
+  // reset password
   resetPassword: (phone: string, code: string, newPassword: string) =>
     api.post('/auth/password/reset', { phone, code, new_password: newPassword }),
 
-  // 修改密码
+  // change password
   changePassword: (oldPassword: string, newPassword: string) =>
     api.post('/auth/password/change', { old_password: oldPassword, new_password: newPassword }),
 
-  // 获取当前用户信息
+  // get current user
   getUserInfo: () =>
     api.get('/auth/me'),
 
-  // 更新用户信息
+  // update user
   updateUserInfo: (data: { nickname?: string; avatar?: string }) =>
     api.put('/auth/me', data),
 
-  // 退出登录
+  // logout
   logout: () =>
     api.post('/auth/logout'),
 
-  // 添加学员
+  // add student
   addStudent: (data: { name: string; gender?: string; birth_date?: string; phone?: string }) =>
     api.post('/auth/students', data)
 }
 
-// 学员API
+// Student API
 export const studentApi = {
   list: (skip = 0, limit = 20) =>
     api.get('/students', { skip, limit }),
@@ -149,7 +140,7 @@ export const studentApi = {
     api.put(`/students/${id}`, data)
 }
 
-// 训练API
+// Training API
 export const trainingApi = {
   getExercises: () =>
     api.get('/training/exercises'),
@@ -164,7 +155,7 @@ export const trainingApi = {
     api.get('/training/history', { student_id: studentId, skip, limit })
 }
 
-// 排课API
+// Schedule API
 export const scheduleApi = {
   list: (params?: any) =>
     api.get('/schedules', params),
@@ -183,7 +174,7 @@ export const scheduleApi = {
     })
 }
 
-// 成长档案API
+// Growth API
 export const growthApi = {
   getFitnessHistory: (studentId: number, skip = 0, limit = 10) =>
     api.get(`/growth/fitness-test/${studentId}`, { skip, limit }),
@@ -192,17 +183,14 @@ export const growthApi = {
     api.get(`/growth/fitness-test/${studentId}/latest`)
 }
 
-// 预约API
+// Booking API
 export const bookingApi = {
-  // 获取我的预约列表
   list: (params?: { status?: string; start_date?: string; end_date?: string; page?: number; page_size?: number }) =>
     api.get('/bookings', params),
 
-  // 获取预约详情
   get: (id: number) =>
     api.get(`/bookings/${id}`),
 
-  // 创建预约
   create: (data: {
     coach_id: number
     booking_date: string
@@ -212,52 +200,42 @@ export const bookingApi = {
     remark?: string
   }) => api.post('/bookings', data),
 
-  // 取消预约
   cancel: (id: number, reason?: string) =>
     api.put(`/bookings/${id}/cancel`, { cancel_reason: reason }),
 
-  // 改期预约
   reschedule: (id: number, data: { new_date: string; new_start_time: string; new_end_time: string }) =>
     api.put(`/bookings/${id}/reschedule`, data)
 }
 
-// 课时卡API
+// Membership API
 export const membershipApi = {
-  // 获取我的课时卡列表
   list: () =>
     api.get('/memberships'),
 
-  // 获取消费记录
   getTransactions: (page = 1, pageSize = 20) =>
     api.get('/memberships/transactions', { page, page_size: pageSize }),
 
-  // 获取可购买的课时卡类型
   getCards: () =>
     api.get('/memberships/cards')
 }
 
-// 教练API
+// Coach API
 export const coachApi = {
-  // 获取教练列表
   list: (params?: { specialty?: string; page?: number; page_size?: number }) =>
     api.get('/coaches', params),
 
-  // 获取教练详情
   get: (id: number) =>
     api.get(`/coaches/${id}`),
 
-  // 获取教练可约时段
   getAvailableSlots: (id: number, startDate?: string, endDate?: string) =>
     api.get(`/coaches/${id}/available-slots`, { start_date: startDate, end_date: endDate }),
 
-  // 获取教练评价
   getReviews: (id: number, page = 1, pageSize = 20) =>
     api.get(`/coaches/${id}/reviews`, { page, page_size: pageSize })
 }
 
-// 评价API
+// Review API
 export const reviewApi = {
-  // 提交评价
   create: (data: {
     booking_id: number
     rating: number
@@ -266,8 +244,31 @@ export const reviewApi = {
     is_anonymous?: boolean
   }) => api.post('/reviews', data),
 
-  // 获取我收到的教练反馈
   getMyFeedbacks: (page = 1, pageSize = 20) =>
     api.get('/reviews/feedbacks/my', { page, page_size: pageSize })
 }
 
+// AI API (stub)
+export const aiApi = {
+  analyzeJumpRope: (data: {
+    student_id: number
+    video_url?: string
+    fps?: number
+    duration_sec?: number
+    meta?: Record<string, any>
+  }) => api.post('/ai/jump-rope/analyze', data),
+
+  getAdvice: (data: {
+    student_id?: number
+    age?: number
+    height_cm?: number
+    weight_kg?: number
+    goal?: string
+    activity_level?: string
+    recent_sessions?: any[]
+    diet_preference?: string
+  }) => api.post('/ai/advice', data),
+
+  chat: (data: { question: string; context?: Record<string, any> }) =>
+    api.post('/ai/chat', data)
+}

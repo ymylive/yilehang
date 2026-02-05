@@ -1,10 +1,9 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
 import { useUserStore } from './stores/user'
 
 onLaunch(() => {
   console.log('App Launch')
-  // 初始化用户状态
   const userStore = useUserStore()
   userStore.initFromStorage()
 })
@@ -19,9 +18,8 @@ onHide(() => {
 </script>
 
 <style>
-/* 全局样式 */
 page {
-  background-color: #f5f5f5;
+  background-color: #FFFBF5;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -29,16 +27,15 @@ page {
   padding: 20rpx;
 }
 
-/* 主题色 */
 :root {
-  --primary-color: #4CAF50;
-  --primary-light: #81C784;
-  --primary-dark: #388E3C;
-  --accent-color: #FF9800;
-  --text-primary: #333333;
+  --primary-color: #FF8800;
+  --primary-light: #FFB347;
+  --primary-dark: #F57C00;
+  --accent-color: #4FA4F3;
+  --text-primary: #2D2D2D;
   --text-secondary: #666666;
   --text-hint: #999999;
-  --bg-color: #F5F5F5;
+  --bg-color: #FFFBF5;
   --card-bg: #FFFFFF;
 }
 </style>

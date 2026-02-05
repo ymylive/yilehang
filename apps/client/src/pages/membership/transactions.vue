@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <view class="transactions-page">
-    <!-- 筛选标签 -->
+    <!-- 绛涢€夋爣绛?-->
     <view class="filter-tabs">
       <view
         v-for="tab in tabs"
@@ -12,7 +12,7 @@
       </view>
     </view>
 
-    <!-- 交易列表 -->
+    <!-- 浜ゆ槗鍒楄〃 -->
     <view class="transaction-list">
       <view
         v-for="item in filteredTransactions"
@@ -27,26 +27,24 @@
           <view class="item-time">{{ formatDateTime(item.created_at) }}</view>
         </view>
         <view class="item-change" :class="{ positive: item.times_change > 0 }">
-          {{ item.times_change > 0 ? '+' : '' }}{{ item.times_change }}次
-        </view>
+          {{ item.times_change > 0 ? '+' : '' }}{{ item.times_change }}娆?        </view>
       </view>
 
-      <!-- 空状态 -->
+      <!-- 绌虹姸鎬?-->
       <view v-if="filteredTransactions.length === 0 && !loading" class="empty-state">
         <image src="/static/empty.png" mode="aspectFit" class="empty-image" />
-        <text class="empty-text">暂无记录</text>
+        <text class="empty-text">鏆傛棤璁板綍</text>
       </view>
 
-      <!-- 加载更多 -->
+      <!-- 鍔犺浇鏇村 -->
       <view v-if="loading" class="loading-more">
         <wd-loading />
-        <text>加载中...</text>
+        <text>鍔犺浇涓?..</text>
       </view>
 
-      <!-- 加载完成 -->
+      <!-- 鍔犺浇瀹屾垚 -->
       <view v-if="!loading && filteredTransactions.length > 0 && !hasMore" class="load-end">
-        没有更多了
-      </view>
+        娌℃湁鏇村浜?      </view>
     </view>
   </view>
 </template>
@@ -68,10 +66,10 @@ interface Transaction {
 }
 
 const tabs = [
-  { label: '全部', value: '' },
-  { label: '消费', value: 'consume' },
-  { label: '充值', value: 'purchase' },
-  { label: '退款', value: 'refund' }
+  { label: '鍏ㄩ儴', value: '' },
+  { label: '娑堣垂', value: 'consume' },
+  { label: '鍏呭€?, value: 'purchase' },
+  { label: '閫€娆?, value: 'refund' }
 ]
 
 const currentTab = ref('')
@@ -101,22 +99,22 @@ function getTypeIcon(type: string): string {
   const map: Record<string, string> = {
     purchase: '+',
     consume: '-',
-    refund: '↩',
-    gift: '🎁',
-    manual: '✎'
+    refund: '鈫?,
+    gift: '馃巵',
+    manual: '鉁?
   }
-  return map[type] || '•'
+  return map[type] || '鈥?
 }
 
 function getTypeText(type: string): string {
   const map: Record<string, string> = {
-    purchase: '购买课时',
-    consume: '预约扣费',
-    refund: '取消退还',
-    gift: '赠送课时',
-    manual: '手动调整'
+    purchase: '璐拱璇炬椂',
+    consume: '棰勭害鎵ｈ垂',
+    refund: '鍙栨秷閫€杩?,
+    gift: '璧犻€佽鏃?,
+    manual: '鎵嬪姩璋冩暣'
   }
-  return map[type] || '其他'
+  return map[type] || '鍏朵粬'
 }
 
 function formatDateTime(dateStr: string): string {
@@ -145,22 +143,20 @@ async function loadTransactions(refresh = false) {
     hasMore.value = data.length === pageSize
     page.value++
   } catch (error: any) {
-    uni.showToast({ title: error.message || '加载失败', icon: 'none' })
+    uni.showToast({ title: error.message || '鍔犺浇澶辫触', icon: 'none' })
   } finally {
     loading.value = false
   }
 }
 
-// 监听tab切换时重新加载
-watch(currentTab, () => {
-  // 由于是前端筛选，不需要重新请求
-})
+// 鐩戝惉tab鍒囨崲鏃堕噸鏂板姞杞?watch(currentTab, () => {
+  // 鐢变簬鏄墠绔瓫閫夛紝涓嶉渶瑕侀噸鏂拌姹?})
 
 onMounted(() => {
   loadTransactions()
 })
 
-// 触底加载更多
+// 瑙﹀簳鍔犺浇鏇村
 onReachBottom(() => {
   if (hasMore.value && !loading.value) {
     loadTransactions()
@@ -192,7 +188,7 @@ onReachBottom(() => {
 
     &.active {
       background-color: #e8f5e9;
-      color: #4caf50;
+      color: #FF8800;
       font-weight: 600;
     }
   }
@@ -223,7 +219,7 @@ onReachBottom(() => {
 
     &.purchase {
       background-color: #e8f5e9;
-      color: #4caf50;
+      color: #FF8800;
     }
 
     &.consume {
@@ -273,7 +269,7 @@ onReachBottom(() => {
     color: #f44336;
 
     &.positive {
-      color: #4caf50;
+      color: #FF8800;
     }
   }
 }

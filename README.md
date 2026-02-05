@@ -12,7 +12,6 @@
 - **课时管理**：支持次卡/时长卡，自动扣费和余额管理
 - **教练排班**：教练自主设置可约时段，灵活管理课表
 - **数据看板**：实时统计预约、收入、到课率等核心指标
-- **AI陪练**：基于姿态识别的智能运动辅助（增值功能）
 
 ### 系统架构
 
@@ -26,9 +25,8 @@
 | 前端(C端/B端) | UniApp + Vue3 + TypeScript |
 | 前端(Admin) | Vue3 + Element Plus + ECharts |
 | 后端 | Python + FastAPI + SQLAlchemy |
-| 数据库 | PostgreSQL + Redis |
+| 数据库 | PostgreSQL |
 | 小程序 | 微信小程序 (AppID: wxdbd150a0458a3c7c) |
-| AI视觉 | MediaPipe |
 
 ## 项目结构
 
@@ -40,7 +38,6 @@ yilehang/
 │   ├── admin/           # 管理后台 (Vue3)
 │   └── api/             # 后端服务 (FastAPI)
 ├── packages/
-│   ├── ai-core/         # AI核心包
 │   ├── ui/              # 共享UI组件
 │   ├── utils/           # 共享工具
 │   └── types/           # TypeScript类型
@@ -57,7 +54,6 @@ yilehang/
 - Node.js >= 18
 - Python >= 3.10
 - PostgreSQL >= 15
-- Redis >= 7
 - pnpm >= 8
 
 ### 安装依赖
@@ -99,7 +95,6 @@ docker-compose -f docker/docker-compose.dev.yml up -d
 - **我的课表**：日历视图查看已约课程
 - **课时卡**：查看余额、消费记录
 - **成长档案**：五维雷达图、体测历史
-- **AI陪练**：实时姿态检测、运动计数
 
 ### 教练端 (乐航教务)
 

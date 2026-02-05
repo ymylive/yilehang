@@ -1,7 +1,7 @@
-{
-  "name": "乐航成长",
+﻿{
+  "name": "涔愯埅鎴愰暱",
   "appid": "__UNI__YILEHANG_CLIENT",
-  "description": "易乐航·ITS智慧体教云平台 - 学员/家长端",
+  "description": "鏄撲箰鑸稩TS鏅烘収浣撴暀浜戝钩鍙?- 瀛﹀憳/瀹堕暱绔?,
   "versionName": "1.0.0",
   "versionCode": "100",
   "transformPx": false,
@@ -36,7 +36,7 @@
     "usingComponents": true,
     "permission": {
       "scope.userLocation": {
-        "desc": "获取您的位置信息用于签到"
+        "desc": "鑾峰彇鎮ㄧ殑浣嶇疆淇℃伅鐢ㄤ簬绛惧埌"
       }
     },
     "requiredPrivateInfos": ["getLocation"]

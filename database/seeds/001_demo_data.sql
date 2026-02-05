@@ -27,10 +27,3 @@ INSERT INTO venues (name, address, capacity, status) VALUES
 ('主馆A区', '体育中心1号馆A区', 30, 'active'),
 ('主馆B区', '体育中心1号馆B区', 30, 'active'),
 ('室外篮球场', '体育中心室外场地', 50, 'active');
-
--- 插入作业模板
-INSERT INTO homework_templates (title, description, exercise_type, target_reps, points, difficulty, status) VALUES
-('深蹲挑战', '完成30个标准深蹲', 'squat', 30, 20, 'normal', 'active'),
-('开合跳训练', '完成50个开合跳', 'jumping_jack', 50, 15, 'easy', 'active'),
-('高抬腿练习', '完成40个高抬腿', 'high_knees', 40, 18, 'normal', 'active'),
-('俯卧撑挑战', '完成20个俯卧撑', 'pushup', 20, 25, 'hard', 'active');

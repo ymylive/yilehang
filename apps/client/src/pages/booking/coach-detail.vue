@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <view class="coach-detail-page">
-    <!-- 教练信息头部 -->
+    <!-- 鏁欑粌淇℃伅澶撮儴 -->
     <view class="coach-header">
       <view class="coach-avatar">
         <image
@@ -11,8 +11,7 @@
       <view class="coach-basic">
         <view class="coach-name">{{ coach?.name }}</view>
         <view class="coach-experience" v-if="coach?.years_of_experience">
-          从业{{ coach.years_of_experience }}年
-        </view>
+          浠庝笟{{ coach.years_of_experience }}骞?        </view>
         <view class="coach-specialty">
           <text v-for="(s, i) in (coach?.specialty || [])" :key="i" class="specialty-tag">
             {{ s }}
@@ -21,40 +20,40 @@
       </view>
     </view>
 
-    <!-- 统计数据 -->
+    <!-- 缁熻鏁版嵁 -->
     <view class="stats-card">
       <view class="stat-item">
         <view class="stat-value">{{ coach?.avg_rating?.toFixed(1) || '0.0' }}</view>
-        <view class="stat-label">评分</view>
+        <view class="stat-label">璇勫垎</view>
       </view>
       <view class="stat-divider"></view>
       <view class="stat-item">
         <view class="stat-value">{{ coach?.total_lessons || 0 }}</view>
-        <view class="stat-label">授课数</view>
+        <view class="stat-label">鎺堣鏁?/view>
       </view>
       <view class="stat-divider"></view>
       <view class="stat-item">
         <view class="stat-value">{{ coach?.total_students || 0 }}</view>
-        <view class="stat-label">学员数</view>
+        <view class="stat-label">瀛﹀憳鏁?/view>
       </view>
       <view class="stat-divider"></view>
       <view class="stat-item">
         <view class="stat-value">{{ coach?.review_count || 0 }}</view>
-        <view class="stat-label">评价数</view>
+        <view class="stat-label">璇勪环鏁?/view>
       </view>
     </view>
 
-    <!-- 个人介绍 -->
+    <!-- 涓汉浠嬬粛 -->
     <view class="section-card" v-if="coach?.introduction">
-      <view class="section-title">个人介绍</view>
+      <view class="section-title">涓汉浠嬬粛</view>
       <view class="section-content">
         {{ coach.introduction }}
       </view>
     </view>
 
-    <!-- 资质证书 -->
+    <!-- 璧勮川璇佷功 -->
     <view class="section-card" v-if="coach?.certificates?.length">
-      <view class="section-title">资质证书</view>
+      <view class="section-title">璧勮川璇佷功</view>
       <view class="certificates">
         <image
           v-for="(cert, i) in coach.certificates"
@@ -67,12 +66,12 @@
       </view>
     </view>
 
-    <!-- 学员评价 -->
+    <!-- 瀛﹀憳璇勪环 -->
     <view class="section-card">
       <view class="section-header">
-        <view class="section-title">学员评价</view>
+        <view class="section-title">瀛﹀憳璇勪环</view>
         <view class="section-more" @click="viewAllReviews">
-          查看全部
+          鏌ョ湅鍏ㄩ儴
           <text class="arrow">></text>
         </view>
       </view>
@@ -84,10 +83,10 @@
                 :src="review.student_avatar || '/static/default-avatar.png'"
                 class="reviewer-avatar"
               />
-              <text class="reviewer-name">{{ review.is_anonymous ? '匿名用户' : review.student_name }}</text>
+              <text class="reviewer-name">{{ review.is_anonymous ? '鍖垮悕鐢ㄦ埛' : review.student_name }}</text>
             </view>
             <view class="review-rating">
-              <text v-for="i in 5" :key="i" :class="['star', { active: i <= review.rating }]">★</text>
+              <text v-for="i in 5" :key="i" :class="['star', { active: i <= review.rating }]">鈽?/text>
             </view>
           </view>
           <view class="review-content" v-if="review.content">
@@ -99,20 +98,20 @@
           <view class="review-time">{{ formatDate(review.created_at) }}</view>
         </view>
         <view v-if="reviews.length === 0" class="no-reviews">
-          暂无评价
+          鏆傛棤璇勪环
         </view>
       </view>
     </view>
 
-    <!-- 底部操作栏 -->
+    <!-- 搴曢儴鎿嶄綔鏍?-->
     <view class="bottom-bar">
       <view class="price-info" v-if="coach?.hourly_rate">
-        <text class="price-label">课时费</text>
-        <text class="price-value">¥{{ coach.hourly_rate }}</text>
-        <text class="price-unit">/课时</text>
+        <text class="price-label">璇炬椂璐?/text>
+        <text class="price-value">楼{{ coach.hourly_rate }}</text>
+        <text class="price-unit">/璇炬椂</text>
       </view>
       <wd-button type="primary" block @click="goToSelectTime">
-        立即约课
+        绔嬪嵆绾﹁
       </wd-button>
     </view>
   </view>
@@ -163,7 +162,7 @@ async function loadCoachDetail() {
   try {
     coach.value = await coachApi.get(coachId.value)
   } catch (error: any) {
-    uni.showToast({ title: error.message || '加载失败', icon: 'none' })
+    uni.showToast({ title: error.message || '鍔犺浇澶辫触', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -174,7 +173,7 @@ async function loadReviews() {
     const data = await coachApi.getReviews(coachId.value, 1, 5)
     reviews.value = data
   } catch (error) {
-    console.error('加载评价失败', error)
+    console.error('鍔犺浇璇勪环澶辫触', error)
   }
 }
 
@@ -263,7 +262,7 @@ onMounted(() => {
         padding: 6rpx 16rpx;
         margin-right: 12rpx;
         background-color: #e8f5e9;
-        color: #4caf50;
+        color: #FF8800;
         font-size: 24rpx;
         border-radius: 6rpx;
       }

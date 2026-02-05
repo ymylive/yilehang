@@ -1,27 +1,27 @@
-<template>
+﻿<template>
   <view class="page">
     <view class="header">
-      <text class="title">我的</text>
+      <text class="title">鎴戠殑</text>
     </view>
 
-    <!-- 用户信息 -->
+    <!-- 鐢ㄦ埛淇℃伅 -->
     <view class="user-card" v-if="userStore.isLoggedIn">
       <image class="avatar" :src="userStore.user?.avatar || '/static/default-avatar.png'" mode="aspectFill" />
       <view class="info">
         <text class="name">{{ userStore.user?.nickname || userStore.user?.phone }}</text>
         <text class="role">{{ getRoleText(userStore.user?.role) }}</text>
       </view>
-      <view class="edit-btn" @click="editProfile">编辑</view>
+      <view class="edit-btn" @click="editProfile">缂栬緫</view>
     </view>
     <view class="user-card login-card" v-else @click="goLogin">
-      <text class="login-text">点击登录</text>
+      <text class="login-text">鐐瑰嚮鐧诲綍</text>
     </view>
 
-    <!-- 学员切换 -->
+    <!-- 瀛﹀憳鍒囨崲 -->
     <view class="section" v-if="userStore.isLoggedIn && userStore.isParent">
       <view class="section-header">
-        <text class="title">我的学员</text>
-        <text class="add" @click="addStudent">+ 添加</text>
+        <text class="title">鎴戠殑瀛﹀憳</text>
+        <text class="add" @click="addStudent">+ 娣诲姞</text>
       </view>
       <view class="student-list">
         <view
@@ -34,57 +34,56 @@
           <view class="student-avatar">{{ student.name.charAt(0) }}</view>
           <view class="student-info">
             <text class="name">{{ student.name }}</text>
-            <text class="lessons">剩余课时: {{ student.remaining_lessons }}</text>
+            <text class="lessons">鍓╀綑璇炬椂: {{ student.remaining_lessons }}</text>
           </view>
-          <view class="check" v-if="userStore.currentStudent?.id === student.id">✓</view>
+          <view class="check" v-if="userStore.currentStudent?.id === student.id">鉁?/view>
         </view>
       </view>
     </view>
 
-    <!-- 功能菜单 -->
+    <!-- 鍔熻兘鑿滃崟 -->
     <view class="menu-list">
       <view class="menu-item" @click="goTo('/pages/membership/index')">
-        <text class="icon">💳</text>
-        <text class="label">我的课时卡</text>
-        <text class="badge" v-if="userStore.currentStudent?.remaining_lessons">{{ userStore.currentStudent.remaining_lessons }}次</text>
+        <text class="icon">馃挸</text>
+        <text class="label">鎴戠殑璇炬椂鍗?/text>
+        <text class="badge" v-if="userStore.currentStudent?.remaining_lessons">{{ userStore.currentStudent.remaining_lessons }}娆?/text>
         <text class="arrow">></text>
       </view>
       <view class="menu-item" @click="goTo('/pages/user/messages')">
-        <text class="icon">🔔</text>
-        <text class="label">消息通知</text>
+        <text class="icon">馃敂</text>
+        <text class="label">娑堟伅閫氱煡</text>
         <text class="arrow">></text>
       </view>
       <view class="menu-item" @click="goTo('/pages/user/orders')">
-        <text class="icon">📋</text>
-        <text class="label">我的订单</text>
+        <text class="icon">馃搵</text>
+        <text class="label">鎴戠殑璁㈠崟</text>
         <text class="arrow">></text>
       </view>
       <view class="menu-item" @click="goTo('/pages/user/coupons')">
-        <text class="icon">🎫</text>
-        <text class="label">优惠券</text>
+        <text class="icon">馃帿</text>
+        <text class="label">浼樻儬鍒?/text>
         <text class="arrow">></text>
       </view>
       <view class="menu-item" @click="goTo('/pages/user/feedback')">
-        <text class="icon">💬</text>
-        <text class="label">意见反馈</text>
+        <text class="icon">馃挰</text>
+        <text class="label">鎰忚鍙嶉</text>
         <text class="arrow">></text>
       </view>
       <view class="menu-item" @click="goTo('/pages/user/settings')">
-        <text class="icon">⚙️</text>
-        <text class="label">设置</text>
+        <text class="icon">鈿欙笍</text>
+        <text class="label">璁剧疆</text>
         <text class="arrow">></text>
       </view>
       <view class="menu-item" @click="goTo('/pages/user/about')">
-        <text class="icon">ℹ️</text>
-        <text class="label">关于我们</text>
+        <text class="icon">鈩癸笍</text>
+        <text class="label">鍏充簬鎴戜滑</text>
         <text class="arrow">></text>
       </view>
     </view>
 
-    <!-- 退出登录 -->
+    <!-- 閫€鍑虹櫥褰?-->
     <view class="logout-btn" v-if="userStore.isLoggedIn" @click="logout">
-      退出登录
-    </view>
+      閫€鍑虹櫥褰?    </view>
   </view>
 </template>
 
@@ -108,28 +107,27 @@ async function loadStudents() {
     const res = await studentApi.list()
     students.value = res || []
 
-    // 如果没有选中学员，默认选中第一个
-    if (!userStore.currentStudent && students.value.length) {
+    // 濡傛灉娌℃湁閫変腑瀛﹀憳锛岄粯璁ら€変腑绗竴涓?    if (!userStore.currentStudent && students.value.length) {
       userStore.setCurrentStudent(students.value[0])
     }
   } catch (error) {
-    console.error('加载学员失败', error)
+    console.error('鍔犺浇瀛﹀憳澶辫触', error)
   }
 }
 
 function getRoleText(role?: string) {
   const map: Record<string, string> = {
-    parent: '家长',
-    coach: '教练',
-    admin: '管理员',
-    student: '学员'
+    parent: '瀹堕暱',
+    coach: '鏁欑粌',
+    admin: '绠＄悊鍛?,
+    student: '瀛﹀憳'
   }
-  return map[role || ''] || '用户'
+  return map[role || ''] || '鐢ㄦ埛'
 }
 
 function selectStudent(student: any) {
   userStore.setCurrentStudent(student)
-  uni.showToast({ title: `已切换到 ${student.name}`, icon: 'none' })
+  uni.showToast({ title: `宸插垏鎹㈠埌 ${student.name}`, icon: 'none' })
 }
 
 function addStudent() {
@@ -150,8 +148,8 @@ function goTo(url: string) {
 
 function logout() {
   uni.showModal({
-    title: '提示',
-    content: '确定要退出登录吗？',
+    title: '鎻愮ず',
+    content: '纭畾瑕侀€€鍑虹櫥褰曞悧锛?,
     success: (res) => {
       if (res.confirm) {
         userStore.logout()
@@ -194,7 +192,7 @@ function logout() {
 
 .login-text {
   font-size: 32rpx;
-  color: #4CAF50;
+  color: #FF8800;
 }
 
 .avatar {
@@ -250,7 +248,7 @@ function logout() {
 
 .section-header .add {
   font-size: 28rpx;
-  color: #4CAF50;
+  color: #FF8800;
 }
 
 .student-item {
@@ -264,14 +262,14 @@ function logout() {
 
 .student-item.active {
   background: #E8F5E9;
-  border: 2rpx solid #4CAF50;
+  border: 2rpx solid #FF8800;
 }
 
 .student-avatar {
   width: 80rpx;
   height: 80rpx;
   border-radius: 50%;
-  background: #4CAF50;
+  background: #FF8800;
   color: #fff;
   display: flex;
   align-items: center;
@@ -297,7 +295,7 @@ function logout() {
 }
 
 .check {
-  color: #4CAF50;
+  color: #FF8800;
   font-size: 36rpx;
   font-weight: bold;
 }
@@ -332,7 +330,7 @@ function logout() {
 .menu-item .badge {
   padding: 4rpx 16rpx;
   background: #e8f5e9;
-  color: #4CAF50;
+  color: #FF8800;
   font-size: 24rpx;
   border-radius: 20rpx;
   margin-right: 16rpx;

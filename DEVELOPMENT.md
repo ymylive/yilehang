@@ -168,6 +168,6 @@ pnpm build
 ## 技术栈
 
 - **前端**: UniApp + Vue3 + TypeScript + Wot Design Uni + Pinia
-- **后端**: Python FastAPI + SQLAlchemy + PostgreSQL + Redis
+- **后端**: Python FastAPI + SQLAlchemy + PostgreSQL
 - **管理后台**: Vue3 + Element Plus + ECharts
 - **小程序**: 微信小程序 (AppID: wxdbd150a0458a3c7c)

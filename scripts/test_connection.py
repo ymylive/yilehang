@@ -1,11 +1,10 @@
-"""
-小程序连接测试脚本 - 验证小程序能否正常连接到生产服务器
-"""
+﻿"""
+灏忕▼搴忚繛鎺ユ祴璇曡剼鏈?- 楠岃瘉灏忕▼搴忚兘鍚︽甯歌繛鎺ュ埌鐢熶骇鏈嶅姟鍣?"""
 import requests
 import json
 from datetime import datetime
 
-# 配置
+# 閰嶇疆
 API_BASE_URL = "https://yilehang.cornna.xyz/api/v1"
 TEST_ENDPOINTS = {
     "health": "/health",
@@ -18,12 +17,12 @@ TEST_ENDPOINTS = {
 }
 
 def test_connection():
-    """测试API连接"""
+    """娴嬭瘯API杩炴帴"""
     print("=" * 60)
-    print("小程序API连接测试")
+    print("灏忕▼搴廇PI杩炴帴娴嬭瘯")
     print("=" * 60)
-    print(f"API地址: {API_BASE_URL}")
-    print(f"测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"API鍦板潃: {API_BASE_URL}")
+    print(f"娴嬭瘯鏃堕棿: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print()
 
     results = {}
@@ -54,26 +53,26 @@ def test_connection():
         except requests.exceptions.SSLError:
             results[name] = {
                 "url": url,
-                "error": "SSL证书错误",
+                "error": "SSL璇佷功閿欒",
                 "success": False
             }
-            print(f"[SSL ERROR] {name:20} SSL证书错误")
+            print(f"[SSL ERROR] {name:20} SSL璇佷功閿欒")
 
         except requests.exceptions.ConnectionError:
             results[name] = {
                 "url": url,
-                "error": "连接失败",
+                "error": "杩炴帴澶辫触",
                 "success": False
             }
-            print(f"[CONN ERROR] {name:20} 连接失败")
+            print(f"[CONN ERROR] {name:20} 杩炴帴澶辫触")
 
         except requests.exceptions.Timeout:
             results[name] = {
                 "url": url,
-                "error": "请求超时",
+                "error": "璇锋眰瓒呮椂",
                 "success": False
             }
-            print(f"[TIMEOUT] {name:20} 请求超时")
+            print(f"[TIMEOUT] {name:20} 璇锋眰瓒呮椂")
 
         except Exception as e:
             results[name] = {
@@ -134,19 +133,17 @@ def test_login():
             print(f"[ERROR] {account['role']:10} ({account['phone']}) error: {str(e)[:30]}")
 
 def main():
-    # 禁用SSL警告（仅用于测试）
-    import urllib3
+    # 绂佺敤SSL璀﹀憡锛堜粎鐢ㄤ簬娴嬭瘯锛?    import urllib3
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    # 测试连接
+    # 娴嬭瘯杩炴帴
     connection_ok = test_connection()
 
-    # 如果连接正常，测试登录
-    if connection_ok:
+    # 濡傛灉杩炴帴姝ｅ父锛屾祴璇曠櫥褰?    if connection_ok:
         test_login()
 
     print("\n" + "=" * 60)
-    print("测试完成")
+    print("娴嬭瘯瀹屾垚")
     print("=" * 60)
 
 if __name__ == "__main__":

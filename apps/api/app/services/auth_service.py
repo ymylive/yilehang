@@ -1,21 +1,16 @@
-"""
-认证服务
-"""
+﻿"""Authentication services."""
 import random
 import string
 import json
 import httpx
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password, create_access_token
-from app.models import User, Student, Coach, UserRole
+from app.models import User, Student, Coach
 
 try:
     from alibabacloud_dysmsapi20170525.client import Client as DysmsapiClient
@@ -25,43 +20,74 @@ except ImportError:
     ALIYUN_SMS_AVAILABLE = False
 
 
+class VerificationCodeStore:
+    """In-memory verification code store (replace with Redis in production)."""
+
+    def __init__(self) -> None:
+        self._codes: dict[str, dict] = {}
+
+    def set_code(self, key: str, code: str, ttl_minutes: int = 5) -> None:
+        self._codes[key] = {
+            "code": code,
+            "expires_at": datetime.utcnow() + timedelta(minutes=ttl_minutes),
+        }
+
+    def verify_code(self, key: str, code: str) -> bool:
+        stored = self._codes.get(key)
+        if not stored:
+            return False
+
+        if datetime.utcnow() > stored["expires_at"]:
+            del self._codes[key]
+            return False
+
+        if stored["code"] != code:
+            return False
+
+        del self._codes[key]
+        return True
+
+
+SMS_CODE_STORE = VerificationCodeStore()
+
+
 class AuthService:
-    """认证服务"""
+    """Authentication service."""
 
     @staticmethod
     def generate_student_no() -> str:
-        """生成学员编号"""
+        """Generate student number."""
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         random_str = ''.join(random.choices(string.digits, k=4))
         return f"S{timestamp}{random_str}"
 
     @staticmethod
     def generate_coach_no() -> str:
-        """生成教练编号"""
+        """Generate coach number."""
         timestamp = datetime.now().strftime('%Y%m%d')
         random_str = ''.join(random.choices(string.digits, k=4))
         return f"C{timestamp}{random_str}"
 
     @staticmethod
     def generate_sms_code() -> str:
-        """生成短信验证码"""
+        """Generate SMS verification code."""
         return ''.join(random.choices(string.digits, k=6))
 
     @staticmethod
     async def get_user_by_phone(db: AsyncSession, phone: str) -> Optional[User]:
-        """通过手机号获取用户"""
+        """Get user by phone number."""
         result = await db.execute(select(User).where(User.phone == phone))
         return result.scalar_one_or_none()
 
     @staticmethod
     async def get_user_by_openid(db: AsyncSession, openid: str) -> Optional[User]:
-        """通过微信openid获取用户"""
+        """Get user by WeChat openid."""
         result = await db.execute(select(User).where(User.wechat_openid == openid))
         return result.scalar_one_or_none()
 
     @staticmethod
     async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
-        """通过ID获取用户"""
+        """Get user by id."""
         result = await db.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
 
@@ -74,12 +100,13 @@ class AuthService:
         nickname: Optional[str] = None,
         openid: Optional[str] = None
     ) -> User:
-        """创建用户"""
+        """Create user."""
+        default_name = f"User{phone[-4:]}" if phone else "NewUser"
         user = User(
-            phone=phone,
+            phone=phone if phone else None,
             password_hash=get_password_hash(password) if password else None,
             role=role,
-            nickname=nickname or f"用户{phone[-4:]}",
+            nickname=nickname or default_name,
             wechat_openid=openid,
             status="active"
         )
@@ -97,7 +124,7 @@ class AuthService:
         birth_date=None,
         parent_id: Optional[int] = None
     ) -> Student:
-        """创建学员档案"""
+        """Create student profile."""
         student = Student(
             user_id=user_id,
             student_no=AuthService.generate_student_no(),
@@ -120,7 +147,7 @@ class AuthService:
         specialty: Optional[str] = None,
         introduction: Optional[str] = None
     ) -> Coach:
-        """创建教练档案"""
+        """Create coach profile."""
         coach = Coach(
             user_id=user_id,
             coach_no=AuthService.generate_coach_no(),
@@ -136,7 +163,7 @@ class AuthService:
 
     @staticmethod
     def create_token(user: User) -> Tuple[str, int]:
-        """创建访问令牌"""
+        """Create access token."""
         expires_in = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         access_token = create_access_token(
             data={"sub": str(user.id), "role": user.role},
@@ -146,7 +173,7 @@ class AuthService:
 
     @staticmethod
     async def authenticate_user(db: AsyncSession, phone: str, password: str) -> Optional[User]:
-        """验证用户密码"""
+        """Verify phone + password."""
         user = await AuthService.get_user_by_phone(db, phone)
         if not user:
             return None
@@ -158,7 +185,7 @@ class AuthService:
 
     @staticmethod
     async def update_password(db: AsyncSession, user: User, new_password: str) -> User:
-        """更新密码"""
+        """Update password."""
         user.password_hash = get_password_hash(new_password)
         user.updated_at = datetime.utcnow()
         await db.flush()
@@ -166,7 +193,7 @@ class AuthService:
 
     @staticmethod
     async def bind_wechat(db: AsyncSession, user: User, openid: str) -> User:
-        """绑定微信"""
+        """Bind WeChat openid to user."""
         user.wechat_openid = openid
         user.updated_at = datetime.utcnow()
         await db.flush()
@@ -174,14 +201,11 @@ class AuthService:
 
 
 class WechatService:
-    """微信服务"""
+    """WeChat service."""
 
     @staticmethod
     async def code2session(code: str) -> dict:
-        """
-        通过code获取微信session信息
-        返回: {openid, session_key, unionid?}
-        """
+        """Get WeChat session info by code."""
         url = "https://api.weixin.qq.com/sns/jscode2session"
         params = {
             "appid": settings.WECHAT_APPID,
@@ -195,15 +219,13 @@ class WechatService:
             data = response.json()
 
         if "errcode" in data and data["errcode"] != 0:
-            raise Exception(f"微信登录失败: {data.get('errmsg', '未知错误')}")
+            raise Exception(f"WeChat login failed: {data.get('errmsg', 'Unknown error')}")
 
         return data
 
     @staticmethod
     async def get_phone_number(code: str, access_token: str) -> str:
-        """
-        通过code获取用户手机号
-        """
+        """Get user phone number via code."""
         url = f"https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token={access_token}"
 
         async with httpx.AsyncClient() as client:
@@ -211,14 +233,14 @@ class WechatService:
             data = response.json()
 
         if data.get("errcode", 0) != 0:
-            raise Exception(f"获取手机号失败: {data.get('errmsg', '未知错误')}")
+            raise Exception(f"Get phone failed: {data.get('errmsg', 'Unknown error')}")
 
         phone_info = data.get("phone_info", {})
         return phone_info.get("phoneNumber", "")
 
     @staticmethod
     async def get_access_token() -> str:
-        """获取微信接口调用凭证"""
+        """Get WeChat access token."""
         url = "https://api.weixin.qq.com/cgi-bin/token"
         params = {
             "grant_type": "client_credential",
@@ -231,68 +253,21 @@ class WechatService:
             data = response.json()
 
         if "errcode" in data and data["errcode"] != 0:
-            raise Exception(f"获取access_token失败: {data.get('errmsg', '未知错误')}")
+            raise Exception(f"Get access_token failed: {data.get('errmsg', 'Unknown error')}")
 
         return data["access_token"]
 
 
-class EmailService:
-    """邮箱服务"""
-
-    # 内存存储验证码 (生产环境应使用Redis)
-    _codes: dict = {}
-
-    @staticmethod
-    async def send_code(email: str) -> bool:
-        """发送邮箱验证码"""
-        code = AuthService.generate_sms_code()
-
-        # 存储验证码 (5分钟有效)
-        EmailService._codes[email] = {
-            "code": code,
-            "expires_at": datetime.utcnow() + timedelta(minutes=5)
-        }
-
-        # 开发环境直接打印
-        print(f"[EMAIL] 发送验证码到 {email}: {code}")
-        return True
-
-    @staticmethod
-    async def verify_code(email: str, code: str) -> bool:
-        """验证邮箱验证码"""
-        stored = EmailService._codes.get(email)
-        if not stored:
-            return False
-
-        if datetime.utcnow() > stored["expires_at"]:
-            del EmailService._codes[email]
-            return False
-
-        if stored["code"] != code:
-            return False
-
-        # 验证成功后删除
-        del EmailService._codes[email]
-        return True
-    """短信服务"""
-
-    # 内存存储验证码 (生产环境应使用Redis)
-    _codes: dict = {}
+class SmsService:
+    """SMS service."""
 
     @staticmethod
     async def send_code(phone: str) -> bool:
-        """
-        发送短信验证码
-        """
+        """Send SMS verification code."""
         code = AuthService.generate_sms_code()
+        SMS_CODE_STORE.set_code(phone, code)
 
-        # 存储验证码 (5分钟有效)
-        SmsService._codes[phone] = {
-            "code": code,
-            "expires_at": datetime.utcnow() + timedelta(minutes=5)
-        }
-
-        # 调用阿里云短信API
+        # Aliyun SMS integration
         if ALIYUN_SMS_AVAILABLE and settings.ALIYUN_ACCESS_KEY_ID:
             try:
                 config = open_api_models.Config(
@@ -313,27 +288,14 @@ class EmailService:
                 await client.send_sms_async(request)
                 return True
             except Exception as e:
-                print(f"[SMS] 阿里云短信发送失败: {str(e)}")
+                print(f"[SMS] Aliyun send failed: {str(e)}")
                 return False
         else:
-            # 开发环境直接打印
-            print(f"[SMS] 发送验证码到 {phone}: {code}")
+            # Dev fallback: print code
+            print(f"[SMS] Code sent to {phone}: {code}")
             return True
 
     @staticmethod
     async def verify_code(phone: str, code: str) -> bool:
-        """验证短信验证码"""
-        stored = SmsService._codes.get(phone)
-        if not stored:
-            return False
-
-        if datetime.utcnow() > stored["expires_at"]:
-            del SmsService._codes[phone]
-            return False
-
-        if stored["code"] != code:
-            return False
-
-        # 验证成功后删除
-        del SmsService._codes[phone]
-        return True
+        """Verify SMS code."""
+        return SMS_CODE_STORE.verify_code(phone, code)

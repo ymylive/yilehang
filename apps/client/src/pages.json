@@ -1,152 +1,146 @@
-{
+﻿{
   "pages": [
     {
       "path": "pages/index/index",
       "style": {
-        "navigationBarTitleText": "乐航成长"
+        "navigationBarTitleText": "涔愯埅鎴愰暱"
       }
     },
     {
       "path": "pages/booking/index",
       "style": {
-        "navigationBarTitleText": "约课"
+        "navigationBarTitleText": "绾﹁"
       }
     },
     {
       "path": "pages/booking/coach-detail",
       "style": {
-        "navigationBarTitleText": "教练详情"
+        "navigationBarTitleText": "鏁欑粌璇︽儏"
       }
     },
     {
       "path": "pages/booking/select-time",
       "style": {
-        "navigationBarTitleText": "选择时段"
+        "navigationBarTitleText": "閫夋嫨鏃舵"
       }
     },
     {
       "path": "pages/booking/confirm",
       "style": {
-        "navigationBarTitleText": "确认预约"
+        "navigationBarTitleText": "纭棰勭害"
       }
     },
     {
       "path": "pages/growth/index",
       "style": {
-        "navigationBarTitleText": "成长档案"
+        "navigationBarTitleText": "鎴愰暱妗ｆ"
       }
     },
     {
       "path": "pages/training/index",
       "style": {
-        "navigationBarTitleText": "AI陪练"
+        "navigationBarTitleText": "AI闄粌"
       }
     },
     {
       "path": "pages/training/session",
       "style": {
-        "navigationBarTitleText": "训练中",
+        "navigationBarTitleText": "璁粌涓?,
         "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/homework/index",
-      "style": {
-        "navigationBarTitleText": "作业闯关"
       }
     },
     {
       "path": "pages/schedule/index",
       "style": {
-        "navigationBarTitleText": "我的课表"
+        "navigationBarTitleText": "鎴戠殑璇捐〃"
       }
     },
     {
       "path": "pages/schedule/detail",
       "style": {
-        "navigationBarTitleText": "课程详情"
+        "navigationBarTitleText": "璇剧▼璇︽儏"
       }
     },
     {
       "path": "pages/membership/index",
       "style": {
-        "navigationBarTitleText": "我的课时卡"
+        "navigationBarTitleText": "鎴戠殑璇炬椂鍗?
       }
     },
     {
       "path": "pages/membership/transactions",
       "style": {
-        "navigationBarTitleText": "消费记录"
+        "navigationBarTitleText": "娑堣垂璁板綍"
       }
     },
     {
       "path": "pages/review/create",
       "style": {
-        "navigationBarTitleText": "课程评价"
+        "navigationBarTitleText": "璇剧▼璇勪环"
       }
     },
     {
       "path": "pages/moments/index",
       "style": {
-        "navigationBarTitleText": "精彩瞬间"
+        "navigationBarTitleText": "绮惧僵鐬棿"
       }
     },
     {
       "path": "pages/user/index",
       "style": {
-        "navigationBarTitleText": "我的"
+        "navigationBarTitleText": "鎴戠殑"
       }
     },
     {
       "path": "pages/user/login",
       "style": {
-        "navigationBarTitleText": "登录"
+        "navigationBarTitleText": "鐧诲綍"
       }
     },
     {
       "path": "pages/user/register",
       "style": {
-        "navigationBarTitleText": "注册"
+        "navigationBarTitleText": "娉ㄥ唽"
       }
     },
     {
       "path": "pages/user/messages",
       "style": {
-        "navigationBarTitleText": "消息通知"
+        "navigationBarTitleText": "娑堟伅閫氱煡"
       }
     }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "乐航成长",
+    "navigationBarTitleText": "涔愯埅鎴愰暱",
     "navigationBarBackgroundColor": "#FFFFFF",
     "backgroundColor": "#F5F5F5"
   },
   "tabBar": {
     "color": "#999999",
-    "selectedColor": "#4CAF50",
+    "selectedColor": "#FF8800",
     "borderStyle": "black",
     "backgroundColor": "#FFFFFF",
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "首页"
+        "text": "棣栭〉"
       },
       {
         "pagePath": "pages/booking/index",
-        "text": "约课"
+        "text": "绾﹁"
       },
       {
         "pagePath": "pages/growth/index",
-        "text": "成长"
+        "text": "鎴愰暱"
       },
       {
         "pagePath": "pages/schedule/index",
-        "text": "课表"
+        "text": "璇捐〃"
       },
       {
         "pagePath": "pages/user/index",
-        "text": "我的"
+        "text": "鎴戠殑"
       }
     ]
   }

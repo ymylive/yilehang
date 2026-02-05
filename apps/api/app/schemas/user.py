@@ -1,5 +1,5 @@
-"""
-用户相关Schema
+﻿"""
+User-related schemas.
 """
 from datetime import datetime, date
 from typing import Optional, List
@@ -8,91 +8,114 @@ import re
 
 
 class UserBase(BaseModel):
-    """用户基础Schema"""
+    """Base user schema."""
     phone: Optional[str] = None
     nickname: Optional[str] = None
     avatar: Optional[str] = None
 
 
 class UserCreate(BaseModel):
-    """用户注册Schema"""
-    phone: str = Field(..., description="手机号")
-    password: str = Field(..., min_length=6, max_length=20, description="密码")
-    role: str = Field(default="parent", description="角色: parent/student/coach")
-    nickname: Optional[str] = Field(None, max_length=50, description="昵称")
+    """User registration schema."""
+    phone: str = Field(..., description="Phone number")
+    password: str = Field(..., min_length=6, max_length=20, description="Password")
+    role: str = Field(default="parent", description="Role: parent/student/coach")
+    nickname: Optional[str] = Field(None, max_length=50, description="Nickname")
 
     @field_validator('phone')
     @classmethod
     def validate_phone(cls, v):
         if not re.match(r'^1[3-9]\d{9}$', v):
-            raise ValueError('手机号格式不正确')
+            raise ValueError('Invalid phone format')
         return v
 
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
         if v not in ['parent', 'student', 'coach', 'admin']:
-            raise ValueError('角色类型不正确')
+            raise ValueError('Invalid role')
         return v
 
 
 class UserLogin(BaseModel):
-    """手机号密码登录Schema"""
-    phone: str = Field(..., description="手机号")
-    password: str = Field(..., description="密码")
+    """Phone + password login schema."""
+    phone: str = Field(..., description="Phone number")
+    password: str = Field(..., description="Password")
 
 
 class WechatLogin(BaseModel):
-    """微信登录Schema"""
-    code: str = Field(..., description="微信登录code")
-    user_info: Optional[dict] = Field(None, description="微信用户信息")
+    """WeChat login schema."""
+    code: str = Field(..., description="WeChat login code")
+    user_info: Optional[dict] = Field(None, description="WeChat user info")
 
 
 class WechatPhoneLogin(BaseModel):
-    """微信手机号登录Schema"""
-    code: str = Field(..., description="微信登录code")
-    phone_code: str = Field(..., description="获取手机号的code")
+    """WeChat phone quick login schema."""
+    code: str = Field(..., description="WeChat login code")
+    phone_code: str = Field(..., description="Phone number code")
 
 
 class SmsCodeRequest(BaseModel):
-    """发送短信验证码请求"""
-    phone: str = Field(..., description="手机号")
+    """Send SMS verification code request."""
+    phone: str = Field(..., description="Phone number")
 
     @field_validator('phone')
     @classmethod
     def validate_phone(cls, v):
         if not re.match(r'^1[3-9]\d{9}$', v):
-            raise ValueError('手机号格式不正确')
+            raise ValueError('Invalid phone format')
         return v
 
 
 class SmsCodeLogin(BaseModel):
-    """短信验证码登录Schema"""
-    phone: str = Field(..., description="手机号")
-    code: str = Field(..., min_length=4, max_length=6, description="验证码")
+    """SMS code login schema."""
+    phone: str = Field(..., description="Phone number")
+    code: str = Field(..., min_length=4, max_length=6, description="Verification code")
+
+
+class SmsRegister(BaseModel):
+    """SMS code registration schema."""
+    phone: str = Field(..., description="Phone number")
+    code: str = Field(..., min_length=4, max_length=6, description="Verification code")
+    password: str = Field(..., min_length=6, max_length=20, description="Password")
+    role: str = Field(default="parent", description="Role: parent/student/coach")
+    nickname: Optional[str] = Field(None, max_length=50, description="Nickname")
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        if not re.match(r'^1[3-9]\d{9}$', v):
+            raise ValueError('Invalid phone format')
+        return v
+
+    @field_validator('role')
+    @classmethod
+    def validate_role(cls, v):
+        if v not in ['parent', 'student', 'coach', 'admin']:
+            raise ValueError('Invalid role')
+        return v
 
 
 class PasswordReset(BaseModel):
-    """重置密码Schema"""
-    phone: str = Field(..., description="手机号")
-    code: str = Field(..., description="验证码")
-    new_password: str = Field(..., min_length=6, max_length=20, description="新密码")
+    """Reset password schema."""
+    phone: str = Field(..., description="Phone number")
+    code: str = Field(..., description="Verification code")
+    new_password: str = Field(..., min_length=6, max_length=20, description="New password")
 
 
 class PasswordChange(BaseModel):
-    """修改密码Schema"""
-    old_password: str = Field(..., description="旧密码")
-    new_password: str = Field(..., min_length=6, max_length=20, description="新密码")
+    """Change password schema."""
+    old_password: str = Field(..., description="Old password")
+    new_password: str = Field(..., min_length=6, max_length=20, description="New password")
 
 
 class UserUpdate(BaseModel):
-    """用户信息更新Schema"""
+    """Update user schema."""
     nickname: Optional[str] = Field(None, max_length=50)
     avatar: Optional[str] = None
 
 
 class UserResponse(UserBase):
-    """用户响应Schema"""
+    """User response schema."""
     id: int
     role: str
     status: str
@@ -103,29 +126,29 @@ class UserResponse(UserBase):
 
 
 class UserDetailResponse(UserResponse):
-    """用户详情响应Schema"""
+    """User detail response."""
     wechat_bindded: bool = False
     student: Optional["StudentResponse"] = None
     coach: Optional["CoachResponse"] = None
 
 
 class Token(BaseModel):
-    """Token响应"""
+    """Token response."""
     access_token: str
     token_type: str = "bearer"
-    expires_in: int = Field(default=86400, description="过期时间(秒)")
+    expires_in: int = Field(default=86400, description="Expires in seconds")
     user: UserResponse
 
 
 class TokenRefresh(BaseModel):
-    """Token刷新请求"""
+    """Token refresh request."""
     refresh_token: str
 
 
-# ============ 学员相关 ============
+# ============ Student-related ============
 
 class StudentBase(BaseModel):
-    """学员基础Schema"""
+    """Student base schema."""
     name: str
     gender: Optional[str] = None
     birth_date: Optional[date] = None
@@ -136,21 +159,21 @@ class StudentBase(BaseModel):
 
 
 class StudentCreate(StudentBase):
-    """学员创建Schema"""
+    """Student create schema."""
     parent_id: Optional[int] = None
     coach_id: Optional[int] = None
 
 
 class StudentRegister(BaseModel):
-    """学员注册Schema (家长为孩子注册)"""
-    name: str = Field(..., max_length=50, description="学员姓名")
-    gender: Optional[str] = Field(None, description="性别: male/female")
-    birth_date: Optional[date] = Field(None, description="出生日期")
-    phone: Optional[str] = Field(None, description="学员手机号(可选)")
+    """Student registration schema (parent registers child)."""
+    name: str = Field(..., max_length=50, description="Student name")
+    gender: Optional[str] = Field(None, description="Gender: male/female")
+    birth_date: Optional[date] = Field(None, description="Birth date")
+    phone: Optional[str] = Field(None, description="Student phone (optional)")
 
 
 class StudentUpdate(BaseModel):
-    """学员更新Schema"""
+    """Student update schema."""
     name: Optional[str] = None
     gender: Optional[str] = None
     birth_date: Optional[date] = None
@@ -162,7 +185,7 @@ class StudentUpdate(BaseModel):
 
 
 class StudentResponse(StudentBase):
-    """学员响应Schema"""
+    """Student response schema."""
     id: int
     student_no: str
     remaining_lessons: int
@@ -174,17 +197,17 @@ class StudentResponse(StudentBase):
 
 
 class StudentDetailResponse(StudentResponse):
-    """学员详情响应"""
+    """Student detail response."""
     coach_name: Optional[str] = None
     parent_name: Optional[str] = None
     total_lessons: int = 0
     attendance_rate: float = 0.0
 
 
-# ============ 教练相关 ============
+# ============ Coach-related ============
 
 class CoachBase(BaseModel):
-    """教练基础Schema"""
+    """Coach base schema."""
     name: str
     certification: Optional[str] = None
     specialty: Optional[str] = None
@@ -192,21 +215,21 @@ class CoachBase(BaseModel):
 
 
 class CoachCreate(CoachBase):
-    """教练创建Schema"""
+    """Coach create schema."""
     user_id: int
 
 
 class CoachRegister(BaseModel):
-    """教练注册Schema"""
-    phone: str = Field(..., description="手机号")
-    password: str = Field(..., min_length=6, description="密码")
-    name: str = Field(..., max_length=50, description="姓名")
-    specialty: Optional[List[str]] = Field(None, description="专长")
-    introduction: Optional[str] = Field(None, description="个人介绍")
+    """Coach registration schema."""
+    phone: str = Field(..., description="Phone number")
+    password: str = Field(..., min_length=6, description="Password")
+    name: str = Field(..., max_length=50, description="Name")
+    specialty: Optional[List[str]] = Field(None, description="Specialties")
+    introduction: Optional[str] = Field(None, description="Introduction")
 
 
 class CoachResponse(CoachBase):
-    """教练响应Schema"""
+    """Coach response schema."""
     id: int
     coach_no: str
     status: str
@@ -217,7 +240,7 @@ class CoachResponse(CoachBase):
 
 
 class CoachProfileResponse(CoachResponse):
-    """教练个人资料响应"""
+    """Coach profile response."""
     avatar: Optional[str] = None
     introduction: Optional[str] = None
     years_of_experience: Optional[int] = None

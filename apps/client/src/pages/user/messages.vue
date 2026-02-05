@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <view class="messages-page">
-    <!-- 消息列表 -->
+    <!-- 娑堟伅鍒楄〃 -->
     <view class="message-list">
       <view
         v-for="msg in messages"
@@ -21,10 +21,10 @@
         <view class="unread-dot" v-if="!msg.is_read"></view>
       </view>
 
-      <!-- 空状态 -->
+      <!-- 绌虹姸鎬?-->
       <view v-if="messages.length === 0 && !loading" class="empty-state">
         <image src="/static/empty.png" mode="aspectFit" class="empty-image" />
-        <text class="empty-text">暂无消息</text>
+        <text class="empty-text">鏆傛棤娑堟伅</text>
       </view>
     </view>
   </view>
@@ -45,29 +45,29 @@ interface Message {
 const messages = ref<Message[]>([])
 const loading = ref(false)
 
-// 模拟消息数据
+// 妯℃嫙娑堟伅鏁版嵁
 const mockMessages: Message[] = [
   {
     id: 1,
     type: 'booking',
-    title: '预约成功',
-    content: '您已成功预约明天10:00-11:00的私教课，教练：张教练',
+    title: '棰勭害鎴愬姛',
+    content: '鎮ㄥ凡鎴愬姛棰勭害鏄庡ぉ10:00-11:00鐨勭鏁欒锛屾暀缁冿細寮犳暀缁?,
     is_read: false,
     created_at: new Date().toISOString()
   },
   {
     id: 2,
     type: 'reminder',
-    title: '上课提醒',
-    content: '您预约的课程将在1小时后开始，请准时到达',
+    title: '涓婅鎻愰啋',
+    content: '鎮ㄩ绾︾殑璇剧▼灏嗗湪1灏忔椂鍚庡紑濮嬶紝璇峰噯鏃跺埌杈?,
     is_read: true,
     created_at: new Date(Date.now() - 3600000).toISOString()
   },
   {
     id: 3,
     type: 'feedback',
-    title: '教练反馈',
-    content: '张教练对您的课程进行了反馈，点击查看详情',
+    title: '鏁欑粌鍙嶉',
+    content: '寮犳暀缁冨鎮ㄧ殑璇剧▼杩涜浜嗗弽棣堬紝鐐瑰嚮鏌ョ湅璇︽儏',
     is_read: true,
     created_at: new Date(Date.now() - 86400000).toISOString()
   }
@@ -75,12 +75,12 @@ const mockMessages: Message[] = [
 
 function getTypeIcon(type: string): string {
   const map: Record<string, string> = {
-    booking: '📅',
-    reminder: '⏰',
-    feedback: '📝',
-    system: '📢'
+    booking: '馃搮',
+    reminder: '鈴?,
+    feedback: '馃摑',
+    system: '馃摙'
   }
-  return map[type] || '📌'
+  return map[type] || '馃搶'
 }
 
 function formatTime(dateStr: string): string {
@@ -88,10 +88,10 @@ function formatTime(dateStr: string): string {
   const now = new Date()
   const diff = now.getTime() - date.getTime()
 
-  if (diff < 60000) return '刚刚'
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
-  if (diff < 604800000) return `${Math.floor(diff / 86400000)}天前`
+  if (diff < 60000) return '鍒氬垰'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}鍒嗛挓鍓峘
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}灏忔椂鍓峘
+  if (diff < 604800000) return `${Math.floor(diff / 86400000)}澶╁墠`
 
   return `${date.getMonth() + 1}-${date.getDate()}`
 }
@@ -109,7 +109,7 @@ function viewMessage(msg: Message) {
 }
 
 onMounted(() => {
-  // 加载消息列表
+  // 鍔犺浇娑堟伅鍒楄〃
   messages.value = mockMessages
 })
 </script>

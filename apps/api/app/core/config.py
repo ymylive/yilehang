@@ -1,49 +1,40 @@
-"""
-核心配置模块
-"""
+﻿"""Application settings."""
 from typing import List
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """应用配置"""
+    """App settings."""
 
-    # 基础配置
-    PROJECT_NAME: str = "易乐航·ITS智慧体教云平台"
+    # Basic
+    PROJECT_NAME: str = "Yilehang ITS Sports Platform"
     API_V1_STR: str = "/api/v1"
     DEBUG: bool = True
 
-    # 安全配置
+    # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7天
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
     ALGORITHM: str = "HS256"
 
-    # 数据库配置
+    # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/yilehang"
 
-    # Redis配置
-    REDIS_URL: str = "redis://localhost:6379/0"
-
-    # CORS配置
+    # CORS
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:8080",
     ]
 
-    # 微信小程序配置
-    WECHAT_APPID: str = "wxdbd150a0458a3c7c"  # 小程序AppID
-    WECHAT_SECRET: str = ""  # 小程序AppSecret
-    WECHAT_APP_ID: str = ""  # 公众号AppID (如有)
-    WECHAT_APP_SECRET: str = ""  # 公众号AppSecret
+    # WeChat Mini Program
+    WECHAT_APPID: str = "wxdbd150a0458a3c7c"
+    WECHAT_SECRET: str = ""
 
-    # 阿里云配置
+    # Aliyun SMS
     ALIYUN_ACCESS_KEY_ID: str = ""
     ALIYUN_ACCESS_KEY_SECRET: str = ""
-    ALIYUN_OSS_BUCKET: str = ""
-    ALIYUN_OSS_ENDPOINT: str = ""
-    ALIYUN_SMS_SIGN_NAME: str = ""  # 短信签名
-    ALIYUN_SMS_TEMPLATE_CODE: str = ""  # 短信模板ID
+    ALIYUN_SMS_SIGN_NAME: str = ""
+    ALIYUN_SMS_TEMPLATE_CODE: str = ""
 
     class Config:
         env_file = ".env"

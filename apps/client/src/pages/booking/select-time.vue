@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <view class="select-time-page">
-    <!-- 教练信息 -->
+    <!-- 鏁欑粌淇℃伅 -->
     <view class="coach-info-bar">
       <image
         :src="coach?.avatar || '/static/default-avatar.png'"
@@ -9,10 +9,10 @@
       <view class="coach-name">{{ coach?.name }}</view>
     </view>
 
-    <!-- 日期选择 -->
+    <!-- 鏃ユ湡閫夋嫨 -->
     <view class="date-selector">
       <view class="date-header">
-        <text class="month-text">{{ currentMonth }}月</text>
+        <text class="month-text">{{ currentMonth }}鏈?/text>
       </view>
       <scroll-view scroll-x class="date-scroll">
         <view
@@ -27,9 +27,9 @@
       </scroll-view>
     </view>
 
-    <!-- 时段选择 -->
+    <!-- 鏃舵閫夋嫨 -->
     <view class="time-slots">
-      <view class="slots-title">选择时段</view>
+      <view class="slots-title">閫夋嫨鏃舵</view>
       <view class="slots-grid">
         <view
           v-for="slot in availableSlots"
@@ -38,15 +38,14 @@
           @click="selectSlot(slot)"
         >
           <text class="slot-time">{{ formatTime(slot.start_time) }} - {{ formatTime(slot.end_time) }}</text>
-          <text class="slot-status">{{ slot.is_available ? '可约' : '已约' }}</text>
+          <text class="slot-status">{{ slot.is_available ? '鍙害' : '宸茬害' }}</text>
         </view>
       </view>
       <view v-if="availableSlots.length === 0" class="no-slots">
-        该日期暂无可约时段
-      </view>
+        璇ユ棩鏈熸殏鏃犲彲绾︽椂娈?      </view>
     </view>
 
-    <!-- 底部操作栏 -->
+    <!-- 搴曢儴鎿嶄綔鏍?-->
     <view class="bottom-bar">
       <view class="selected-info" v-if="selectedSlot">
         <text class="selected-date">{{ formatSelectedDate() }}</text>
@@ -57,8 +56,7 @@
         :disabled="!selectedSlot"
         @click="goToConfirm"
       >
-        下一步
-      </button>
+        涓嬩竴姝?      </button>
     </view>
   </view>
 </template>
@@ -95,9 +93,9 @@ const selectedSlot = ref<TimeSlot | null>(null)
 const allSlots = ref<TimeSlot[]>([])
 const loading = ref(false)
 
-const weekdays = ['日', '一', '二', '三', '四', '五', '六']
+const weekdays = ['鏃?, '涓€', '浜?, '涓?, '鍥?, '浜?, '鍏?]
 
-// 生成未来7天的日期列表
+// 鐢熸垚鏈潵7澶╃殑鏃ユ湡鍒楄〃
 const dateList = computed<DateItem[]>(() => {
   const list: DateItem[] = []
   const today = new Date()
@@ -110,7 +108,7 @@ const dateList = computed<DateItem[]>(() => {
     list.push({
       date: formatDateStr(date),
       day: date.getDate(),
-      weekday: i === 0 ? '今天' : i === 1 ? '明天' : `周${weekdays[date.getDay()]}`,
+      weekday: i === 0 ? '浠婂ぉ' : i === 1 ? '鏄庡ぉ' : `鍛?{weekdays[date.getDay()]}`,
       isPast: false
     })
   }
@@ -123,8 +121,7 @@ const currentMonth = computed(() => {
   return new Date(selectedDate.value).getMonth() + 1
 })
 
-// 当前选中日期的可约时段
-const availableSlots = computed(() => {
+// 褰撳墠閫変腑鏃ユ湡鐨勫彲绾︽椂娈?const availableSlots = computed(() => {
   return allSlots.value.filter(slot => slot.date === selectedDate.value)
 })
 
@@ -136,21 +133,21 @@ function formatDateStr(date: Date): string {
 }
 
 function formatTime(timeStr: string): string {
-  // 处理 "HH:MM:SS" 格式
+  // 澶勭悊 "HH:MM:SS" 鏍煎紡
   return timeStr.substring(0, 5)
 }
 
 function formatSelectedDate(): string {
   if (!selectedDate.value) return ''
   const date = new Date(selectedDate.value)
-  return `${date.getMonth() + 1}月${date.getDate()}日 周${weekdays[date.getDay()]}`
+  return `${date.getMonth() + 1}鏈?{date.getDate()}鏃?鍛?{weekdays[date.getDay()]}`
 }
 
 async function loadCoachInfo() {
   try {
     coach.value = await coachApi.get(coachId.value)
   } catch (error) {
-    console.error('加载教练信息失败', error)
+    console.error('鍔犺浇鏁欑粌淇℃伅澶辫触', error)
   }
 }
 
@@ -163,7 +160,7 @@ async function loadAvailableSlots() {
     const data = await coachApi.getAvailableSlots(coachId.value, startDate, endDate)
     allSlots.value = data.slots || []
   } catch (error: any) {
-    uni.showToast({ title: error.message || '加载时段失败', icon: 'none' })
+    uni.showToast({ title: error.message || '鍔犺浇鏃舵澶辫触', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -209,7 +206,7 @@ onMounted(() => {
   coachId.value = parseInt(options.coachId) || 0
 
   if (coachId.value) {
-    // 默认选中今天
+    // 榛樿閫変腑浠婂ぉ
     selectedDate.value = dateList.value[0]?.date || ''
     loadCoachInfo()
     loadAvailableSlots()
@@ -288,7 +285,7 @@ onMounted(() => {
     }
 
     &.active {
-      background-color: #4caf50;
+      background-color: #FF8800;
 
       .weekday,
       .day {
@@ -337,12 +334,12 @@ onMounted(() => {
 
     .slot-status {
       font-size: 22rpx;
-      color: #4caf50;
+      color: #FF8800;
     }
 
     &.active {
       background-color: #e8f5e9;
-      border-color: #4caf50;
+      border-color: #FF8800;
     }
 
     &.disabled {
@@ -386,14 +383,14 @@ onMounted(() => {
 
     .selected-time {
       font-size: 28rpx;
-      color: #4caf50;
+      color: #FF8800;
       font-weight: 600;
     }
   }
   .btn-next {
     width: 100%;
     height: 88rpx;
-    background-color: #4caf50;
+    background-color: #FF8800;
     color: #fff;
     font-size: 32rpx;
     border-radius: 44rpx;
