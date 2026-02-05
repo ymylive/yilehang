@@ -37,11 +37,13 @@ class Settings(BaseSettings):
     WECHAT_APP_ID: str = ""  # 公众号AppID (如有)
     WECHAT_APP_SECRET: str = ""  # 公众号AppSecret
 
-    # 阿里云OSS配置
+    # 阿里云配置
     ALIYUN_ACCESS_KEY_ID: str = ""
     ALIYUN_ACCESS_KEY_SECRET: str = ""
     ALIYUN_OSS_BUCKET: str = ""
     ALIYUN_OSS_ENDPOINT: str = ""
+    ALIYUN_SMS_SIGN_NAME: str = ""  # 短信签名
+    ALIYUN_SMS_TEMPLATE_CODE: str = ""  # 短信模板ID
 
     class Config:
         env_file = ".env"

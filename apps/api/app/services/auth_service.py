@@ -14,6 +14,13 @@ from app.core.config import settings
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.models import User, Student, Coach, UserRole
 
+try:
+    from alibabacloud_dysmsapi20170525.client import Client as DysmsapiClient
+    from alibabacloud_tea_openapi import models as open_api_models
+    ALIYUN_SMS_AVAILABLE = True
+except ImportError:
+    ALIYUN_SMS_AVAILABLE = False
+
 
 class AuthService:
     """认证服务"""
@@ -236,7 +243,6 @@ class SmsService:
     async def send_code(phone: str) -> bool:
         """
         发送短信验证码
-        TODO: 接入实际短信服务商 (阿里云/腾讯云)
         """
         code = AuthService.generate_sms_code()
 
@@ -246,11 +252,33 @@ class SmsService:
             "expires_at": datetime.utcnow() + timedelta(minutes=5)
         }
 
-        # TODO: 调用短信API发送
-        # 开发环境直接打印
-        print(f"[SMS] 发送验证码到 {phone}: {code}")
+        # 调用阿里云短信API
+        if ALIYUN_SMS_AVAILABLE and settings.ALIYUN_ACCESS_KEY_ID:
+            try:
+                config = open_api_models.Config(
+                    access_key_id=settings.ALIYUN_ACCESS_KEY_ID,
+                    access_key_secret=settings.ALIYUN_ACCESS_KEY_SECRET,
+                    endpoint="dysmsapi.aliyuncs.com"
+                )
+                client = DysmsapiClient(config)
 
-        return True
+                from alibabacloud_dysmsapi20170525 import models as dysmsapi_models
+                request = dysmsapi_models.SendSmsRequest(
+                    phone_numbers=phone,
+                    sign_name=settings.ALIYUN_SMS_SIGN_NAME,
+                    template_code=settings.ALIYUN_SMS_TEMPLATE_CODE,
+                    template_param=json.dumps({"code": code})
+                )
+
+                await client.send_sms_async(request)
+                return True
+            except Exception as e:
+                print(f"[SMS] 阿里云短信发送失败: {str(e)}")
+                return False
+        else:
+            # 开发环境直接打印
+            print(f"[SMS] 发送验证码到 {phone}: {code}")
+            return True
 
     @staticmethod
     async def verify_code(phone: str, code: str) -> bool:
