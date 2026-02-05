@@ -1,4 +1,5 @@
-﻿"""Configure domain and SSL via acme.sh, update nginx + compose."""
+﻿"""Configure domain and SSL via acme.sh (Cloudflare DNS-01)."""
+import os
 import paramiko
 import time
 import sys
@@ -7,6 +8,9 @@ SERVER = "82.158.88.34"
 USER = "root"
 PASSWORD = "Qq159741"
 DOMAIN = "yilehang.cornna.xyz"
+
+CF_TOKEN = os.environ.get("CF_Token") or os.environ.get("CF_TOKEN")
+CF_ACCOUNT_ID = os.environ.get("CF_Account_ID") or os.environ.get("CF_ACCOUNT_ID")
 
 client = paramiko.SSHClient()
 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -68,54 +72,53 @@ def get_compose_cmd() -> str:
     raise Exception("Docker Compose not available")
 
 
-ensure_docker()
-compose_cmd = get_compose_cmd()
-
-print("=== 0. DNS check ===")
-_, dns_ip = run(f"getent hosts {DOMAIN} | awk '{{print $1}}' | head -n 1", check=False)
-if SERVER not in dns_ip:
-    print(f"[WARN] DNS for {DOMAIN} -> {dns_ip.strip()} (expected {SERVER}).")
-    print("Update DNS first, then re-run this script.")
+if not CF_TOKEN:
+    print("[ERROR] CF_Token is required for Cloudflare DNS-01.")
+    print("Set env var: CF_Token=<your_token> and re-run.")
     client.close()
     sys.exit(1)
 
-print("=== 1. Install acme.sh (if missing) ===")
+ensure_docker()
+compose_cmd = get_compose_cmd()
+
+print("=== 0. Install acme.sh (if missing) ===")
 exit_code, _ = run("~/.acme.sh/acme.sh --version", check=False)
 if exit_code != 0:
     run("apt-get update -y", check=False)
     run("apt-get install -y curl socat", check=False)
     run("curl https://get.acme.sh | sh", check=False)
 
-print("=== 2. Stop services on port 80 ===")
-run("docker stop yilehang-nginx 2>/dev/null; echo done", check=False)
-run("systemctl stop nginx 2>/dev/null; echo done", check=False)
-run("pkill -f 'nginx' 2>/dev/null; echo done", check=False)
-time.sleep(2)
+print("=== 1. Issue SSL certificate (DNS-01 via Cloudflare) ===")
+export_env = f"export CF_Token=\"{CF_TOKEN}\";"
+if CF_ACCOUNT_ID:
+    export_env += f" export CF_Account_ID=\"{CF_ACCOUNT_ID}\";"
 
-print("\n=== 3. Check port 80 ===")
-run("netstat -tlnp | grep ':80' || echo 'Port 80 is free'", check=False)
+issue_cmd = (
+    f"{export_env} ~/.acme.sh/acme.sh --issue -d {DOMAIN} --dns dns_cf --force"
+)
+run(issue_cmd, check=False)
 
-print("\n=== 4. Issue SSL certificate ===")
-exit_code, out = run(f"~/.acme.sh/acme.sh --issue -d {DOMAIN} --standalone --httpport 80 --force", check=False)
-
-if exit_code != 0 and "already" not in out.lower():
-    print("Try webroot mode...")
-    run("mkdir -p /var/www/acme", check=False)
-    run(f"~/.acme.sh/acme.sh --issue -d {DOMAIN} --webroot /var/www/acme --force", check=False)
-
-print("\n=== 5. Verify cert files ===")
+print("\n=== 2. Verify cert files ===")
 run(f"ls -la ~/.acme.sh/{DOMAIN}_ecc/ 2>/dev/null || ls -la ~/.acme.sh/{DOMAIN}/ 2>/dev/null || echo 'No cert found'", check=False)
 
-print("\n=== 6. Install cert ===")
+print("\n=== 3. Install cert ===")
 run("mkdir -p /opt/yilehang/ssl")
-exit_code, _ = run(f"~/.acme.sh/acme.sh --install-cert -d {DOMAIN} --ecc --key-file /opt/yilehang/ssl/key.pem --fullchain-file /opt/yilehang/ssl/cert.pem", check=False)
+install_cmd = (
+    f"{export_env} ~/.acme.sh/acme.sh --install-cert -d {DOMAIN} --ecc "
+    f"--key-file /opt/yilehang/ssl/key.pem --fullchain-file /opt/yilehang/ssl/cert.pem"
+)
+exit_code, _ = run(install_cmd, check=False)
 if exit_code != 0:
-    run(f"~/.acme.sh/acme.sh --install-cert -d {DOMAIN} --key-file /opt/yilehang/ssl/key.pem --fullchain-file /opt/yilehang/ssl/cert.pem", check=False)
+    install_cmd = (
+        f"{export_env} ~/.acme.sh/acme.sh --install-cert -d {DOMAIN} "
+        f"--key-file /opt/yilehang/ssl/key.pem --fullchain-file /opt/yilehang/ssl/cert.pem"
+    )
+    run(install_cmd, check=False)
 
-print("\n=== 7. Check cert files ===")
+print("\n=== 4. Check cert files ===")
 run("ls -la /opt/yilehang/ssl/", check=False)
 
-print("\n=== 8. Update nginx config ===")
+print("\n=== 5. Update nginx config ===")
 nginx_conf = f'''events {{ worker_connections 1024; }}
 http {{
     include /etc/nginx/mime.types;
@@ -154,7 +157,7 @@ http {{
 
 run(f"cat > /opt/yilehang/docker/nginx/nginx.conf << 'EOFNGINX'\n{nginx_conf}\nEOFNGINX")
 
-print("\n=== 9. Update docker-compose.yml ===")
+print("\n=== 6. Update docker-compose.yml ===")
 compose = '''version: "3.8"
 services:
   postgres:
@@ -219,13 +222,10 @@ volumes:
 
 run(f"cat > /opt/yilehang/docker/docker-compose.yml << 'EOFCOMPOSE'\n{compose}\nEOFCOMPOSE")
 
-print("\n=== 10. Start Docker services ===")
+print("\n=== 7. Restart services ===")
 run(f"cd /opt/yilehang/docker && {compose_cmd} up -d", check=False)
 
-print("\n=== 11. Wait for services ===")
-time.sleep(10)
-
-print("\n=== 12. Check status ===")
+print("\n=== 8. Check status ===")
 run("docker ps", check=False)
 run("docker logs yilehang-nginx --tail 15 2>&1", check=False)
 
@@ -238,6 +238,3 @@ print("Access:")
 print(f"  - HTTPS: https://{DOMAIN}/")
 print(f"  - Admin: https://{DOMAIN}/admin")
 print(f"  - API docs: https://{DOMAIN}/docs")
-print("\nNotes:")
-print(f"1. Ensure domain {DOMAIN} resolves to {SERVER}")
-print("2. Ensure firewall allows 80/443")

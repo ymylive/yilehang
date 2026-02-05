@@ -8,8 +8,8 @@ Date: 2026-02-05
 
 ## Status
 - Docker services are running (postgres + api + nginx)
-- HTTP is available on port 80
-- SSL is pending (DNS does not resolve to 82.158.88.34 yet)
+- SSL issued successfully via Cloudflare DNS-01
+- HTTPS is enabled on 443
 
 ## Containers
 - yilehang-nginx
@@ -17,14 +17,10 @@ Date: 2026-02-05
 - yilehang-postgres
 
 ## Access
-- Client: http://82.158.88.34/
-- Admin: http://82.158.88.34/admin
-- API docs: http://82.158.88.34/docs
+- Client: https://yilehang.cornna.xyz/
+- Admin: https://yilehang.cornna.xyz/admin
+- API docs: https://yilehang.cornna.xyz/docs
 
-## DNS Check
-- Current DNS result: 198.18.4.148
-- Expected: 82.158.88.34
-
-## Next steps
-1. Update DNS for yilehang.cornna.xyz -> 82.158.88.34
-2. Re-run `python scripts/setup_ssl.py`
+## Notes
+- Cloudflare DNS-01 used, no need to expose port 80 during issuance
+- HTTP->HTTPS redirect is enabled
