@@ -5,6 +5,9 @@ import random
 import string
 import json
 import httpx
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -233,7 +236,44 @@ class WechatService:
         return data["access_token"]
 
 
-class SmsService:
+class EmailService:
+    """邮箱服务"""
+
+    # 内存存储验证码 (生产环境应使用Redis)
+    _codes: dict = {}
+
+    @staticmethod
+    async def send_code(email: str) -> bool:
+        """发送邮箱验证码"""
+        code = AuthService.generate_sms_code()
+
+        # 存储验证码 (5分钟有效)
+        EmailService._codes[email] = {
+            "code": code,
+            "expires_at": datetime.utcnow() + timedelta(minutes=5)
+        }
+
+        # 开发环境直接打印
+        print(f"[EMAIL] 发送验证码到 {email}: {code}")
+        return True
+
+    @staticmethod
+    async def verify_code(email: str, code: str) -> bool:
+        """验证邮箱验证码"""
+        stored = EmailService._codes.get(email)
+        if not stored:
+            return False
+
+        if datetime.utcnow() > stored["expires_at"]:
+            del EmailService._codes[email]
+            return False
+
+        if stored["code"] != code:
+            return False
+
+        # 验证成功后删除
+        del EmailService._codes[email]
+        return True
     """短信服务"""
 
     # 内存存储验证码 (生产环境应使用Redis)

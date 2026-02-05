@@ -16,7 +16,7 @@ from app.schemas import (
     StudentRegister, StudentResponse,
     CoachRegister, CoachResponse, CoachProfileResponse
 )
-from app.services.auth_service import AuthService, WechatService, SmsService
+from app.services.auth_service import AuthService, WechatService, SmsService, EmailService
 
 router = APIRouter()
 
@@ -202,7 +202,61 @@ async def login_with_sms(login_data: SmsCodeLogin, db: AsyncSession = Depends(ge
     )
 
 
-@router.post("/login/wechat", response_model=Token, summary="微信登录")
+@router.post("/login/email/send", summary="发送邮箱验证码")
+async def send_email_code(data: SmsCodeRequest):
+    """
+    发送邮箱验证码
+    """
+    success = await EmailService.send_code(data.phone)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="验证码发送失败"
+        )
+    return {"message": "验证码已发送"}
+
+
+@router.post("/login/email", response_model=Token, summary="邮箱验证码登录")
+async def login_with_email(login_data: SmsCodeLogin, db: AsyncSession = Depends(get_db)):
+    """
+    邮箱验证码登录 (自动注册)
+    """
+    # 验证验证码
+    is_valid = await EmailService.verify_code(login_data.phone, login_data.code)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="验证码错误或已过期"
+        )
+
+    # 查找或创建用户
+    user = await AuthService.get_user_by_phone(db, login_data.phone)
+    if not user:
+        # 自动注册
+        user = await AuthService.create_user(
+            db=db,
+            phone=login_data.phone,
+            password="",  # 邮箱登录无密码
+            role="parent"
+        )
+        await db.commit()
+
+    if user.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="账号已被禁用"
+        )
+
+    access_token, expires_in = AuthService.create_token(user)
+
+    return Token(
+        access_token=access_token,
+        expires_in=expires_in,
+        user=UserResponse.model_validate(user)
+    )
+
+
+
 async def wechat_login(wechat_data: WechatLogin, db: AsyncSession = Depends(get_db)):
     """
     微信小程序登录
