@@ -98,8 +98,14 @@ function formatTime(dateStr: string): string {
 
 function viewMessage(msg: Message) {
   msg.is_read = true
-  // TODO: 跳转到对应详情页
-  uni.showToast({ title: '功能开发中', icon: 'none' })
+  const routes: Record<string, string> = {
+    booking: `/pages/booking/detail?id=${msg.id}`,
+    reminder: `/pages/booking/detail?id=${msg.id}`,
+    feedback: `/pages/user/feedback-detail?id=${msg.id}`,
+    system: `/pages/user/system-message?id=${msg.id}`
+  }
+  const url = routes[msg.type] || '/pages/user/messages'
+  uni.navigateTo({ url })
 }
 
 onMounted(() => {

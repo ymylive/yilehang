@@ -191,8 +191,9 @@ function previewImage(url: string) {
 }
 
 function viewAllReviews() {
-  // TODO: 跳转到评价列表页
-  uni.showToast({ title: '功能开发中', icon: 'none' })
+  uni.navigateTo({
+    url: `/pages/booking/reviews-list?coachId=${coachId.value}`
+  })
 }
 
 function goToSelectTime() {
