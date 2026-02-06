@@ -1,141 +1,142 @@
-# Yilehang Development Plan
+# 易乐航一周开发计划（7天冲刺版）
 
-Last updated: 2026-02-06
+更新时间：2026-02-06
 
-## 1. Planning Assumptions
+## 1. 冲刺目标（必须在 1 周内完成）
 
-- Product focus remains WeChat mini program first (student + coach), admin web second.
-- Current production baseline exists (Docker + HTTPS + domain already online).
-- Team priority is delivery speed with controlled technical debt.
+在 7 天内交付可稳定演示和内部试运行的最小闭环：
 
-## 2. Product Milestones
+- 学员端：登录、约课、查看课表、查看课时/消费
+- 教练端：查看课表、完成上课、提交反馈、查看学员
+- 后端：预约冲突校验、课时扣减、基础权限隔离
+- 运维：预发/生产一键部署、可回滚、基础监控
 
-## Milestone M1: Internal Operations Stable (Week 1-3)
+## 2. 范围控制
 
-Scope:
+## 本周必做（P0）
 
-- Student booking / cancel / reschedule end-to-end
-- Coach availability, schedule completion, feedback write-back
-- Membership consumption consistency
+- 约课主链路：预约、取消、改期
+- 课时主链路：扣课、剩余课时、消费记录
+- 教练主链路：课表、完课、反馈
+- 角色权限：管理员/教练/学员最小权限正确
+- 线上部署：Docker 发布 + HTTPS 可访问
 
-Deliverables:
+## 本周可选（P1）
 
-- Unified API contract document (request/response/error)
-- Booking conflict and quota checks fully covered
-- Baseline regression checklist for student/coach critical paths
+- 首页营销位（静态内容）
+- 简单埋点（访问、提交预约）
 
-Acceptance criteria:
+## 本周不做（延期）
 
-- Booking lifecycle succeeds with >= 98% success in internal test runs
-- No manual database intervention needed for lesson consumption fixes
+- AI 跳绳识别与饮食建议
+- 老带新/复杂营销活动
+- 完整运营看板与流失预测
 
-## Milestone M2: External Growth Entry (Week 4-6)
+## 3. 日计划（D1-D7）
 
-Scope:
+## D1（需求冻结 + 技术冻结）
 
-- Mini program marketing homepage
-- Trial signup + one-click consultation
-- Basic campaign tooling (coupon, referral code)
-- Conversion analytics events
+- 冻结页面与接口清单（不再新增需求）
+- 输出接口对照表：前端字段名 vs 后端字段名
+- 建立缺陷看板（P0/P1/P2）
 
-Deliverables:
+交付物：
 
-- Funnel dashboard: visit -> signup -> booked -> paid
-- Marketing config table for banners / CTA / campaign windows
+- 接口契约文档 v1
+- 冲刺任务看板
 
-Acceptance criteria:
+## D2（后端核心链路）
 
-- Trial conversion funnel is measurable in dashboard
-- Event loss rate < 3% on core funnel events
+- 完成预约冲突校验与错误码规范
+- 完成扣课一致性（幂等保护）
+- 完成预约/取消/改期接口联调
 
-## Milestone M3: Ops Intelligence (Week 7-9)
+交付物：
 
-Scope:
+- 预约与课时链路通过联调
+- 关键接口单元/集成测试
 
-- Owner/ops dashboard for attendance, renewal, revenue, coach utilization
-- Risk warnings for low attendance/churn/schedule anomalies
-- Ops follow-up workflow fields
+## D3（学员端闭环）
 
-Deliverables:
+- 学员端约课流程打通（选教练->选时段->确认）
+- 课表与课时/消费页真实数据接入
+- 异常态（无课、失败、重试）补齐
 
-- Daily, weekly, monthly KPI cards + trend charts
-- Risk queue with reason tags and follow-up status
+交付物：
 
-Acceptance criteria:
+- 学员端 P0 页面可走通
 
-- Weekly ops meeting can rely on dashboard without manual spreadsheet merge
-- Risk queue supports assignment and closure tracking
+## D4（教练端闭环）
 
-## Milestone M4: AI Sports MVP (Week 10-12)
+- 教练端课表、课程详情、完课、反馈打通
+- 学员列表与详情页真实数据校验
+- 收入/评价页保持可用（不扩功能）
 
-Scope:
+交付物：
 
-- Jump-rope action recognition service integration
-- AI training and diet advice endpoint
-- AI analysis history linked to student profile
+- 教练端 P0 页面可走通
 
-Deliverables:
+## D5（权限 + 回归）
 
-- `POST /api/v1/ai/jump-rope/analyze` with structured output
-- Mini program UI for upload, result display, and history
-- Coach-facing recommendation view
+- 权限矩阵回归：管理员/教练/学员
+- 全链路回归：预约->完课->扣课->记录
+- 修复 P0 缺陷，P1 只修高影响
 
-Acceptance criteria:
+交付物：
 
-- Median AI response time <= 8s (clip length cap applied)
-- AI result persistence and retrieval validated in production-like env
+- 回归测试报告 v1
+- P0 清零
 
-## 3. Engineering Workstreams (Parallel)
+## D6（部署 + 预发验收）
 
-### A. Backend Reliability
+- 执行 Docker 部署脚本到预发/线上
+- 验证 HTTPS、域名、API 文档、健康检查
+- 生成发布清单与回滚步骤
 
-- Add idempotency for booking-related writes
-- Add stricter domain validations and error codes
-- Add integration tests for booking/membership/review flows
+交付物：
 
-### B. Frontend Consistency
+- 部署记录
+- 回滚手册
 
-- Keep student/coach design tokens aligned
-- Standardize API error handling and empty/loading states
-- Remove remaining legacy/mocked branches
+## D7（上线 + 复盘）
 
-### C. Data & Observability
+- 正式发布
+- 上线后 2 小时重点监控（错误率、预约成功率）
+- 输出一周复盘与下周计划
 
-- Structured logging with request IDs
-- Core metrics: booking success, payment success, retention, churn risk count
-- Alerting thresholds and on-call handover notes
+交付物：
 
-### D. Security & Compliance
+- 发布说明
+- 冲刺复盘报告
 
-- Privacy consent text and audit fields
-- Permission boundary tests (role isolation)
-- Data retention and export/delete policy draft
+## 4. 验收标准（本周）
 
-## 4. Risks and Mitigations
+满足以下条件即视为“本周计划完成”：
 
-- Risk: API schema drift between backend and mini programs
-  - Mitigation: lock response schema and add contract checks in CI
+1. 学员端和教练端 P0 主流程全部可用
+2. 预约冲突与扣课逻辑通过回归
+3. P0 缺陷为 0，P1 缺陷有明确处理计划
+4. 生产环境可访问并可回滚
+5. 文档同步更新（README、部署报告、接口说明）
 
-- Risk: AI module latency/cost spikes
-  - Mitigation: clip duration limits, async job option, fallback responses
+## 5. 风险与应对
 
-- Risk: growth features create noisy leads
-  - Mitigation: lead quality tags and ops filtering workflow
+- 风险：需求继续膨胀导致延期  
+  应对：D1 后仅允许修复缺陷，不新增功能点
 
-## 5. Suggested Sprint Rhythm
+- 风险：前后端字段不一致  
+  应对：接口契约文档作为唯一真源，联调按文档执行
 
-- Sprint length: 1 week
-- Cadence:
-  - Monday: plan and acceptance criteria freeze
-  - Wednesday: integration checkpoint
-  - Friday: demo + release + rollback verification
+- 风险：上线后出现扣课异常  
+  应对：扣课操作幂等 + 操作日志 + 快速回滚预案
 
-## 6. Definition of Done (DoD)
+## 6. 本周角色分工建议
 
-A feature is "done" only when:
+- 前端：学员端/教练端 P0 页面联调与异常态
+- 后端：预约、扣课、权限、接口稳定性
+- 测试：全链路回归 + 权限矩阵
+- 运维：部署、证书、监控、回滚演练
 
-1. Business logic and UI are both completed
-2. Error handling and empty/loading states are implemented
-3. Logs/metrics are added for key events
-4. Test checklist is executed and recorded
-5. Documentation (`README.md` / this plan / API docs) is updated
+---
+
+说明：本计划是“7 天交付版”，目标是先把业务主链路做稳；AI 能力与精细化运营在下一冲刺继续推进。
