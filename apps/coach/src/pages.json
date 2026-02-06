@@ -1,4 +1,4 @@
-{
+﻿{
   "pages": [
     {
       "path": "pages/workbench/index",
@@ -49,6 +49,12 @@
       }
     },
     {
+      "path": "pages/reviews/index",
+      "style": {
+        "navigationBarTitleText": "评价中心"
+      }
+    },
+    {
       "path": "pages/user/index",
       "style": {
         "navigationBarTitleText": "我的"
@@ -69,7 +75,7 @@
   },
   "tabBar": {
     "color": "#999999",
-    "selectedColor": "#2196F3",
+    "selectedColor": "#FF8D1F",
     "borderStyle": "black",
     "backgroundColor": "#FFFFFF",
     "list": [

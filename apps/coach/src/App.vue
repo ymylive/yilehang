@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
 
 onLaunch(() => {
@@ -17,19 +17,18 @@ onHide(() => {
 <style>
 page {
   background-color: #f5f5f5;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: "ZCOOL QingKe HuangYou", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
-/* 全局样式 */
 view, text {
   box-sizing: border-box;
 }
 
-/* 主题色 */
 :root {
-  --primary-color: #2196F3;
-  --primary-light: #64B5F6;
-  --primary-dark: #1976D2;
+  --primary-color: #FF8800;
+  --primary-light: #FFB347;
+  --primary-dark: #E56A00;
+  --accent-color: #4FA4F3;
   --success-color: #4CAF50;
   --warning-color: #FF9800;
   --error-color: #F44336;

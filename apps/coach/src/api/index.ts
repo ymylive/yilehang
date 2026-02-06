@@ -1,7 +1,3 @@
-/**
- * 教练端 API 封装
- */
-
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
 
 interface RequestOptions {
@@ -41,43 +37,36 @@ async function request<T = any>(url: string, options: RequestOptions = {}): Prom
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data as T)
-        } else if (res.statusCode === 401) {
+          return
+        }
+
+        if (res.statusCode === 401) {
           uni.removeStorageSync('token')
           uni.reLaunch({ url: '/pages/user/login' })
-          reject(new Error('登录已过期'))
-        } else {
-          reject(new Error((res.data as any)?.detail || '请求失败'))
+          reject(new Error('\u767b\u5f55\u5df2\u8fc7\u671f'))
+          return
         }
+
+        const detail = (res.data as any)?.detail
+        reject(new Error(typeof detail === 'string' && detail.trim() ? detail : '\u8bf7\u6c42\u5931\u8d25'))
       },
       fail: (err) => {
-        reject(new Error(err.errMsg || '网络错误'))
+        reject(new Error(err.errMsg || '\u7f51\u7edc\u9519\u8bef'))
       }
     })
   })
 }
 
-// 教练信息
 export const coachApi = {
-  // 获取当前教练信息
   getProfile: () => request('/coaches/me/profile'),
-
-  // 更新教练信息
   updateProfile: (data: any) => request('/coaches/me/profile', { method: 'PUT', data }),
-
-  // 获取收入统计
   getIncomeSummary: () => request('/coaches/me/income/summary'),
-
-  // 获取收入明细
   getIncomeDetails: (params?: { month?: string; page?: number; page_size?: number }) =>
     request('/coaches/me/income/details', { params })
 }
 
-// 可约时段管理
 export const slotsApi = {
-  // 获取可约时段列表
   getSlots: () => request('/coaches/me/slots'),
-
-  // 创建可约时段
   createSlot: (data: {
     day_of_week: number
     start_time: string
@@ -85,82 +74,92 @@ export const slotsApi = {
     slot_duration?: number
     max_students?: number
   }) => request('/coaches/me/slots', { method: 'POST', data }),
-
-  // 更新可约时段
-  updateSlot: (id: number, data: any) =>
-    request(`/coaches/me/slots/${id}`, { method: 'PUT', data }),
-
-  // 删除可约时段
-  deleteSlot: (id: number) =>
-    request(`/coaches/me/slots/${id}`, { method: 'DELETE' })
+  updateSlot: (id: number, data: any) => request(`/coaches/me/slots/${id}`, { method: 'PUT', data }),
+  deleteSlot: (id: number) => request(`/coaches/me/slots/${id}`, { method: 'DELETE' })
 }
 
-// 学员管理
 export const studentsApi = {
-  // 获取我的学员列表
   getStudents: (params?: { page?: number; page_size?: number }) =>
     request('/coaches/me/students', { params }),
-
-  // 获取学员详情
   getStudent: (id: number) => request(`/coaches/me/students/${id}`)
 }
 
-// 课程/预约管理
 export const scheduleApi = {
-  // 获取我的课表
-  getSchedule: (params?: { start_date?: string; end_date?: string; status?: string }) =>
-    request('/coaches/me/schedule', { params }),
+  getSchedule: (params?: {
+    start_date?: string
+    end_date?: string
+    status?: string
+    page?: number
+    page_size?: number
+  }) => request('/coaches/me/schedule', { params }),
 
-  // 确认预约
-  confirmBooking: (id: number) =>
-    request(`/coaches/me/bookings/${id}/confirm`, { method: 'PUT' }),
+  getBookingDetail: async (id: number) => {
+    try {
+      return await request(`/coaches/me/bookings/${id}`)
+    } catch (error) {
+      const today = new Date()
+      const start = new Date(today)
+      const end = new Date(today)
+      start.setDate(start.getDate() - 30)
+      end.setDate(end.getDate() + 30)
 
-  // 完成课程
+      const data: any = await request('/coaches/me/schedule', {
+        params: {
+          start_date: start.toISOString().slice(0, 10),
+          end_date: end.toISOString().slice(0, 10),
+          page: 1,
+          page_size: 300
+        }
+      })
+
+      const list = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : []
+      const found = list.find((item: any) => Number(item?.id) === id)
+      if (found) {
+        return found
+      }
+      throw error
+    }
+  },
+
+  confirmBooking: (id: number) => request(`/coaches/me/bookings/${id}/confirm`, { method: 'PUT' }),
   completeBooking: (id: number, notes?: string) =>
     request(`/coaches/me/bookings/${id}/complete`, { method: 'PUT', params: notes ? { notes } : undefined }),
-
-  // 标记未到
-  markNoShow: (id: number) =>
-    request(`/coaches/me/bookings/${id}/no-show`, { method: 'PUT' })
+  markNoShow: (id: number) => request(`/coaches/me/bookings/${id}/no-show`, { method: 'PUT' })
 }
 
-// 评价管理
 export const reviewApi = {
-  // 获取我的评价列表
-  getMyReviews: (params?: { page?: number; page_size?: number }) =>
-    request('/reviews/coach/my', { params }),
+  getMyReviews: async (params?: { page?: number; page_size?: number }) => {
+    try {
+      return await request('/reviews/coach/my', { params })
+    } catch (error) {
+      const profile: any = await coachApi.getProfile()
+      if (!profile?.id) {
+        throw error
+      }
+      return request(`/coaches/${profile.id}/reviews`, { params })
+    }
+  },
 
-  // 回复评价
   replyReview: (id: number, reply: string) =>
     request(`/coaches/me/reviews/${id}/reply`, { method: 'POST', data: { reply } })
 }
 
-// 反馈管理
 export const feedbackApi = {
-  // 提交学习反馈
   createFeedback: (data: {
     booking_id?: number
     student_id: number
-    performance_rating: number
+    performance_rating: number | null
     content: string
-    suggestions?: string
+    suggestions?: string | null
   }) => request('/reviews/feedbacks', { method: 'POST', data }),
 
-  // 获取反馈列表
   getFeedbacks: (params?: { page?: number; page_size?: number; student_id?: number }) =>
     request('/reviews/feedbacks', { params })
 }
 
-// 认证
 export const authApi = {
-  // 登录
-  login: (data: { phone: string; password: string }) =>
-    request('/auth/login', { method: 'POST', data }),
-
-  // 获取用户信息
+  login: (data: { phone: string; password: string }) => request('/auth/login', { method: 'POST', data }),
   getUserInfo: () => request('/auth/me'),
-
-  // 登出
   logout: () => request('/auth/logout', { method: 'POST' })
 }
 
