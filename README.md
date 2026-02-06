@@ -1,190 +1,215 @@
-# 易乐航·ITS智慧体教云平台
+# Yilehang ITS Sports Platform
 
-> 青少年体育培训智能约课管理系统
+A WeChat mini-program-first platform for youth sports training operations.
 
-## 项目简介
+## Product Positioning
 
-易乐航·ITS智慧体教云平台是一个面向青少年体育培训机构的综合管理系统，以**微信小程序**为主要载体，提供完整的约课、排课、课时管理功能。
+Yilehang provides three role-based products around booking and lesson consumption:
 
-### 核心功能
+- Student app (`apps/client`): booking, schedule, membership, growth records
+- Coach app (`apps/coach`): schedule, students, feedback, income, reviews
+- Admin web (`apps/admin`): operations and data dashboard
 
-- **在线约课**：学员可自主选择教练、时段进行预约
-- **课时管理**：支持次卡/时长卡，自动扣费和余额管理
-- **教练排班**：教练自主设置可约时段，灵活管理课表
-- **数据看板**：实时统计预约、收入、到课率等核心指标
+The backend (`apps/api`) is a FastAPI service with PostgreSQL.
 
-### 系统架构
+## Current Status (2026-02)
 
-- **3大应用端口**：学员端(C端)、教练端(B端)、管理后台(Admin)
-- **1个核心数据中台**：统一的用户、课程、预约数据管理
+Implemented and available now:
 
-## 技术栈
+- Student side: booking flow, schedule view, training sessions, membership and transactions, basic review flow
+- Coach side: workbench, schedule/detail, student list/detail, feedback submit, income detail, review reply, profile
+- API side: auth, coaches, students, bookings, memberships, reviews, dashboard, AI placeholder routes
+- Deployment: Dockerized API + PostgreSQL + Nginx with HTTPS
 
-| 层级 | 技术方案 |
-|------|---------|
-| 前端(C端/B端) | UniApp + Vue3 + TypeScript |
-| 前端(Admin) | Vue3 + Element Plus + ECharts |
-| 后端 | Python + FastAPI + SQLAlchemy |
-| 数据库 | PostgreSQL |
-| 小程序 | 微信小程序 (AppID: wxdbd150a0458a3c7c) |
+Recent completed refactors:
 
-## 项目结构
+- Coach pages migrated from mock data to real APIs with defensive response normalization
+- Client and coach UI refreshed to a unified orange/yellow visual style
+- Copy handling standardized to reduce encoding-related text corruption issues
 
-```
+## Monorepo Structure
+
+```text
 yilehang/
-├── apps/
-│   ├── client/          # C端 - 乐航成长 (UniApp)
-│   ├── coach/           # B端 - 乐航教务 (UniApp)
-│   ├── admin/           # 管理后台 (Vue3)
-│   └── api/             # 后端服务 (FastAPI)
-├── packages/
-│   ├── ui/              # 共享UI组件
-│   ├── utils/           # 共享工具
-│   └── types/           # TypeScript类型
-├── database/
-│   ├── migrations/      # 数据库迁移
-│   └── seeds/           # 种子数据
-└── docker/              # Docker配置
+|- apps/
+|  |- client/          # Student mini program (UniApp)
+|  |- coach/           # Coach mini program (UniApp)
+|  |- admin/           # Admin web (Vue3 + Vite)
+|  \- api/             # FastAPI backend
+|- packages/
+|  |- ui/
+|  |- utils/
+|  \- types/
+|- database/
+|- docker/
+|- scripts/
+|- docs/
+\- README.md
 ```
 
-## 快速开始
+## Tech Stack
 
-### 环境要求
+- Client/Coach: UniApp + Vue 3 + TypeScript + Pinia + Wot Design Uni
+- Admin: Vue 3 + TypeScript + Element Plus + ECharts
+- Backend: FastAPI + SQLAlchemy + PostgreSQL
+- Deployment: Docker Compose + Nginx + acme.sh (Cloudflare DNS challenge)
+
+## Quick Start
+
+### 1) Prerequisites
 
 - Node.js >= 18
+- pnpm >= 8
 - Python >= 3.10
 - PostgreSQL >= 15
-- pnpm >= 8
 
-### 安装依赖
+### 2) Install Dependencies
 
 ```bash
-# 安装前端依赖
 pnpm install
 
-# 安装后端依赖
 cd apps/api
 pip install -e .
+cp .env.example .env
 ```
 
-### 启动开发服务
+### 3) Run in Development
+
+From repository root:
 
 ```bash
-# 启动后端API
-pnpm dev:api
-
-# 启动C端(H5)
-pnpm dev:client
-
-# 启动管理后台
-pnpm dev:admin
+pnpm dev:api      # FastAPI at :8000
+pnpm dev:client   # Student H5
+pnpm dev:coach    # Coach H5
+pnpm dev:admin    # Admin web
 ```
 
-### Docker启动
+### 4) Build WeChat Mini Program Packages
 
 ```bash
-# 启动所有服务
-docker-compose -f docker/docker-compose.dev.yml up -d
+pnpm -C apps/client build:mp-weixin
+pnpm -C apps/coach build:mp-weixin
 ```
 
-## 核心功能
+Import generated output in WeChat DevTools:
 
-### 学员端 (乐航成长)
+- `apps/client/dist/build/mp-weixin`
+- `apps/coach/dist/build/mp-weixin`
 
-- **在线约课**：浏览教练、选择时段、确认预约
-- **我的课表**：日历视图查看已约课程
-- **课时卡**：查看余额、消费记录
-- **成长档案**：五维雷达图、体测历史
+## API Entry Points
 
-### 教练端 (乐航教务)
+When backend is running:
 
-- **工作台**：今日课程、待办事项、快捷操作
-- **时段管理**：设置每周可约时段
-- **我的课表**：查看预约、确认/完成课程
-- **学员管理**：学员列表、上课记录、学习反馈
-- **收入统计**：月度收入、课时费明细
+- Swagger: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+- Health: `http://localhost:8000/health`
 
-### 管理后台
+Main route groups (prefix `/api/v1`):
 
-- **数据看板**：学员数、预约数、收入统计、趋势图表
-- **用户管理**：学员、教练、管理员
-- **预约管理**：预约列表、状态管理
-- **课时卡管理**：套餐设置、学员课时卡
-- **财务管理**：收入统计、消费记录
+- `/auth`
+- `/students`
+- `/schedules`
+- `/training`
+- `/growth`
+- `/bookings`
+- `/memberships`
+- `/coaches`
+- `/reviews`
+- `/dashboard`
+- `/ai`
 
-## API文档
+## Deployment Snapshot
 
-启动后端服务后访问：
+Production report reference: `DEPLOYMENT_REPORT.md`
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Domain: `https://yilehang.cornna.xyz`
+- API docs: `https://yilehang.cornna.xyz/docs`
 
-### 主要API模块
+## Development Plan (Next 12 Weeks)
 
-| 模块 | 路径 | 说明 |
-|------|------|------|
-| 认证 | `/api/v1/auth` | 登录、注册、微信授权 |
-| 学员 | `/api/v1/students` | 学员信息管理 |
-| 教练 | `/api/v1/coaches` | 教练信息、时段、收入 |
-| 预约 | `/api/v1/bookings` | 预约创建、取消、改期 |
-| 课时卡 | `/api/v1/memberships` | 课时卡购买、查询 |
-| 仪表盘 | `/api/v1/dashboard` | 统计数据、图表 |
+Detailed plan: `docs/dev_plan.md`
 
-## 开发指南
+### Phase 1 (Week 1-3): Internal MVP Hardening
 
-### 代码规范
+Goal: make student/coach/booking/lesson-card flow stable for daily internal operation.
 
-- 前端：ESLint + Prettier
-- 后端：Black + Ruff
+- Complete API contract alignment (client + coach + backend)
+- Add missing backend validations (booking conflict, lesson consumption consistency)
+- Improve failure states and retry UX for booking/cancel/reschedule
+- Add role-permission regression checks (admin/coach/student)
+- Add baseline monitoring: API error rate, booking success rate
 
-### 提交规范
+Exit criteria:
 
+- Internal test users can complete full booking lifecycle without manual DB fixes
+- P0 defects in booking and lesson consumption are cleared
+
+### Phase 2 (Week 4-6): Public-facing Mini Program + Conversion
+
+Goal: support external traffic and trial conversion.
+
+- Build marketing home sections (environment/course/coach/price/reviews)
+- Add free-trial signup and consultation CTA
+- Add basic campaign capability (coupon/referral code)
+- Add analytics events (visit, click, booking submit, conversion)
+
+Exit criteria:
+
+- Conversion funnel observable end-to-end
+- New user can complete trial signup in under 60 seconds
+
+### Phase 3 (Week 7-9): Ops Dashboard + Retention
+
+Goal: provide actionable operations visibility for owner/ops.
+
+- Daily/weekly/monthly metrics: attendance, new users, renewals, revenue, coach workload
+- Alerts: low attendance students, churn-risk students, scheduling anomalies
+- Add follow-up workflow fields for ops actions
+
+Exit criteria:
+
+- Dashboard supports weekly operations meeting decisions
+- Risk list can be exported and followed up
+
+### Phase 4 (Week 10-12): AI Sports Module (MVP)
+
+Goal: launch first practical AI capability with measurable value.
+
+- Integrate jump-rope detection service (video clip upload + result)
+- Return structured output: count, confidence, posture issues, suggestions
+- Add AI advice endpoint for training and diet Q&A
+- Save AI analysis history per student for trend tracking
+
+Exit criteria:
+
+- At least one AI feature available in mini program with stable response SLA
+- AI output can be reviewed by coach and linked to training records
+
+## Quality and Security Baseline (Cross-phase)
+
+- Auth: phone verification login + token expiry/refresh strategy
+- Data protection: role-based data isolation, privacy policy and consent flow
+- Delivery: staging before production, rollback-capable release process
+- Observability: request tracing, structured logs, error alerting
+
+## Team Workflow
+
+Suggested commit convention:
+
+```text
+feat: new feature
+fix: bug fix
+refactor: non-breaking refactor
+docs: documentation update
+test: tests
+chore: tooling/build maintenance
 ```
-feat: 新功能
-fix: 修复bug
-docs: 文档更新
-style: 代码格式
-refactor: 重构
-test: 测试
-chore: 构建/工具
-```
 
-## 部署
+---
 
-### 小程序发布
+If you need a cloud rollout runbook (Docker + domain + SSL + CI), use:
 
-```bash
-# 构建微信小程序
-cd apps/client
-pnpm build:mp-weixin
+- `scripts/deploy_full.py`
+- `scripts/setup_ssl.py`
 
-# 使用微信开发者工具打开 dist/build/mp-weixin 目录上传
-```
-
-### 生产环境部署
-
-```bash
-# 构建前端
-pnpm build:client
-pnpm build:admin
-
-# 启动生产服务
-docker-compose -f docker/docker-compose.prod.yml up -d
-```
-
-## 开发进度
-
-- [x] 用户认证系统（微信登录、JWT）
-- [x] 学员端约课流程（教练列表→选时段→确认预约）
-- [x] 学员端课表页面
-- [x] 教练端工作台
-- [x] 教练端时段管理
-- [x] 教练端收入统计
-- [x] 管理后台数据看板
-- [ ] 微信支付集成
-- [ ] 订阅消息推送
-- [ ] 评价系统
-
-## 许可证
-
-MIT License
+and align with `DEPLOYMENT_REPORT.md`.
