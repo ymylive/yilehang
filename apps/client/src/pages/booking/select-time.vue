@@ -1,74 +1,111 @@
-﻿<template>
+<template>
   <view class="select-time-page">
-    <!-- 鏁欑粌淇℃伅 -->
-    <view class="coach-info-bar">
-      <image
-        :src="coach?.avatar || '/static/default-avatar.png'"
-        class="coach-avatar"
-      />
-      <view class="coach-name">{{ coach?.name }}</view>
+    <view v-if="initialLoading" class="skeleton-group">
+      <view class="skeleton-hero shimmer"></view>
+      <view class="skeleton-card shimmer"></view>
     </view>
 
-    <!-- 鏃ユ湡閫夋嫨 -->
-    <view class="date-selector">
-      <view class="date-header">
-        <text class="month-text">{{ currentMonth }}鏈?/text>
-      </view>
-      <scroll-view scroll-x class="date-scroll">
-        <view
-          v-for="day in dateList"
-          :key="day.date"
-          :class="['date-item', { active: selectedDate === day.date, disabled: day.isPast }]"
-          @click="selectDate(day)"
-        >
-          <text class="weekday">{{ day.weekday }}</text>
-          <text class="day">{{ day.day }}</text>
+    <view v-else>
+      <view class="hero-card" v-if="coach">
+        <image :src="coach.avatar || '/static/default-avatar.png'" class="hero-avatar" mode="aspectFill" />
+        <view class="hero-main">
+          <text class="hero-name">{{ coach.name }}</text>
+          <text class="hero-meta" v-if="coach.years_of_experience">{{ t.yearsLabel }} {{ coach.years_of_experience }} {{ t.yearUnit }}</text>
+          <text class="hero-meta" v-else>{{ t.pickSlotPrefix }}{{ isReschedule ? t.reschedule : t.booking }}</text>
         </view>
-      </scroll-view>
-    </view>
+        <view class="hero-rating" v-if="coach.avg_rating">{{ coach.avg_rating.toFixed(1) }}</view>
+      </view>
 
-    <!-- 鏃舵閫夋嫨 -->
-    <view class="time-slots">
-      <view class="slots-title">閫夋嫨鏃舵</view>
-      <view class="slots-grid">
-        <view
-          v-for="slot in availableSlots"
-          :key="`${slot.start_time}-${slot.end_time}`"
-          :class="['slot-item', { active: isSlotSelected(slot), disabled: !slot.is_available }]"
-          @click="selectSlot(slot)"
-        >
-          <text class="slot-time">{{ formatTime(slot.start_time) }} - {{ formatTime(slot.end_time) }}</text>
-          <text class="slot-status">{{ slot.is_available ? '鍙害' : '宸茬害' }}</text>
+      <view class="hero-card hero-empty" v-else>
+        <text class="hero-name">{{ t.coachLoadFailed }}</text>
+        <text class="hero-meta">{{ t.backRetry }}</text>
+      </view>
+
+      <view class="card">
+        <view class="card-head">
+          <text class="card-title">{{ t.selectDateTitle }}</text>
+          <text class="card-sub">{{ monthLabel }}</text>
         </view>
+        <scroll-view scroll-x class="date-scroll" :show-scrollbar="false">
+          <view
+            v-for="item in dateList"
+            :key="item.date"
+            :class="['date-chip', { active: selectedDate === item.date }]"
+            hover-class="chip-hover"
+            :hover-start-time="0"
+            :hover-stay-time="60"
+            @click="selectDate(item.date)"
+          >
+            <text class="chip-week">{{ item.weekday }}</text>
+            <text class="chip-day">{{ item.day }}</text>
+            <text class="chip-label">{{ item.label }}</text>
+          </view>
+        </scroll-view>
       </view>
-      <view v-if="availableSlots.length === 0" class="no-slots">
-        璇ユ棩鏈熸殏鏃犲彲绾︽椂娈?      </view>
-    </view>
 
-    <!-- 搴曢儴鎿嶄綔鏍?-->
-    <view class="bottom-bar">
-      <view class="selected-info" v-if="selectedSlot">
-        <text class="selected-date">{{ formatSelectedDate() }}</text>
-        <text class="selected-time">{{ formatTime(selectedSlot.start_time) }} - {{ formatTime(selectedSlot.end_time) }}</text>
+      <view class="card">
+        <view class="card-head">
+          <text class="card-title">{{ t.slotTitle }}</text>
+          <text class="card-sub" v-if="availableSlots.length">{{ t.totalPrefix }} {{ availableSlots.length }} {{ t.slotUnit }}</text>
+        </view>
+
+        <view class="slot-grid" v-if="availableSlots.length">
+          <view
+            v-for="slot in availableSlots"
+            :key="`${slot.date}-${slot.start_time}-${slot.end_time}`"
+            :class="['slot-item', { active: isSlotSelected(slot), disabled: !slot.is_available }]"
+            :hover-class="slot.is_available ? 'slot-hover' : ''"
+            :hover-start-time="0"
+            :hover-stay-time="60"
+            @click="selectSlot(slot)"
+          >
+            <text class="slot-time">{{ formatTime(slot.start_time) }} - {{ formatTime(slot.end_time) }}</text>
+            <text class="slot-tip" v-if="slot.is_available">
+              {{ slot.remaining_slots > 0 && slot.remaining_slots < 3 ? onlyLeftText(slot.remaining_slots) : t.available }}
+            </text>
+            <text class="slot-tip" v-else>{{ t.full }}</text>
+          </view>
+        </view>
+
+        <view class="empty" v-else-if="!loading">
+          <text class="empty-title">{{ t.noSlotTitle }}</text>
+          <text class="empty-sub">{{ t.noSlotSub }}</text>
+        </view>
+
+        <view class="loading" v-else>{{ t.loading }}</view>
       </view>
-      <button
-        class="btn-next"
-        :disabled="!selectedSlot"
-        @click="goToConfirm"
-      >
-        涓嬩竴姝?      </button>
+
+      <view class="bottom-bar">
+        <view class="selected" v-if="selectedSlot">
+          <text>{{ selectedDateLabel }}</text>
+          <text>{{ formatTime(selectedSlot.start_time) }} - {{ formatTime(selectedSlot.end_time) }}</text>
+        </view>
+        <view class="selected muted" v-else>{{ t.selectHint }}</view>
+
+        <button
+          class="next-btn"
+          :disabled="!selectedSlot"
+          hover-class="btn-hover"
+          :hover-stay-time="60"
+          @click="goToConfirm"
+        >
+          {{ isReschedule ? t.nextReschedule : t.nextBooking }}
+        </button>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { coachApi } from '@/api/index'
 
 interface Coach {
   id: number
   name: string
   avatar: string | null
+  years_of_experience?: number | null
+  avg_rating?: number
 }
 
 interface TimeSlot {
@@ -83,71 +120,143 @@ interface DateItem {
   date: string
   day: number
   weekday: string
-  isPast: boolean
+  label: string
 }
 
+const t = {
+  yearsLabel: '\u6559\u9f84',
+  yearUnit: '\u5e74',
+  monthUnit: '\u6708',
+  dayUnit: '\u65e5',
+  pickSlotPrefix: '\u8bf7\u9009\u62e9\u5408\u9002\u65f6\u6bb5\u8fdb\u884c',
+  booking: '\u9884\u7ea6',
+  reschedule: '\u6539\u671f',
+  coachLoadFailed: '\u6559\u7ec3\u4fe1\u606f\u52a0\u8f7d\u5931\u8d25',
+  backRetry: '\u8bf7\u8fd4\u56de\u91cd\u8bd5',
+  selectDateTitle: '\u9009\u62e9\u65e5\u671f',
+  slotTitle: '\u53ef\u9009\u65f6\u6bb5',
+  totalPrefix: '\u5171',
+  slotUnit: '\u4e2a',
+  available: '\u53ef\u9884\u7ea6',
+  full: '\u5df2\u7ea6\u6ee1',
+  onlyLeftPrefix: '\u4ec5\u5269',
+  seatUnit: '\u5e2d',
+  noSlotTitle: '\u5f53\u5929\u6682\u65e0\u53ef\u7ea6\u65f6\u6bb5',
+  noSlotSub: '\u6362\u4e00\u4e2a\u65e5\u671f\u8bd5\u8bd5',
+  loading: '\u52a0\u8f7d\u4e2d...',
+  selectHint: '\u8bf7\u9009\u62e9\u4e00\u4e2a\u53ef\u7528\u65f6\u6bb5',
+  nextReschedule: '\u4e0b\u4e00\u6b65\uff1a\u786e\u8ba4\u6539\u671f',
+  nextBooking: '\u4e0b\u4e00\u6b65\uff1a\u786e\u8ba4\u9884\u7ea6',
+  today: '\u4eca\u5929',
+  tomorrow: '\u660e\u5929',
+  coachNotFound: '\u6559\u7ec3\u4fe1\u606f\u4e0d\u5b58\u5728',
+  loadCoachFail: '\u52a0\u8f7d\u6559\u7ec3\u4fe1\u606f\u5931\u8d25',
+  loadSlotFail: '\u52a0\u8f7d\u65f6\u6bb5\u5931\u8d25'
+} as const
+
 const coachId = ref(0)
+const rescheduleId = ref(0)
 const coach = ref<Coach | null>(null)
 const selectedDate = ref('')
 const selectedSlot = ref<TimeSlot | null>(null)
 const allSlots = ref<TimeSlot[]>([])
 const loading = ref(false)
+const initialLoading = ref(true)
 
-const weekdays = ['鏃?, '涓€', '浜?, '涓?, '鍥?, '浜?, '鍏?]
+const weekdayNames = ['\u5468\u65e5', '\u5468\u4e00', '\u5468\u4e8c', '\u5468\u4e09', '\u5468\u56db', '\u5468\u4e94', '\u5468\u516d']
 
-// 鐢熸垚鏈潵7澶╃殑鏃ユ湡鍒楄〃
+const isReschedule = computed(() => rescheduleId.value > 0)
+
 const dateList = computed<DateItem[]>(() => {
-  const list: DateItem[] = []
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const base = new Date()
+  base.setHours(0, 0, 0, 0)
 
-  for (let i = 0; i < 14; i++) {
-    const date = new Date(today)
-    date.setDate(today.getDate() + i)
-
-    list.push({
-      date: formatDateStr(date),
+  return Array.from({ length: 14 }).map((_, index) => {
+    const date = new Date(base)
+    date.setDate(base.getDate() + index)
+    return {
+      date: formatDate(date),
       day: date.getDate(),
-      weekday: i === 0 ? '浠婂ぉ' : i === 1 ? '鏄庡ぉ' : `鍛?{weekdays[date.getDay()]}`,
-      isPast: false
-    })
+      weekday: index === 0 ? t.today : index === 1 ? t.tomorrow : weekdayNames[date.getDay()],
+      label: `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`
+    }
+  })
+})
+
+const monthLabel = computed(() => {
+  if (!selectedDate.value) {
+    const now = new Date()
+    return `${now.getFullYear()}${t.yearUnit}${now.getMonth() + 1}${t.monthUnit}`
   }
-
-  return list
+  const date = new Date(selectedDate.value)
+  return `${date.getFullYear()}${t.yearUnit}${date.getMonth() + 1}${t.monthUnit}`
 })
 
-const currentMonth = computed(() => {
-  if (!selectedDate.value) return new Date().getMonth() + 1
-  return new Date(selectedDate.value).getMonth() + 1
+const availableSlots = computed(() => {
+  return allSlots.value
+    .filter((slot) => slot.date === selectedDate.value)
+    .sort((a, b) => a.start_time.localeCompare(b.start_time))
 })
 
-// 褰撳墠閫変腑鏃ユ湡鐨勫彲绾︽椂娈?const availableSlots = computed(() => {
-  return allSlots.value.filter(slot => slot.date === selectedDate.value)
+const selectedDateLabel = computed(() => {
+  if (!selectedDate.value) return ''
+  const date = new Date(selectedDate.value)
+  return `${date.getMonth() + 1}${t.monthUnit}${date.getDate()}${t.dayUnit} ${weekdayNames[date.getDay()]}`
 })
 
-function formatDateStr(date: Date): string {
+function getOptions() {
+  const pages = getCurrentPages()
+  const current = pages[pages.length - 1]
+  return (current as any).$page?.options || {}
+}
+
+function formatDate(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
-function formatTime(timeStr: string): string {
-  // 澶勭悊 "HH:MM:SS" 鏍煎紡
-  return timeStr.substring(0, 5)
+function toDateOnly(value?: string): string {
+  if (!value) return ''
+  return value.slice(0, 10)
 }
 
-function formatSelectedDate(): string {
-  if (!selectedDate.value) return ''
-  const date = new Date(selectedDate.value)
-  return `${date.getMonth() + 1}鏈?{date.getDate()}鏃?鍛?{weekdays[date.getDay()]}`
+function formatTime(value?: string): string {
+  if (!value) return '--:--'
+  if (value.includes('T')) {
+    const date = new Date(value)
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  }
+  return value.slice(0, 5)
 }
 
-async function loadCoachInfo() {
+function normalizeSlot(raw: any): TimeSlot {
+  const start = String(raw.start_time || raw.start_at || '')
+  const end = String(raw.end_time || raw.end_at || '')
+  const date = toDateOnly(raw.date || start)
+
+  const remaining = Number(raw.remaining_slots ?? raw.remaining ?? 0)
+  const availableByStatus = raw.is_available !== false && raw.status !== 'booked' && raw.status !== 'full'
+
+  return {
+    date,
+    start_time: start,
+    end_time: end,
+    is_available: availableByStatus && (remaining > 0 || raw.remaining_slots == null),
+    remaining_slots: remaining
+  }
+}
+
+function onlyLeftText(count: number) {
+  return `${t.onlyLeftPrefix}${count}${t.seatUnit}`
+}
+
+async function loadCoachDetail() {
   try {
     coach.value = await coachApi.get(coachId.value)
-  } catch (error) {
-    console.error('鍔犺浇鏁欑粌淇℃伅澶辫触', error)
+  } catch (error: any) {
+    uni.showToast({ title: error.message || t.loadCoachFail, icon: 'none' })
   }
 }
 
@@ -156,19 +265,19 @@ async function loadAvailableSlots() {
   try {
     const startDate = dateList.value[0]?.date
     const endDate = dateList.value[dateList.value.length - 1]?.date
+    const response = await coachApi.getAvailableSlots(coachId.value, startDate, endDate)
 
-    const data = await coachApi.getAvailableSlots(coachId.value, startDate, endDate)
-    allSlots.value = data.slots || []
+    const source = Array.isArray(response) ? response : response?.slots || response?.items || []
+    allSlots.value = source.map(normalizeSlot).filter((slot) => slot.date && slot.start_time && slot.end_time)
   } catch (error: any) {
-    uni.showToast({ title: error.message || '鍔犺浇鏃舵澶辫触', icon: 'none' })
+    uni.showToast({ title: error.message || t.loadSlotFail, icon: 'none' })
   } finally {
     loading.value = false
   }
 }
 
-function selectDate(day: DateItem) {
-  if (day.isPast) return
-  selectedDate.value = day.date
+function selectDate(date: string) {
+  selectedDate.value = date
   selectedSlot.value = null
 }
 
@@ -177,228 +286,377 @@ function selectSlot(slot: TimeSlot) {
   selectedSlot.value = slot
 }
 
-function isSlotSelected(slot: TimeSlot): boolean {
+function isSlotSelected(slot: TimeSlot) {
   if (!selectedSlot.value) return false
-  return selectedSlot.value.start_time === slot.start_time &&
-         selectedSlot.value.end_time === slot.end_time
+  return selectedSlot.value.start_time === slot.start_time && selectedSlot.value.end_time === slot.end_time
 }
 
 function goToConfirm() {
   if (!selectedSlot.value) return
 
-  const params = {
-    coachId: coachId.value,
-    coachName: coach.value?.name || '',
-    date: selectedDate.value,
-    startTime: selectedSlot.value.start_time,
-    endTime: selectedSlot.value.end_time
+  const query = [
+    `coachId=${coachId.value}`,
+    `coachName=${encodeURIComponent(coach.value?.name || '')}`,
+    `date=${selectedDate.value}`,
+    `startTime=${encodeURIComponent(selectedSlot.value.start_time)}`,
+    `endTime=${encodeURIComponent(selectedSlot.value.end_time)}`
+  ]
+
+  if (rescheduleId.value) {
+    query.push(`rescheduleId=${rescheduleId.value}`)
   }
 
   uni.navigateTo({
-    url: `/pages/booking/confirm?${new URLSearchParams(params as any).toString()}`
+    url: `/pages/booking/confirm?${query.join('&')}`
   })
 }
 
-onMounted(() => {
-  const pages = getCurrentPages()
-  const currentPage = pages[pages.length - 1]
-  const options = (currentPage as any).$page?.options || {}
-  coachId.value = parseInt(options.coachId) || 0
+onMounted(async () => {
+  const options = getOptions()
+  coachId.value = Number(options.coachId || options.id || 0)
+  rescheduleId.value = Number(options.rescheduleId || 0)
+  selectedDate.value = dateList.value[0]?.date || ''
 
-  if (coachId.value) {
-    // 榛樿閫変腑浠婂ぉ
-    selectedDate.value = dateList.value[0]?.date || ''
-    loadCoachInfo()
-    loadAvailableSlots()
+  if (!coachId.value) {
+    uni.showToast({ title: t.coachNotFound, icon: 'none' })
+    initialLoading.value = false
+    return
+  }
+
+  try {
+    await Promise.all([loadCoachDetail(), loadAvailableSlots()])
+  } finally {
+    initialLoading.value = false
   }
 })
 </script>
 
 <style lang="scss" scoped>
+:root {
+  --c-primary-start: #ffc04d;
+  --c-primary-end: #ff9024;
+  --c-primary-bg-light: #fff8ed;
+  --c-text-main: #1d2129;
+  --c-text-sub: #86909c;
+  --c-bg-page: #f7f8fa;
+}
+
 .select-time-page {
   min-height: 100vh;
-  background-color: #f5f5f5;
-  padding-bottom: 160rpx;
+  background: var(--c-bg-page);
+  padding: 24rpx;
+  padding-bottom: 220rpx;
 }
 
-.coach-info-bar {
+.hero-card,
+.card {
+  border-radius: 24rpx;
+  background: #fff;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.04);
+}
+
+.hero-card {
   display: flex;
   align-items: center;
-  padding: 24rpx 30rpx;
-  background-color: #fff;
-
-  .coach-avatar {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: 50%;
-    margin-right: 20rpx;
-  }
-
-  .coach-name {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333;
-  }
+  padding: 20rpx;
+  margin-bottom: 14rpx;
+  animation: fadeInUp 0.35s ease-out;
 }
 
-.date-selector {
-  background-color: #fff;
-  margin-top: 20rpx;
-  padding: 24rpx 0;
-
-  .date-header {
-    padding: 0 30rpx 20rpx;
-
-    .month-text {
-      font-size: 32rpx;
-      font-weight: 600;
-      color: #333;
-    }
-  }
-
-  .date-scroll {
-    white-space: nowrap;
-    padding: 0 20rpx;
-  }
-
-  .date-item {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100rpx;
-    height: 120rpx;
-    margin: 0 10rpx;
-    border-radius: 12rpx;
-    background-color: #f5f5f5;
-
-    .weekday {
-      font-size: 24rpx;
-      color: #999;
-      margin-bottom: 8rpx;
-    }
-
-    .day {
-      font-size: 36rpx;
-      font-weight: 600;
-      color: #333;
-    }
-
-    &.active {
-      background-color: #FF8800;
-
-      .weekday,
-      .day {
-        color: #fff;
-      }
-    }
-
-    &.disabled {
-      opacity: 0.5;
-    }
-  }
+.hero-empty {
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-.time-slots {
-  background-color: #fff;
-  margin-top: 20rpx;
-  padding: 30rpx;
+.hero-avatar {
+  width: 98rpx;
+  height: 98rpx;
+  border-radius: 24rpx;
+  background: #f3f5fb;
+  flex-shrink: 0;
+  margin-right: 14rpx;
+}
 
-  .slots-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 24rpx;
-  }
+.hero-main {
+  flex: 1;
+  min-width: 0;
+}
 
-  .slots-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20rpx;
-  }
+.hero-name {
+  display: block;
+  font-size: 31rpx;
+  font-weight: 700;
+  color: var(--c-text-main);
+}
 
-  .slot-item {
-    width: calc(33.33% - 14rpx);
-    padding: 24rpx 0;
-    text-align: center;
-    background-color: #f5f5f5;
-    border-radius: 12rpx;
-    border: 2rpx solid transparent;
+.hero-meta {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  color: var(--c-text-sub);
+}
 
-    .slot-time {
-      display: block;
-      font-size: 28rpx;
-      color: #333;
-      margin-bottom: 8rpx;
-    }
+.hero-rating {
+  min-width: 72rpx;
+  height: 48rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #ffe7c2, #ffd08a);
+  color: #d2780f;
+  font-size: 24rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-    .slot-status {
-      font-size: 22rpx;
-      color: #FF8800;
-    }
+.card {
+  padding: 20rpx;
+  margin-bottom: 14rpx;
+  animation: fadeInUp 0.4s ease-out;
+}
 
-    &.active {
-      background-color: #e8f5e9;
-      border-color: #FF8800;
-    }
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
 
-    &.disabled {
-      .slot-time {
-        color: #ccc;
-      }
+.card-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--c-text-main);
+}
 
-      .slot-status {
-        color: #ccc;
-      }
-    }
-  }
+.card-sub {
+  font-size: 22rpx;
+  color: #9aa2b5;
+}
 
-  .no-slots {
-    text-align: center;
-    padding: 60rpx 0;
-    color: #999;
-    font-size: 28rpx;
-  }
+.date-scroll {
+  white-space: nowrap;
+}
+
+.date-chip {
+  width: 116rpx;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.02);
+  border: 2rpx solid transparent;
+  padding: 12rpx 0;
+  margin-right: 10rpx;
+  transition: all 0.2s ease;
+}
+
+.date-chip.active {
+  background: linear-gradient(135deg, var(--c-primary-start), var(--c-primary-end));
+  box-shadow: 0 8rpx 20rpx rgba(255, 144, 36, 0.25);
+  transform: translateY(-2rpx);
+}
+
+.chip-hover {
+  transform: scale(0.96);
+  opacity: 0.92;
+}
+
+.chip-week {
+  font-size: 21rpx;
+  color: #8f98ac;
+}
+
+.chip-day {
+  margin-top: 6rpx;
+  font-size: 33rpx;
+  font-weight: 700;
+  color: var(--c-text-main);
+}
+
+.chip-label {
+  margin-top: 4rpx;
+  font-size: 20rpx;
+  color: #a1a9bb;
+}
+
+.date-chip.active .chip-week,
+.date-chip.active .chip-day,
+.date-chip.active .chip-label {
+  color: #fff;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10rpx;
+}
+
+.slot-item {
+  border-radius: 16rpx;
+  background: #fff;
+  border: 1rpx solid #f2f4f7;
+  padding: 16rpx 12rpx;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.slot-item.active {
+  background: var(--c-primary-bg-light);
+  border-color: var(--c-primary-end);
+}
+
+.slot-item.disabled {
+  background: #fafafa;
+  border-color: transparent;
+  opacity: 0.6;
+}
+
+.slot-hover {
+  background: #fffbf5;
+  border-color: #ffe0b2;
+}
+
+.slot-time {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #2b3448;
+}
+
+.slot-item.disabled .slot-time {
+  color: #c9cdd4;
+}
+
+.slot-tip {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 21rpx;
+  color: #9aa2b5;
+}
+
+.slot-item.active .slot-tip {
+  color: #dc7d15;
+}
+
+.empty,
+.loading {
+  border-radius: 18rpx;
+  background: #f8f9fd;
+  text-align: center;
+  padding: 40rpx 20rpx;
+}
+
+.empty-title {
+  display: block;
+  font-size: 26rpx;
+  color: #4e5870;
+}
+
+.empty-sub {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #a0a8ba;
+}
+
+.loading {
+  font-size: 24rpx;
+  color: #9aa2b5;
 }
 
 .bottom-bar {
   position: fixed;
-  bottom: 0;
   left: 0;
   right: 0;
-  padding: 20rpx 30rpx;
-  background-color: #fff;
-  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.05);
+  bottom: 0;
+  padding: 18rpx 20rpx calc(18rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(18rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 -8rpx 24rpx rgba(30, 36, 50, 0.08);
+}
 
-  .selected-info {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 16rpx;
+.selected {
+  font-size: 23rpx;
+  color: #4f5870;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10rpx;
+}
 
-    .selected-date {
-      font-size: 28rpx;
-      color: #333;
-      margin-right: 20rpx;
-    }
+.selected.muted {
+  color: #9ba3b6;
+}
 
-    .selected-time {
-      font-size: 28rpx;
-      color: #FF8800;
-      font-weight: 600;
-    }
+.next-btn {
+  width: 100%;
+  height: 84rpx;
+  border: none;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, var(--c-primary-start), var(--c-primary-end));
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
+  box-shadow: 0 12rpx 32rpx rgba(255, 144, 36, 0.16);
+}
+
+.next-btn::after {
+  border: none;
+}
+
+.next-btn[disabled] {
+  background: #d6dbe6;
+  box-shadow: none;
+  color: #fff;
+}
+
+.btn-hover {
+  transform: scale(0.98);
+  opacity: 0.95;
+}
+
+.skeleton-group {
+  animation: fadeInUp 0.2s ease-out;
+}
+
+.skeleton-hero,
+.skeleton-card {
+  border-radius: 24rpx;
+  margin-bottom: 14rpx;
+}
+
+.skeleton-hero {
+  height: 140rpx;
+}
+
+.skeleton-card {
+  height: 380rpx;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 37%, #f0f2f5 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -100% 0;
   }
-  .btn-next {
-    width: 100%;
-    height: 88rpx;
-    background-color: #FF8800;
-    color: #fff;
-    font-size: 32rpx;
-    border-radius: 44rpx;
-    border: none;
+  100% {
+    background-position: 100% 0;
+  }
+}
 
-    &[disabled] {
-      background-color: #ccc;
-    }
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

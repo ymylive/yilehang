@@ -1,17 +1,17 @@
-﻿<template>
+<template>
   <view class="page">
-    <!-- 鑷畾涔夊鑸爮 -->
+    <!-- 顶部导航 -->
     <view class="nav-bar">
       <view class="back" @click="goBack">
-        <text>杩斿洖</text>
+        <text>返回</text>
       </view>
       <text class="title">{{ exerciseName }}</text>
       <view class="timer">{{ formatDuration(duration) }}</view>
     </view>
 
-    <!-- 瑙嗛鍖哄煙 -->
+    <!-- 训练画面 -->
     <view class="video-container">
-      <!-- H5浣跨敤video鏍囩 -->
+      <!-- H5 使用 video -->
       <!-- #ifdef H5 -->
       <video
         ref="videoRef"
@@ -23,7 +23,7 @@
       />
       <!-- #endif -->
 
-      <!-- 灏忕▼搴忎娇鐢╟amera缁勪欢 -->
+      <!-- 小程序使用 camera -->
       <!-- #ifndef H5 -->
       <camera
         class="camera"
@@ -33,72 +33,73 @@
       />
       <!-- #endif -->
 
-      <!-- 楠ㄩ缁樺埗灞?-->
+      <!-- 姿态渲染 -->
       <canvas canvas-id="poseCanvas" class="pose-canvas" />
 
-      <!-- 璁℃暟鏄剧ず -->
+      <!-- 计数器 -->
       <view class="count-display">
         <text class="count">{{ count }}</text>
-        <text class="label">娆?/text>
+        <text class="label">次</text>
       </view>
 
-      <!-- 鍙嶉鎻愮ず -->
+      <!-- 反馈提示 -->
       <view class="feedback" :class="{ show: feedback }">
         <text>{{ feedback }}</text>
       </view>
     </view>
 
-    <!-- 鎺у埗鍖哄煙 -->
+    <!-- 控制区 -->
     <view class="controls">
       <view class="stats">
         <view class="stat-item">
           <text class="value">{{ accuracy.toFixed(0) }}%</text>
-          <text class="label">鍑嗙‘鐜?/text>
+          <text class="label">准确率</text>
         </view>
         <view class="stat-item">
           <text class="value">{{ calories.toFixed(0) }}</text>
-          <text class="label">鍗¤矾閲?/text>
+          <text class="label">消耗卡路里</text>
         </view>
       </view>
 
       <view class="buttons">
         <button class="btn-pause" @click="togglePause" v-if="isTraining">
-          {{ isPaused ? '缁х画' : '鏆傚仠' }}
+          {{ isPaused ? '继续' : '暂停' }}
         </button>
         <button class="btn-start" @click="startTraining" v-else>
-          寮€濮嬭缁?        </button>
+          开始训练
+        </button>
         <button class="btn-stop" @click="stopTraining" v-if="isTraining">
-          缁撴潫璁粌
+          结束训练
         </button>
       </view>
     </view>
 
-    <!-- 缁撴灉寮圭獥 -->
+    <!-- 结果弹窗 -->
     <view class="result-modal" v-if="showResult">
       <view class="result-content">
-        <view class="result-icon">馃帀</view>
-        <text class="result-title">璁粌瀹屾垚锛?/text>
+        <view class="result-icon">🎉</view>
+        <text class="result-title">训练完成</text>
         <view class="result-stats">
           <view class="result-item">
             <text class="value">{{ count }}</text>
-            <text class="label">瀹屾垚娆℃暟</text>
+            <text class="label">完成次数</text>
           </view>
           <view class="result-item">
             <text class="value">{{ formatDuration(duration) }}</text>
-            <text class="label">璁粌鏃堕暱</text>
+            <text class="label">训练时长</text>
           </view>
           <view class="result-item">
             <text class="value">{{ calories.toFixed(0) }}</text>
-            <text class="label">娑堣€楀崱璺噷</text>
+            <text class="label">消耗卡路里</text>
           </view>
           <view class="result-item">
             <text class="value">{{ accuracy.toFixed(0) }}%</text>
-            <text class="label">鍔ㄤ綔鍑嗙‘鐜?/text>
+            <text class="label">动作准确率</text>
           </view>
         </view>
         <view class="result-buttons">
-          <button class="btn-again" @click="resetTraining">鍐嶆潵涓€娆?/button>
-          <button class="btn-done" @click="saveAndExit">淇濆瓨閫€鍑?/button>
+          <button class="btn-again" @click="resetTraining">再来一次</button>
+          <button class="btn-done" @click="saveAndExit">保存并退出</button>
         </view>
       </view>
     </view>
@@ -112,24 +113,22 @@ import { trainingApi } from '@/api'
 
 const userStore = useUserStore()
 
-// 璺敱鍙傛暟
 const exerciseType = ref('')
 const exerciseName = ref('')
 
-// 璁粌鐘舵€?const isTraining = ref(false)
+const isTraining = ref(false)
 const isPaused = ref(false)
 const showResult = ref(false)
 
-// 璁粌鏁版嵁
 const count = ref(0)
 const duration = ref(0)
 const accuracy = ref(100)
 const calories = ref(0)
 const feedback = ref('')
 
-// 璁℃椂鍣?let durationTimer: any = null
+let durationTimer: any = null
 
-// 鍗¤矾閲岀郴鏁?const caloriesPerRep: Record<string, number> = {
+const caloriesPerRep: Record<string, number> = {
   squat: 0.32,
   jumping_jack: 0.2,
   jump_rope: 0.1,
@@ -140,15 +139,13 @@ const feedback = ref('')
 }
 
 onMounted(() => {
-  // 鑾峰彇璺敱鍙傛暟
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1] as any
   const options = currentPage.$page?.options || currentPage.options || {}
 
   exerciseType.value = options.type || 'squat'
-  exerciseName.value = options.name || '娣辫共'
+  exerciseName.value = options.name || '深蹲'
 
-  // 鍒濆鍖栨憚鍍忓ご
   initCamera()
 })
 
@@ -157,7 +154,6 @@ onUnmounted(() => {
   stopCamera()
 })
 
-// 鍒濆鍖栨憚鍍忓ご
 async function initCamera() {
   // #ifdef H5
   try {
@@ -169,13 +165,13 @@ async function initCamera() {
       video.srcObject = stream
     }
   } catch (error) {
-    console.error('鎽勫儚澶村垵濮嬪寲澶辫触', error)
-    uni.showToast({ title: '鏃犳硶璁块棶鎽勫儚澶?, icon: 'none' })
+    console.error('摄像头启动失败', error)
+    uni.showToast({ title: '无法使用摄像头', icon: 'none' })
   }
   // #endif
 }
 
-// 鍋滄鎽勫儚澶?function stopCamera() {
+function stopCamera() {
   // #ifdef H5
   const video = document.getElementById('camera-video') as HTMLVideoElement
   if (video && video.srcObject) {
@@ -185,16 +181,15 @@ async function initCamera() {
   // #endif
 }
 
-// 寮€濮嬭缁?function startTraining() {
+function startTraining() {
   isTraining.value = true
   isPaused.value = false
   startTimer()
   startPoseDetection()
-  feedback.value = '寮€濮嬭缁冿紒'
+  feedback.value = '开始训练，加油！'
   setTimeout(() => { feedback.value = '' }, 2000)
 }
 
-// 鏆傚仠/缁х画
 function togglePause() {
   isPaused.value = !isPaused.value
   if (isPaused.value) {
@@ -204,7 +199,6 @@ function togglePause() {
   }
 }
 
-// 鍋滄璁粌
 function stopTraining() {
   isTraining.value = false
   stopTimer()
@@ -212,13 +206,12 @@ function stopTraining() {
   showResult.value = true
 }
 
-// 寮€濮嬭鏃?function startTimer() {
+function startTimer() {
   durationTimer = setInterval(() => {
     duration.value++
   }, 1000)
 }
 
-// 鍋滄璁℃椂
 function stopTimer() {
   if (durationTimer) {
     clearInterval(durationTimer)
@@ -226,42 +219,39 @@ function stopTimer() {
   }
 }
 
-// 寮€濮嬪Э鎬佹娴?function startPoseDetection() {
-  // 棰勭暀濮挎€佹娴嬫帴鍏ヤ綅
-  // 鐢变簬UniApp鐨勯檺鍒讹紝瀹屾暣濮挎€佹娴嬪缓璁湪H5绔疄鐜?  // 杩欓噷浣跨敤妯℃嫙鏁版嵁婕旂ず
-
+function startPoseDetection() {
+  // 这里接入姿态识别与动作计数（当前使用模拟）
   // #ifdef H5
   simulateTraining()
   // #endif
 }
 
-// 鍋滄濮挎€佹娴?function stopPoseDetection() {
-  // 鍋滄妫€娴?}
+function stopPoseDetection() {
+  // 预留停止姿态识别的逻辑
+}
 
-// 妯℃嫙璁粌锛堟紨绀虹敤锛?function simulateTraining() {
+function simulateTraining() {
   const interval = setInterval(() => {
     if (!isTraining.value || isPaused.value) {
       clearInterval(interval)
       return
     }
 
-    // 妯℃嫙璁℃暟澧炲姞
     if (Math.random() > 0.7) {
       count.value++
       calories.value = count.value * (caloriesPerRep[exerciseType.value] || 0.3)
-      feedback.value = `瀹屾垚绗?{count.value}涓紒`
+      feedback.value = `已完成 ${count.value} 次`
       setTimeout(() => { feedback.value = '' }, 1500)
     }
   }, 2000)
 }
 
-// 鏍煎紡鍖栨椂闀?function formatDuration(seconds: number) {
+function formatDuration(seconds: number) {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
-// 閲嶇疆璁粌
 function resetTraining() {
   count.value = 0
   duration.value = 0
@@ -271,7 +261,7 @@ function resetTraining() {
   isTraining.value = false
 }
 
-// 淇濆瓨骞堕€€鍑?async function saveAndExit() {
+async function saveAndExit() {
   if (!userStore.currentStudent) {
     uni.navigateBack()
     return
@@ -287,22 +277,21 @@ function resetTraining() {
       calories_burned: calories.value
     })
 
-    uni.showToast({ title: '璁粌璁板綍宸蹭繚瀛?, icon: 'success' })
+    uni.showToast({ title: '训练记录已保存', icon: 'success' })
     setTimeout(() => {
       uni.navigateBack()
     }, 1500)
   } catch (error) {
-    console.error('淇濆瓨澶辫触', error)
-    uni.showToast({ title: '淇濆瓨澶辫触', icon: 'none' })
+    console.error('保存失败', error)
+    uni.showToast({ title: '保存失败', icon: 'none' })
   }
 }
 
-// 杩斿洖
 function goBack() {
   if (isTraining.value) {
     uni.showModal({
-      title: '鎻愮ず',
-      content: '璁粌杩涜涓紝纭畾瑕侀€€鍑哄悧锛?,
+      title: '提示',
+      content: '训练进行中，确定要退出吗？记录将不会保存。',
       success: (res) => {
         if (res.confirm) {
           stopTraining()
@@ -315,9 +304,9 @@ function goBack() {
   }
 }
 
-// 鎽勫儚澶撮敊璇?function onCameraError(e: any) {
-  console.error('鎽勫儚澶撮敊璇?, e)
-  uni.showToast({ title: '鎽勫儚澶村惎鍔ㄥけ璐?, icon: 'none' })
+function onCameraError(e: any) {
+  console.error('摄像头错误', e)
+  uni.showToast({ title: '摄像头不可用，请检查权限', icon: 'none' })
 }
 </script>
 
@@ -398,96 +387,74 @@ function goBack() {
 
 .count-display .label {
   font-size: 28rpx;
-  color: rgba(255, 255, 255, 0.9);
+  color: #fff;
 }
 
 .feedback {
   position: absolute;
-  bottom: 200rpx;
+  bottom: 180rpx;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.7);
-  padding: 20rpx 40rpx;
-  border-radius: 40rpx;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 16rpx 30rpx;
+  border-radius: 30rpx;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.3s ease;
 }
 
 .feedback.show {
   opacity: 1;
 }
 
-.feedback text {
-  color: #fff;
-  font-size: 32rpx;
-}
-
 .controls {
-  background: #fff;
+  background: #111;
   padding: 30rpx;
-  border-radius: 40rpx 40rpx 0 0;
 }
 
 .stats {
   display: flex;
   justify-content: space-around;
-  margin-bottom: 30rpx;
-}
-
-.stat-item {
-  text-align: center;
+  margin-bottom: 20rpx;
+  color: #fff;
 }
 
 .stat-item .value {
-  font-size: 48rpx;
+  font-size: 32rpx;
   font-weight: bold;
-  color: #FF8800;
   display: block;
 }
 
 .stat-item .label {
   font-size: 24rpx;
-  color: #999;
+  opacity: 0.8;
 }
 
 .buttons {
   display: flex;
+  justify-content: center;
   gap: 20rpx;
 }
 
 .btn-start,
 .btn-pause,
 .btn-stop {
-  flex: 1;
-  padding: 24rpx;
-  border-radius: 50rpx;
-  font-size: 32rpx;
-  border: none;
-}
-
-.btn-start {
+  height: 80rpx;
+  padding: 0 40rpx;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  color: #fff;
   background: #FF8800;
-  color: #fff;
-}
-
-.btn-pause {
-  background: #FF7A18;
-  color: #fff;
 }
 
 .btn-stop {
-  background: #f5f5f5;
-  color: #666;
+  background: #FF5722;
 }
 
-/* 缁撴灉寮圭獥 */
 .result-modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -495,70 +462,60 @@ function goBack() {
 }
 
 .result-content {
-  background: #fff;
-  border-radius: 30rpx;
-  padding: 60rpx 40rpx;
   width: 80%;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 40rpx;
   text-align: center;
 }
 
 .result-icon {
-  font-size: 100rpx;
+  font-size: 60rpx;
+  margin-bottom: 16rpx;
 }
 
 .result-title {
-  font-size: 40rpx;
+  font-size: 32rpx;
   font-weight: bold;
-  color: #333;
-  margin: 20rpx 0;
-  display: block;
+  margin-bottom: 20rpx;
 }
 
 .result-stats {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 30rpx;
-  margin: 40rpx 0;
-}
-
-.result-item {
-  text-align: center;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
 }
 
 .result-item .value {
-  font-size: 44rpx;
+  font-size: 28rpx;
   font-weight: bold;
   color: #FF8800;
-  display: block;
 }
 
 .result-item .label {
-  font-size: 24rpx;
-  color: #999;
+  font-size: 22rpx;
+  color: #666;
+  margin-top: 4rpx;
 }
 
 .result-buttons {
   display: flex;
+  justify-content: center;
   gap: 20rpx;
-  margin-top: 30rpx;
 }
 
 .btn-again,
 .btn-done {
-  flex: 1;
-  padding: 24rpx;
-  border-radius: 50rpx;
-  font-size: 28rpx;
-  border: none;
-}
-
-.btn-again {
-  background: #f5f5f5;
-  color: #666;
+  height: 70rpx;
+  padding: 0 30rpx;
+  border-radius: 35rpx;
+  font-size: 26rpx;
+  color: #fff;
+  background: #FF8800;
 }
 
 .btn-done {
-  background: #FF8800;
-  color: #fff;
+  background: #4CAF50;
 }
 </style>

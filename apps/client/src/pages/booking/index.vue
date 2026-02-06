@@ -1,17 +1,8 @@
 ﻿<template>
   <view class="booking-page">
-    <!-- 鎼滅储鏍?-->
-    <view class="search-bar">
-      <wd-search
-        v-model="searchKeyword"
-        placeholder="鎼滅储鏁欑粌"
-        @search="handleSearch"
-      />
-    </view>
-
-    <!-- 绛涢€夋爣绛?-->
-    <view class="filter-tags">
-      <scroll-view scroll-x class="tags-scroll">
+    <view class="header-card">
+      <wd-search v-model="searchKeyword" placeholder="搜索教练姓名" @search="handleSearch" />
+      <scroll-view scroll-x class="tag-scroll" :show-scrollbar="false">
         <view
           v-for="tag in specialtyTags"
           :key="tag.value"
@@ -23,70 +14,54 @@
       </scroll-view>
     </view>
 
-    <!-- 鏁欑粌鍒楄〃 -->
-    <view class="coach-list">
-      <view
-        v-for="coach in coaches"
-        :key="coach.id"
-        class="coach-card"
-        @click="goToCoachDetail(coach.id)"
-      >
-        <view class="coach-avatar">
-          <image
-            :src="coach.avatar || '/static/default-avatar.png'"
-            mode="aspectFill"
-          />
-        </view>
-        <view class="coach-info">
-          <view class="coach-name">{{ coach.name }}</view>
-          <view class="coach-specialty">
-            <text v-for="(s, i) in (coach.specialty || []).slice(0, 3)" :key="i" class="specialty-tag">
-              {{ s }}
-            </text>
+    <view class="coach-list" v-if="displayCoaches.length">
+      <view class="coach-card" v-for="coach in displayCoaches" :key="coach.id" @click="goToCoachDetail(coach.id)">
+        <image :src="coach.avatar || '/static/default-avatar.png'" class="coach-avatar" mode="aspectFill" />
+
+        <view class="coach-main">
+          <view class="coach-head">
+            <text class="coach-name">{{ coach.name }}</text>
+            <text class="coach-price" v-if="coach.hourly_rate">¥{{ coach.hourly_rate }}/课时</text>
           </view>
+
+          <view class="coach-tags" v-if="coach.specialty?.length">
+            <text v-for="(s, i) in coach.specialty.slice(0, 3)" :key="i" class="coach-tag">{{ s }}</text>
+          </view>
+
           <view class="coach-stats">
-            <view class="stat-item">
-              <text class="stat-value">{{ coach.avg_rating.toFixed(1) }}</text>
-              <text class="stat-label">璇勫垎</text>
-            </view>
-            <view class="stat-item">
-              <text class="stat-value">{{ coach.total_lessons }}</text>
-              <text class="stat-label">璇炬椂</text>
-            </view>
-            <view class="stat-item">
-              <text class="stat-value">{{ coach.total_students }}</text>
-              <text class="stat-label">瀛﹀憳</text>
-            </view>
+            <text>评分 {{ coach.avg_rating.toFixed(1) }}</text>
+            <text>课时 {{ coach.total_lessons }}</text>
+            <text>学员 {{ coach.total_students }}</text>
           </view>
         </view>
+
         <view class="coach-action">
-          <view class="price" v-if="coach.hourly_rate">
-            <text class="price-value">{{ coach.hourly_rate }}</text>
-            <text class="price-unit">鍏?璇炬椂</text>
-          </view>
-          <wd-button size="small" type="primary" @click.stop="goToSelectTime(coach.id)">
-            绔嬪嵆绾﹁
-          </wd-button>
+          <button class="book-btn" @click.stop="goToSelectTime(coach.id)">立即预约</button>
         </view>
       </view>
 
-      <!-- 绌虹姸鎬?-->
-      <view v-if="coaches.length === 0 && !loading" class="empty-state">
-        <image src="/static/empty.png" mode="aspectFit" class="empty-image" />
-        <text class="empty-text">鏆傛棤鏁欑粌</text>
+      <view class="load-more-wrap">
+        <button v-if="hasMore && !loading" class="load-more-btn" @click="loadMore">加载更多</button>
+        <text v-else-if="loading" class="load-more-text">加载中...</text>
+        <text v-else class="load-more-text">没有更多了</text>
       </view>
+    </view>
 
-      <!-- 鍔犺浇鏇村 -->
-      <view v-if="loading" class="loading-more">
-        <wd-loading />
-        <text>鍔犺浇涓?..</text>
-      </view>
+    <view class="empty-state" v-else-if="!loading">
+      <view class="empty-icon">练</view>
+      <text class="empty-title">暂无匹配教练</text>
+      <text class="empty-sub">试试切换标签或清空关键词</text>
+    </view>
+
+    <view class="loading-state" v-else>
+      <text>加载中...</text>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import { onReachBottom } from '@dcloudio/uni-app'
 import { coachApi } from '@/api'
 
 interface Coach {
@@ -110,21 +85,34 @@ const coaches = ref<Coach[]>([])
 const loading = ref(false)
 const page = ref(1)
 const pageSize = 20
+const hasMore = ref(true)
 
 const specialtyTags = [
-  { label: '鍏ㄩ儴', value: '' },
-  { label: '绡悆', value: 'basketball' },
-  { label: '瓒崇悆', value: 'football' },
-  { label: '娓告吵', value: 'swimming' },
-  { label: '璺嗘嫵閬?, value: 'taekwondo' },
-  { label: '鑸炶箞', value: 'dance' },
-  { label: '浣撴搷', value: 'gymnastics' }
+  { label: '全部', value: '' },
+  { label: '篮球', value: 'basketball' },
+  { label: '足球', value: 'football' },
+  { label: '游泳', value: 'swimming' },
+  { label: '跆拳道', value: 'taekwondo' },
+  { label: '舞蹈', value: 'dance' },
+  { label: '体操', value: 'gymnastics' }
 ]
 
-async function loadCoaches() {
-  if (loading.value) return
-  loading.value = true
+const displayCoaches = computed(() => {
+  const key = searchKeyword.value.trim().toLowerCase()
+  if (!key) return coaches.value
+  return coaches.value.filter(item => item.name.toLowerCase().includes(key))
+})
 
+async function loadCoaches(reset = false) {
+  if (loading.value) return
+  if (reset) {
+    page.value = 1
+    hasMore.value = true
+    coaches.value = []
+  }
+  if (!hasMore.value) return
+
+  loading.value = true
   try {
     const params: any = {
       page: page.value,
@@ -135,205 +123,253 @@ async function loadCoaches() {
     }
 
     const data = await coachApi.list(params)
-    if (page.value === 1) {
-      coaches.value = data
+    const list = Array.isArray(data) ? data : data?.items || []
+
+    if (reset) {
+      coaches.value = list
     } else {
-      coaches.value = [...coaches.value, ...data]
+      coaches.value = [...coaches.value, ...list]
+    }
+
+    hasMore.value = list.length >= pageSize
+    if (hasMore.value) {
+      page.value += 1
     }
   } catch (error: any) {
-    uni.showToast({ title: error.message || '鍔犺浇澶辫触', icon: 'none' })
+    uni.showToast({ title: error.message || '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
 }
 
 function handleSearch() {
-  page.value = 1
-  loadCoaches()
+  // local filter by computed
 }
 
 function selectTag(tag: string) {
   selectedTag.value = tag
-  page.value = 1
-  loadCoaches()
+  loadCoaches(true)
 }
 
 function goToCoachDetail(coachId: number) {
-  uni.navigateTo({
-    url: `/pages/booking/coach-detail?id=${coachId}`
-  })
+  uni.navigateTo({ url: `/pages/booking/coach-detail?id=${coachId}` })
 }
 
 function goToSelectTime(coachId: number) {
-  uni.navigateTo({
-    url: `/pages/booking/select-time?coachId=${coachId}`
-  })
+  uni.navigateTo({ url: `/pages/booking/select-time?coachId=${coachId}` })
 }
 
+function loadMore() {
+  if (loading.value || !hasMore.value) return
+  loadCoaches(false)
+}
+
+onReachBottom(() => {
+  loadMore()
+})
+
 onMounted(() => {
-  loadCoaches()
+  loadCoaches(true)
 })
 </script>
 
 <style lang="scss" scoped>
 .booking-page {
   min-height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.search-bar {
+  background: #f7f8fb;
   padding: 20rpx;
-  background-color: #fff;
+  padding-bottom: 120rpx;
 }
 
-.filter-tags {
-  background-color: #fff;
-  padding: 0 20rpx 20rpx;
+.header-card {
+  border-radius: 22rpx;
+  background: #fff;
+  box-shadow: 0 10rpx 24rpx rgba(31, 37, 51, 0.05);
+  padding: 18rpx;
+}
 
-  .tags-scroll {
-    white-space: nowrap;
-  }
+.tag-scroll {
+  margin-top: 12rpx;
+  white-space: nowrap;
+}
 
-  .tag-item {
-    display: inline-block;
-    padding: 12rpx 28rpx;
-    margin-right: 16rpx;
-    background-color: #f5f5f5;
-    border-radius: 30rpx;
-    font-size: 26rpx;
-    color: #666;
+.tag-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 56rpx;
+  border-radius: 999rpx;
+  padding: 0 20rpx;
+  margin-right: 10rpx;
+  background: #f4f6fb;
+  color: #7f879a;
+  font-size: 22rpx;
+}
 
-    &.active {
-      background-color: #FFF3E0;
-      color: #FF8800;
-    }
-  }
+.tag-item.active {
+  background: linear-gradient(135deg, #ffbd49, #ff9120);
+  color: #fff;
+  font-weight: 700;
 }
 
 .coach-list {
-  padding: 20rpx;
+  margin-top: 14rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
 }
 
 .coach-card {
+  border-radius: 22rpx;
+  background: #fff;
+  box-shadow: 0 10rpx 24rpx rgba(31, 37, 51, 0.05);
+  padding: 18rpx;
   display: flex;
-  background-color: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
-
-  .coach-avatar {
-    width: 140rpx;
-    height: 140rpx;
-    border-radius: 12rpx;
-    overflow: hidden;
-    flex-shrink: 0;
-
-    image {
-      width: 100%;
-      height: 100%;
-    }
-  }
-
-  .coach-info {
-    flex: 1;
-    margin-left: 24rpx;
-    overflow: hidden;
-
-    .coach-name {
-      font-size: 32rpx;
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 12rpx;
-    }
-
-    .coach-specialty {
-      margin-bottom: 16rpx;
-
-      .specialty-tag {
-        display: inline-block;
-        padding: 4rpx 12rpx;
-        margin-right: 8rpx;
-        background-color: #fff3e0;
-        color: #FF8800;
-        font-size: 22rpx;
-        border-radius: 4rpx;
-      }
-    }
-
-    .coach-stats {
-      display: flex;
-
-      .stat-item {
-        margin-right: 32rpx;
-        text-align: center;
-
-        .stat-value {
-          display: block;
-          font-size: 28rpx;
-          font-weight: 600;
-          color: #333;
-        }
-
-        .stat-label {
-          font-size: 22rpx;
-          color: #999;
-        }
-      }
-    }
-  }
-
-  .coach-action {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: space-between;
-
-    .price {
-      text-align: right;
-
-      .price-value {
-        font-size: 36rpx;
-        font-weight: 600;
-        color: #FF7A18;
-      }
-
-      .price-unit {
-        font-size: 22rpx;
-        color: #999;
-      }
-    }
-  }
+  gap: 14rpx;
 }
 
-.empty-state {
+.coach-card:active {
+  transform: translateY(2rpx);
+}
+
+.coach-avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 24rpx;
+  background: #f4f6fb;
+  flex-shrink: 0;
+}
+
+.coach-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.coach-head {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  padding: 100rpx 0;
-
-  .empty-image {
-    width: 200rpx;
-    height: 200rpx;
-    margin-bottom: 20rpx;
-  }
-
-  .empty-text {
-    font-size: 28rpx;
-    color: #999;
-  }
+  gap: 8rpx;
 }
 
-.loading-more {
+.coach-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1f2533;
+}
+
+.coach-price {
+  font-size: 22rpx;
+  color: #de7f16;
+}
+
+.coach-tags {
+  margin-top: 10rpx;
+  display: flex;
+  gap: 8rpx;
+  flex-wrap: wrap;
+}
+
+.coach-tag {
+  border-radius: 999rpx;
+  padding: 4rpx 10rpx;
+  font-size: 20rpx;
+  color: #8b93a8;
+  background: #f4f6fb;
+}
+
+.coach-stats {
+  margin-top: 10rpx;
+  display: flex;
+  gap: 14rpx;
+  font-size: 22rpx;
+  color: #8e97aa;
+}
+
+.coach-action {
+  display: flex;
+  align-items: flex-end;
+}
+
+.book-btn {
+  border: none;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #ffbd49, #ff9120);
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: 700;
+  padding: 10rpx 18rpx;
+  line-height: 1;
+}
+
+.book-btn::after {
+  border: none;
+}
+
+.load-more-wrap {
+  text-align: center;
+  padding: 10rpx 0 4rpx;
+}
+
+.load-more-btn {
+  display: inline-block;
+  border: none;
+  border-radius: 999rpx;
+  padding: 12rpx 26rpx;
+  font-size: 22rpx;
+  color: #fff;
+  background: linear-gradient(135deg, #ffbc47, #ff8d1f);
+}
+
+.load-more-btn::after {
+  border: none;
+}
+
+.load-more-text {
+  font-size: 22rpx;
+  color: #9aa2b5;
+}
+
+.empty-state,
+.loading-state {
+  margin-top: 14rpx;
+  border-radius: 22rpx;
+  background: #fff;
+  box-shadow: 0 10rpx 24rpx rgba(31, 37, 51, 0.05);
+  padding: 56rpx 24rpx;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 88rpx;
+  height: 88rpx;
+  margin: 0 auto;
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, #fff1dd, #ffdcb9);
+  color: #ff8d1f;
+  font-size: 36rpx;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 30rpx;
-  color: #999;
-  font-size: 26rpx;
+}
 
-  text {
-    margin-left: 10rpx;
-  }
+.empty-title {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 28rpx;
+  color: #4f5870;
+}
+
+.empty-sub {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  color: #99a1b2;
+}
+
+.loading-state {
+  font-size: 24rpx;
+  color: #99a1b2;
 }
 </style>

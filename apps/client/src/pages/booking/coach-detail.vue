@@ -1,125 +1,122 @@
-﻿<template>
+<template>
   <view class="coach-detail-page">
-    <!-- 鏁欑粌淇℃伅澶撮儴 -->
-    <view class="coach-header">
-      <view class="coach-avatar">
-        <image
-          :src="coach?.avatar || '/static/default-avatar.png'"
-          mode="aspectFill"
-        />
-      </view>
-      <view class="coach-basic">
-        <view class="coach-name">{{ coach?.name }}</view>
-        <view class="coach-experience" v-if="coach?.years_of_experience">
-          浠庝笟{{ coach.years_of_experience }}骞?        </view>
-        <view class="coach-specialty">
-          <text v-for="(s, i) in (coach?.specialty || [])" :key="i" class="specialty-tag">
-            {{ s }}
-          </text>
+    <view v-if="initialLoading" class="skeleton-group">
+      <view class="skeleton-header shimmer"></view>
+      <view class="skeleton-stats shimmer"></view>
+      <view class="skeleton-review shimmer"></view>
+    </view>
+
+    <view v-else>
+      <view class="hero-card" v-if="coach">
+        <image :src="coach.avatar || '/static/default-avatar.png'" class="hero-avatar" mode="aspectFill" />
+
+        <view class="hero-main">
+          <view class="hero-head">
+            <text class="coach-name">{{ coach.name }}</text>
+            <text class="coach-exp" v-if="coach.years_of_experience">{{ t.yearsLabel }} {{ coach.years_of_experience }} {{ t.yearUnit }}</text>
+          </view>
+
+          <view class="coach-tags" v-if="coach.specialty?.length">
+            <text v-for="(item, index) in coach.specialty" :key="index" class="coach-tag">{{ item }}</text>
+          </view>
+
+          <view class="coach-intro" v-if="coach.introduction">{{ coach.introduction }}</view>
         </view>
       </view>
-    </view>
 
-    <!-- 缁熻鏁版嵁 -->
-    <view class="stats-card">
-      <view class="stat-item">
-        <view class="stat-value">{{ coach?.avg_rating?.toFixed(1) || '0.0' }}</view>
-        <view class="stat-label">璇勫垎</view>
+      <view class="hero-card hero-empty" v-else>
+        <text class="coach-name">{{ t.coachLoadFailed }}</text>
+        <text class="coach-intro">{{ t.backRetry }}</text>
       </view>
-      <view class="stat-divider"></view>
-      <view class="stat-item">
-        <view class="stat-value">{{ coach?.total_lessons || 0 }}</view>
-        <view class="stat-label">鎺堣鏁?/view>
-      </view>
-      <view class="stat-divider"></view>
-      <view class="stat-item">
-        <view class="stat-value">{{ coach?.total_students || 0 }}</view>
-        <view class="stat-label">瀛﹀憳鏁?/view>
-      </view>
-      <view class="stat-divider"></view>
-      <view class="stat-item">
-        <view class="stat-value">{{ coach?.review_count || 0 }}</view>
-        <view class="stat-label">璇勪环鏁?/view>
-      </view>
-    </view>
 
-    <!-- 涓汉浠嬬粛 -->
-    <view class="section-card" v-if="coach?.introduction">
-      <view class="section-title">涓汉浠嬬粛</view>
-      <view class="section-content">
-        {{ coach.introduction }}
-      </view>
-    </view>
-
-    <!-- 璧勮川璇佷功 -->
-    <view class="section-card" v-if="coach?.certificates?.length">
-      <view class="section-title">璧勮川璇佷功</view>
-      <view class="certificates">
-        <image
-          v-for="(cert, i) in coach.certificates"
-          :key="i"
-          :src="cert"
-          mode="aspectFill"
-          class="cert-image"
-          @click="previewImage(cert)"
-        />
-      </view>
-    </view>
-
-    <!-- 瀛﹀憳璇勪环 -->
-    <view class="section-card">
-      <view class="section-header">
-        <view class="section-title">瀛﹀憳璇勪环</view>
-        <view class="section-more" @click="viewAllReviews">
-          鏌ョ湅鍏ㄩ儴
-          <text class="arrow">></text>
+      <view class="stats-card" v-if="coach">
+        <view class="stat-item">
+          <text class="stat-value">{{ coach.avg_rating?.toFixed(1) || '0.0' }}</text>
+          <text class="stat-label">{{ t.rating }}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-value">{{ coach.total_lessons || 0 }}</text>
+          <text class="stat-label">{{ t.totalLessons }}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-value">{{ coach.total_students || 0 }}</text>
+          <text class="stat-label">{{ t.students }}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-value">{{ coach.review_count || 0 }}</text>
+          <text class="stat-label">{{ t.reviewCount }}</text>
         </view>
       </view>
-      <view class="reviews-list">
-        <view v-for="review in reviews" :key="review.id" class="review-item">
-          <view class="review-header">
-            <view class="reviewer-info">
-              <image
-                :src="review.student_avatar || '/static/default-avatar.png'"
-                class="reviewer-avatar"
-              />
-              <text class="reviewer-name">{{ review.is_anonymous ? '鍖垮悕鐢ㄦ埛' : review.student_name }}</text>
+
+      <view class="card" v-if="coach?.certificates?.length">
+        <view class="card-head">
+          <text class="card-title">{{ t.certificates }}</text>
+        </view>
+        <view class="cert-grid">
+          <image
+            v-for="(cert, index) in coach.certificates"
+            :key="index"
+            :src="cert"
+            class="cert-image"
+            mode="aspectFill"
+            @click="previewImage(cert)"
+          />
+        </view>
+      </view>
+
+      <view class="card">
+        <view class="card-head">
+          <text class="card-title">{{ t.studentReviews }}</text>
+          <text class="card-sub">{{ t.latestFive }}</text>
+        </view>
+
+        <view class="loading-box" v-if="reviewsLoading">{{ t.loadingReviews }}</view>
+
+        <view class="review-list" v-else-if="reviews.length">
+          <view class="review-item" v-for="item in reviews" :key="item.id">
+            <view class="review-user">
+              <image :src="item.student_avatar || '/static/default-avatar.png'" class="user-avatar" mode="aspectFill" />
+              <view class="user-main">
+                <text class="user-name">{{ item.is_anonymous ? t.anonymous : item.student_name || t.student }}</text>
+                <text class="review-time">{{ formatDate(item.created_at) }}</text>
+              </view>
+              <text class="review-stars">{{ renderStars(item.rating) }}</text>
             </view>
-            <view class="review-rating">
-              <text v-for="i in 5" :key="i" :class="['star', { active: i <= review.rating }]">鈽?/text>
+
+            <text class="review-content" v-if="item.content">{{ item.content }}</text>
+
+            <view class="review-tags" v-if="item.tags?.length">
+              <text class="review-tag" v-for="(tag, index) in item.tags" :key="index">{{ tag }}</text>
             </view>
           </view>
-          <view class="review-content" v-if="review.content">
-            {{ review.content }}
-          </view>
-          <view class="review-tags" v-if="review.tags?.length">
-            <text v-for="(tag, i) in review.tags" :key="i" class="review-tag">{{ tag }}</text>
-          </view>
-          <view class="review-time">{{ formatDate(review.created_at) }}</view>
         </view>
-        <view v-if="reviews.length === 0" class="no-reviews">
-          鏆傛棤璇勪环
-        </view>
-      </view>
-    </view>
 
-    <!-- 搴曢儴鎿嶄綔鏍?-->
-    <view class="bottom-bar">
-      <view class="price-info" v-if="coach?.hourly_rate">
-        <text class="price-label">璇炬椂璐?/text>
-        <text class="price-value">楼{{ coach.hourly_rate }}</text>
-        <text class="price-unit">/璇炬椂</text>
+        <view class="review-empty" v-else>
+          <text class="empty-title">{{ t.noReviews }}</text>
+          <text class="empty-sub">{{ t.noReviewsSub }}</text>
+        </view>
       </view>
-      <wd-button type="primary" block @click="goToSelectTime">
-        绔嬪嵆绾﹁
-      </wd-button>
+
+      <view class="bottom-bar" v-if="coach">
+        <view class="price-block">
+          <text class="price-label">{{ t.priceLabel }}</text>
+          <view class="price-line">
+            <text class="price-currency">{{ t.currency }}</text>
+            <text class="price-value" v-if="coach.hourly_rate">{{ coach.hourly_rate }}</text>
+            <text class="price-value" v-else>{{ t.customPrice }}</text>
+            <text class="price-unit">{{ t.perLesson }}</text>
+          </view>
+        </view>
+
+        <button class="book-btn" hover-class="btn-hover" :hover-stay-time="60" @click="goToSelectTime">{{ t.bookNow }}</button>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { coachApi } from '@/api'
+import { onMounted, ref } from 'vue'
+import { coachApi } from '@/api/index'
 
 interface Coach {
   id: number
@@ -139,47 +136,77 @@ interface Coach {
 
 interface Review {
   id: number
-  booking_id: number
-  student_id: number
-  coach_id: number
   rating: number
   content: string | null
   tags: string[] | null
   is_anonymous: boolean
-  coach_reply: string | null
   created_at: string
   student_name: string | null
   student_avatar: string | null
 }
 
+const t = {
+  yearsLabel: '\u6559\u9f84',
+  yearUnit: '\u5e74',
+  coachLoadFailed: '\u6559\u7ec3\u4fe1\u606f\u52a0\u8f7d\u5931\u8d25',
+  backRetry: '\u8bf7\u8fd4\u56de\u91cd\u8bd5',
+  rating: '\u8bc4\u5206',
+  totalLessons: '\u7d2f\u8ba1\u8bfe\u65f6',
+  students: '\u670d\u52a1\u5b66\u5458',
+  reviewCount: '\u8bc4\u4ef7\u6570',
+  certificates: '\u8d44\u8d28\u8bc1\u4e66',
+  studentReviews: '\u5b66\u5458\u8bc4\u4ef7',
+  latestFive: '\u6700\u8fd1 5 \u6761',
+  loadingReviews: '\u8bc4\u4ef7\u52a0\u8f7d\u4e2d...',
+  anonymous: '\u533f\u540d\u5b66\u5458',
+  student: '\u5b66\u5458',
+  noReviews: '\u6682\u65e0\u8bc4\u4ef7',
+  noReviewsSub: '\u5b8c\u6210\u8bfe\u7a0b\u540e\u4f1a\u5c55\u793a\u5b66\u5458\u53cd\u9988',
+  priceLabel: '\u8bfe\u65f6\u4ef7\u683c',
+  currency: '\u00a5',
+  customPrice: '\u9762\u8bae',
+  perLesson: '/ \u8bfe\u65f6',
+  bookNow: '\u7acb\u5373\u9884\u7ea6',
+  loadCoachFail: '\u52a0\u8f7d\u6559\u7ec3\u4fe1\u606f\u5931\u8d25',
+  loadReviewsFail: '\u52a0\u8f7d\u8bc4\u4ef7\u5931\u8d25',
+  coachNotFound: '\u6559\u7ec3\u4fe1\u606f\u4e0d\u5b58\u5728'
+} as const
+
 const coachId = ref(0)
 const coach = ref<Coach | null>(null)
 const reviews = ref<Review[]>([])
-const loading = ref(false)
+const initialLoading = ref(true)
+const reviewsLoading = ref(false)
 
-async function loadCoachDetail() {
-  loading.value = true
-  try {
-    coach.value = await coachApi.get(coachId.value)
-  } catch (error: any) {
-    uni.showToast({ title: error.message || '鍔犺浇澶辫触', icon: 'none' })
-  } finally {
-    loading.value = false
-  }
+function getOptions() {
+  const pages = getCurrentPages()
+  const current = pages[pages.length - 1]
+  return (current as any).$page?.options || {}
 }
 
-async function loadReviews() {
-  try {
-    const data = await coachApi.getReviews(coachId.value, 1, 5)
-    reviews.value = data
-  } catch (error) {
-    console.error('鍔犺浇璇勪环澶辫触', error)
-  }
+function normalizeReviews(source: any): Review[] {
+  const list = Array.isArray(source) ? source : source?.items || []
+  return list.map((item: any) => ({
+    id: Number(item.id || 0),
+    rating: Number(item.rating || 0),
+    content: item.content || null,
+    tags: Array.isArray(item.tags) ? item.tags : null,
+    is_anonymous: !!item.is_anonymous,
+    created_at: item.created_at || '',
+    student_name: item.student_name || null,
+    student_avatar: item.student_avatar || null
+  }))
 }
 
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr)
+function formatDate(value: string) {
+  if (!value) return ''
+  const date = new Date(value)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function renderStars(score: number) {
+  const count = Math.max(0, Math.min(5, Math.round(score)))
+  return `${'\u2605'.repeat(count)}${'\u2606'.repeat(5 - count)}`
 }
 
 function previewImage(url: string) {
@@ -189,277 +216,422 @@ function previewImage(url: string) {
   })
 }
 
-function viewAllReviews() {
-  uni.navigateTo({
-    url: `/pages/booking/reviews-list?coachId=${coachId.value}`
-  })
-}
-
 function goToSelectTime() {
   uni.navigateTo({
     url: `/pages/booking/select-time?coachId=${coachId.value}`
   })
 }
 
-onMounted(() => {
-  const pages = getCurrentPages()
-  const currentPage = pages[pages.length - 1]
-  const options = (currentPage as any).$page?.options || {}
-  coachId.value = parseInt(options.id) || 0
+async function loadCoachDetail() {
+  try {
+    coach.value = await coachApi.get(coachId.value)
+  } catch (error: any) {
+    uni.showToast({ title: error.message || t.loadCoachFail, icon: 'none' })
+  }
+}
 
-  if (coachId.value) {
-    loadCoachDetail()
-    loadReviews()
+async function loadReviews() {
+  reviewsLoading.value = true
+  try {
+    const response = await coachApi.getReviews(coachId.value, 1, 5)
+    reviews.value = normalizeReviews(response)
+  } catch (error: any) {
+    reviews.value = []
+    console.error(t.loadReviewsFail, error)
+  } finally {
+    reviewsLoading.value = false
+  }
+}
+
+onMounted(async () => {
+  const options = getOptions()
+  coachId.value = Number(options.id || options.coachId || 0)
+
+  if (!coachId.value) {
+    uni.showToast({ title: t.coachNotFound, icon: 'none' })
+    initialLoading.value = false
+    return
+  }
+
+  try {
+    await Promise.all([loadCoachDetail(), loadReviews()])
+  } finally {
+    initialLoading.value = false
   }
 })
 </script>
 
 <style lang="scss" scoped>
-.coach-detail-page {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-  padding-bottom: 140rpx;
+:root {
+  --c-primary-start: #ffc04d;
+  --c-primary-end: #ff9024;
+  --c-text-main: #1d2129;
+  --c-text-sub: #86909c;
+  --c-bg-page: #f7f8fa;
 }
 
-.coach-header {
+.coach-detail-page {
+  min-height: 100vh;
+  background: var(--c-bg-page);
+  padding: 24rpx;
+  padding-bottom: 220rpx;
+}
+
+.hero-card,
+.stats-card,
+.card {
+  border-radius: 24rpx;
+  background: #fff;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.04);
+  margin-bottom: 14rpx;
+  animation: fadeInUp 0.35s ease-out;
+}
+
+.hero-card {
   display: flex;
-  padding: 40rpx;
-  background-color: #fff;
+  padding: 20rpx;
+}
 
-  .coach-avatar {
-    width: 160rpx;
-    height: 160rpx;
-    border-radius: 16rpx;
-    overflow: hidden;
-    flex-shrink: 0;
+.hero-empty {
+  flex-direction: column;
+}
 
-    image {
-      width: 100%;
-      height: 100%;
-    }
-  }
+.hero-avatar {
+  width: 110rpx;
+  height: 110rpx;
+  border-radius: 26rpx;
+  background: #f3f5fb;
+  flex-shrink: 0;
+  margin-right: 14rpx;
+}
 
-  .coach-basic {
-    flex: 1;
-    margin-left: 30rpx;
+.hero-main {
+  flex: 1;
+  min-width: 0;
+}
 
-    .coach-name {
-      font-size: 40rpx;
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 12rpx;
-    }
+.hero-head {
+  display: flex;
+  align-items: baseline;
+}
 
-    .coach-experience {
-      font-size: 26rpx;
-      color: #666;
-      margin-bottom: 16rpx;
-    }
+.coach-name {
+  font-size: 33rpx;
+  font-weight: 700;
+  color: var(--c-text-main);
+}
 
-    .coach-specialty {
-      .specialty-tag {
-        display: inline-block;
-        padding: 6rpx 16rpx;
-        margin-right: 12rpx;
-        background-color: #e8f5e9;
-        color: #FF8800;
-        font-size: 24rpx;
-        border-radius: 6rpx;
-      }
-    }
-  }
+.coach-exp {
+  font-size: 22rpx;
+  color: #8f98ac;
+  margin-left: 10rpx;
+}
+
+.coach-tags {
+  margin-top: 10rpx;
+}
+
+.coach-tag {
+  display: inline-block;
+  border-radius: 999rpx;
+  padding: 5rpx 12rpx;
+  margin-right: 8rpx;
+  margin-bottom: 8rpx;
+  font-size: 21rpx;
+  color: #fa8c16;
+  background: #fff7e6;
+  border: 1rpx solid rgba(250, 140, 22, 0.1);
+}
+
+.coach-intro {
+  margin-top: 10rpx;
+  font-size: 23rpx;
+  line-height: 1.6;
+  color: #616b82;
 }
 
 .stats-card {
   display: flex;
-  justify-content: space-around;
+  padding: 18rpx 0;
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+
+.stat-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 2rpx;
+  background: #f2f4f7;
+}
+
+.stat-value {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--c-text-main);
+}
+
+.stat-label {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 21rpx;
+  color: #98a1b5;
+}
+
+.card {
+  padding: 20rpx;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  background-color: #fff;
-  padding: 30rpx 0;
-  margin-top: 2rpx;
-
-  .stat-item {
-    text-align: center;
-
-    .stat-value {
-      font-size: 40rpx;
-      font-weight: 600;
-      color: #333;
-    }
-
-    .stat-label {
-      font-size: 24rpx;
-      color: #999;
-      margin-top: 8rpx;
-    }
-  }
-
-  .stat-divider {
-    width: 1rpx;
-    height: 60rpx;
-    background-color: #eee;
-  }
+  margin-bottom: 12rpx;
 }
 
-.section-card {
-  background-color: #fff;
-  margin-top: 20rpx;
-  padding: 30rpx;
-
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20rpx;
-  }
-
-  .section-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 20rpx;
-  }
-
-  .section-more {
-    font-size: 26rpx;
-    color: #999;
-
-    .arrow {
-      margin-left: 8rpx;
-    }
-  }
-
-  .section-content {
-    font-size: 28rpx;
-    color: #666;
-    line-height: 1.6;
-  }
+.card-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--c-text-main);
 }
 
-.certificates {
+.card-sub {
+  font-size: 22rpx;
+  color: #9aa2b5;
+}
+
+.cert-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
-
-  .cert-image {
-    width: 200rpx;
-    height: 150rpx;
-    border-radius: 8rpx;
-  }
+  margin-right: -8rpx;
 }
 
-.reviews-list {
-  .review-item {
-    padding: 24rpx 0;
-    border-bottom: 1rpx solid #f0f0f0;
+.cert-image {
+  width: calc(33.33% - 8rpx);
+  height: 150rpx;
+  border-radius: 14rpx;
+  background: #f3f5fb;
+  margin-right: 8rpx;
+  margin-bottom: 8rpx;
+}
 
-    &:last-child {
-      border-bottom: none;
-    }
+.loading-box {
+  border-radius: 16rpx;
+  background: #f8f9fd;
+  text-align: center;
+  padding: 36rpx 12rpx;
+  font-size: 23rpx;
+  color: #8f98ac;
+}
 
-    .review-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16rpx;
+.review-item {
+  padding: 22rpx 0;
+  border-bottom: 2rpx solid #f7f8fa;
+}
 
-      .reviewer-info {
-        display: flex;
-        align-items: center;
+.review-item:last-child {
+  border-bottom: none;
+}
 
-        .reviewer-avatar {
-          width: 56rpx;
-          height: 56rpx;
-          border-radius: 50%;
-          margin-right: 16rpx;
-        }
+.review-user {
+  display: flex;
+  align-items: center;
+}
 
-        .reviewer-name {
-          font-size: 28rpx;
-          color: #333;
-        }
-      }
+.user-avatar {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 16rpx;
+  background: #f0f3fa;
+  margin-right: 10rpx;
+}
 
-      .review-rating {
-        .star {
-          font-size: 28rpx;
-          color: #ddd;
+.user-main {
+  flex: 1;
+  min-width: 0;
+}
 
-          &.active {
-            color: #ffb800;
-          }
-        }
-      }
-    }
+.user-name {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #2b3448;
+}
 
-    .review-content {
-      font-size: 28rpx;
-      color: #666;
-      line-height: 1.5;
-      margin-bottom: 12rpx;
-    }
+.review-time {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 21rpx;
+  color: #99a2b5;
+}
 
-    .review-tags {
-      margin-bottom: 12rpx;
+.review-stars {
+  font-size: 22rpx;
+  color: #f4a11f;
+}
 
-      .review-tag {
-        display: inline-block;
-        padding: 4rpx 12rpx;
-        margin-right: 12rpx;
-        background-color: #f5f5f5;
-        color: #666;
-        font-size: 22rpx;
-        border-radius: 4rpx;
-      }
-    }
+.review-content {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #5e6880;
+}
 
-    .review-time {
-      font-size: 24rpx;
-      color: #999;
-    }
-  }
+.review-tags {
+  margin-top: 8rpx;
+}
 
-  .no-reviews {
-    text-align: center;
-    padding: 40rpx;
-    color: #999;
-    font-size: 28rpx;
-  }
+.review-tag {
+  display: inline-block;
+  border-radius: 999rpx;
+  padding: 4rpx 10rpx;
+  margin-right: 8rpx;
+  margin-bottom: 6rpx;
+  font-size: 20rpx;
+  color: #8691a8;
+  background: #edf1f7;
+}
+
+.review-empty {
+  border-radius: 16rpx;
+  background: #f8f9fd;
+  text-align: center;
+  padding: 36rpx 12rpx;
+}
+
+.empty-title {
+  display: block;
+  font-size: 26rpx;
+  color: #4f5870;
+}
+
+.empty-sub {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #a0a8ba;
 }
 
 .bottom-bar {
   position: fixed;
-  bottom: 0;
   left: 0;
   right: 0;
+  bottom: 0;
+  padding: 14rpx 20rpx calc(14rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(14rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 -6rpx 16rpx rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
-  padding: 20rpx 30rpx;
-  background-color: #fff;
-  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.05);
+}
 
-  .price-info {
-    margin-right: 30rpx;
+.price-block {
+  min-width: 176rpx;
+  margin-right: 12rpx;
+}
 
-    .price-label {
-      font-size: 24rpx;
-      color: #999;
-    }
+.price-label {
+  display: block;
+  font-size: 21rpx;
+  color: #9aa2b5;
+}
 
-    .price-value {
-      font-size: 40rpx;
-      font-weight: 600;
-      color: #f44336;
-    }
+.price-line {
+  margin-top: 4rpx;
+  display: flex;
+  align-items: baseline;
+}
 
-    .price-unit {
-      font-size: 24rpx;
-      color: #999;
-    }
+.price-currency {
+  font-size: 24rpx;
+  color: #ff7d00;
+  font-weight: 700;
+  margin-right: 4rpx;
+}
+
+.price-value {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #ff7d00;
+}
+
+.price-unit {
+  margin-left: 6rpx;
+  font-size: 21rpx;
+  color: #9aa2b5;
+}
+
+.book-btn {
+  flex: 1;
+  height: 82rpx;
+  border: none;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, var(--c-primary-start), var(--c-primary-end));
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
+  box-shadow: 0 12rpx 32rpx rgba(255, 144, 36, 0.16);
+}
+
+.book-btn::after {
+  border: none;
+}
+
+.btn-hover {
+  transform: scale(0.98);
+  opacity: 0.95;
+}
+
+.skeleton-header,
+.skeleton-stats,
+.skeleton-review {
+  border-radius: 24rpx;
+  margin-bottom: 14rpx;
+}
+
+.skeleton-header {
+  height: 160rpx;
+}
+
+.skeleton-stats {
+  height: 120rpx;
+}
+
+.skeleton-review {
+  height: 320rpx;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 37%, #f0f2f5 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -100% 0;
   }
+  100% {
+    background-position: 100% 0;
+  }
+}
 
-  :deep(.wd-button) {
-    flex: 1;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

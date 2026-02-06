@@ -1,11 +1,15 @@
 ﻿<template>
-  <view class="page">
-    <!-- 鏃ユ湡閫夋嫨鍣?-->
-    <view class="date-picker">
-      <view class="arrow" @click="prevWeek">&lt;</view>
-      <view class="dates">
+  <view class="schedule-page">
+    <view class="calendar-card">
+      <view class="calendar-head">
+        <view class="switch-btn" @click="prevWeek">&lt;</view>
+        <view class="month-title">{{ currentMonthLabel }}</view>
+        <view class="switch-btn" @click="nextWeek">&gt;</view>
+      </view>
+
+      <view class="week-row">
         <view
-          class="date-item"
+          class="day-item"
           v-for="date in weekDates"
           :key="date.dateStr"
           :class="{ active: selectedDate === date.dateStr, today: date.isToday }"
@@ -16,54 +20,51 @@
           <view class="dot" v-if="hasSchedule(date.dateStr)"></view>
         </view>
       </view>
-      <view class="arrow" @click="nextWeek">&gt;</view>
     </view>
 
-    <!-- 璇剧▼鍒楄〃 -->
     <view class="schedule-list" v-if="daySchedules.length">
       <view class="schedule-card" v-for="schedule in daySchedules" :key="schedule.id">
         <view class="time-line">
-          <view class="time">{{ formatTime(schedule.start_time) }}</view>
-          <view class="line"></view>
-          <view class="time">{{ formatTime(schedule.end_time) }}</view>
+          <text class="time-main">{{ formatTime(schedule.start_time) }}</text>
+          <view class="time-divider"></view>
+          <text class="time-sub">{{ formatTime(schedule.end_time) }}</text>
         </view>
+
         <view class="course-info">
-          <view class="course-header">
-            <text class="course-name">{{ schedule.course?.name || '璇剧▼' }}</text>
-            <view class="status" :class="schedule.status">
-              {{ getStatusText(schedule.status) }}
-            </view>
+          <view class="course-head">
+            <text class="course-name">{{ schedule.course?.name || schedule.course_name || '课程' }}</text>
+            <view class="status" :class="schedule.status">{{ getStatusText(schedule.status) }}</view>
           </view>
-          <view class="course-details">
-            <text class="detail">鏁欑粌: {{ schedule.coach_name || '寰呭畾' }}</text>
-            <text class="detail">鍦哄湴: {{ schedule.venue_name || '寰呭畾' }}</text>
-            <text class="detail">浜烘暟: {{ schedule.enrolled_count }}/{{ schedule.capacity }}</text>
+
+          <view class="course-meta">
+            <text>教练：{{ schedule.coach_name || '待定' }}</text>
+            <text>场馆：{{ schedule.venue_name || '待定' }}</text>
+            <text>人数：{{ schedule.enrolled_count || 0 }}/{{ schedule.capacity || '-' }}</text>
           </view>
+
           <view class="course-actions">
             <button
-              class="btn-enroll"
+              class="action-btn primary"
               v-if="schedule.status === 'scheduled' && !isEnrolled(schedule)"
               @click="enrollSchedule(schedule)"
-            >
-              鎶ュ悕
-            </button>
+            >报名</button>
+
             <button
-              class="btn-checkin"
+              class="action-btn success"
               v-if="isEnrolled(schedule) && canCheckin(schedule)"
               @click="checkinSchedule(schedule)"
-            >
-              绛惧埌
-            </button>
-            <text class="enrolled-text" v-if="isEnrolled(schedule)">宸叉姤鍚?/text>
+            >签到</button>
+
+            <text class="enrolled-text" v-if="isEnrolled(schedule)">已报名</text>
           </view>
         </view>
       </view>
     </view>
 
-    <!-- 绌虹姸鎬?-->
-    <view class="empty" v-else>
-      <text class="icon">馃搮</text>
-      <text class="text">褰撴棩鏆傛棤璇剧▼瀹夋帓</text>
+    <view class="empty-state" v-else>
+      <view class="empty-icon">课</view>
+      <text class="empty-title">当天暂无课程安排</text>
+      <text class="empty-sub">去预约一节新课程吧</text>
     </view>
   </view>
 </template>
@@ -75,58 +76,64 @@ import { scheduleApi } from '@/api'
 
 const userStore = useUserStore()
 
-// 褰撳墠鍛ㄧ殑璧峰鏃ユ湡
 const weekStart = ref(getWeekStart(new Date()))
 const selectedDate = ref(formatDateStr(new Date()))
 const schedules = ref<any[]>([])
 const enrolledIds = ref<number[]>([])
 
-// 璁＄畻褰撳墠鍛ㄧ殑鏃ユ湡
 const weekDates = computed(() => {
   const dates = []
-  const weekdays = ['鏃?, '涓€', '浜?, '涓?, '鍥?, '浜?, '鍏?]
+  const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
   const today = formatDateStr(new Date())
 
   for (let i = 0; i < 7; i++) {
     const date = new Date(weekStart.value)
     date.setDate(date.getDate() + i)
+    const dateStr = formatDateStr(date)
     dates.push({
-      dateStr: formatDateStr(date),
+      dateStr,
       day: date.getDate(),
-      weekday: weekdays[date.getDay()],
-      isToday: formatDateStr(date) === today
+      weekday: weekdays[(date.getDay() + 6) % 7],
+      isToday: dateStr === today
     })
   }
   return dates
 })
 
-// 褰撳ぉ鐨勮绋?const daySchedules = computed(() => {
-  return schedules.value.filter(s => {
-    const scheduleDate = formatDateStr(new Date(s.start_time))
-    return scheduleDate === selectedDate.value
-  })
+const currentMonthLabel = computed(() => {
+  const date = new Date(selectedDate.value)
+  return `${date.getMonth() + 1}月课程表`
+})
+
+const daySchedules = computed(() => {
+  return schedules.value.filter(schedule => getScheduleDate(schedule) === selectedDate.value)
 })
 
 onMounted(async () => {
   await loadSchedules()
 })
 
-// 鑾峰彇鍛ㄤ竴鏃ユ湡
 function getWeekStart(date: Date) {
   const d = new Date(date)
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  d.setDate(diff)
+  const day = d.getDay() || 7
+  d.setDate(d.getDate() - day + 1)
   d.setHours(0, 0, 0, 0)
   return d
 }
 
-// 鏍煎紡鍖栨棩鏈熷瓧绗︿覆
 function formatDateStr(date: Date) {
-  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-// 鍔犺浇璇剧▼
+function getScheduleDate(schedule: any): string {
+  if (schedule?.booking_date) return schedule.booking_date.slice(0, 10)
+  if (schedule?.date) return schedule.date.slice(0, 10)
+  if (typeof schedule?.start_time === 'string' && schedule.start_time.includes('T')) {
+    return schedule.start_time.slice(0, 10)
+  }
+  return ''
+}
+
 async function loadSchedules() {
   try {
     const startDate = new Date(weekStart.value)
@@ -139,303 +146,351 @@ async function loadSchedules() {
     })
     schedules.value = res || []
   } catch (error) {
-    console.error('鍔犺浇璇剧▼澶辫触', error)
+    console.error('加载课程失败', error)
   }
 }
 
-// 閫夋嫨鏃ユ湡
 function selectDate(dateStr: string) {
   selectedDate.value = dateStr
 }
 
-// 涓婁竴鍛?function prevWeek() {
+function prevWeek() {
   const newStart = new Date(weekStart.value)
   newStart.setDate(newStart.getDate() - 7)
   weekStart.value = newStart
   loadSchedules()
 }
 
-// 涓嬩竴鍛?function nextWeek() {
+function nextWeek() {
   const newStart = new Date(weekStart.value)
   newStart.setDate(newStart.getDate() + 7)
   weekStart.value = newStart
   loadSchedules()
 }
 
-// 鏄惁鏈夎绋?function hasSchedule(dateStr: string) {
-  return schedules.value.some(s => {
-    const scheduleDate = formatDateStr(new Date(s.start_time))
-    return scheduleDate === dateStr
-  })
+function hasSchedule(dateStr: string) {
+  return schedules.value.some(schedule => getScheduleDate(schedule) === dateStr)
 }
 
-// 鏍煎紡鍖栨椂闂?function formatTime(dateStr: string) {
-  const date = new Date(dateStr)
-  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+function formatTime(timeStr: string) {
+  if (!timeStr) return '--:--'
+  if (timeStr.includes('T')) {
+    const date = new Date(timeStr)
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  }
+  return timeStr.slice(0, 5)
 }
 
-// 鑾峰彇鐘舵€佹枃鏈?function getStatusText(status: string) {
+function getStatusText(status: string) {
   const map: Record<string, string> = {
-    scheduled: '寰呬笂璇?,
-    ongoing: '杩涜涓?,
-    completed: '宸插畬鎴?,
-    cancelled: '宸插彇娑?
+    scheduled: '待上课',
+    ongoing: '进行中',
+    completed: '已完成',
+    cancelled: '已取消'
   }
   return map[status] || status
 }
 
-// 鏄惁宸叉姤鍚?function isEnrolled(schedule: any) {
+function isEnrolled(schedule: any) {
   return enrolledIds.value.includes(schedule.id)
 }
 
-// 鏄惁鍙鍒?function canCheckin(schedule: any) {
+function canCheckin(schedule: any) {
+  if (!schedule?.start_time) return false
+  const start = schedule.start_time.includes('T')
+    ? new Date(schedule.start_time)
+    : new Date(`${selectedDate.value}T${schedule.start_time}`)
   const now = new Date()
-  const start = new Date(schedule.start_time)
   const diff = start.getTime() - now.getTime()
-  // 寮€璇惧墠30鍒嗛挓鍙鍒?  return diff <= 30 * 60 * 1000 && diff >= -60 * 60 * 1000
+  return diff <= 30 * 60 * 1000 && diff >= -60 * 60 * 1000
 }
 
-// 鎶ュ悕
 async function enrollSchedule(schedule: any) {
   if (!userStore.currentStudent) {
-    uni.showToast({ title: '璇峰厛缁戝畾瀛﹀憳', icon: 'none' })
+    uni.showToast({ title: '请先登录或选择学员', icon: 'none' })
     return
   }
 
   try {
     await scheduleApi.enroll(schedule.id, userStore.currentStudent.id)
     enrolledIds.value.push(schedule.id)
-    schedule.enrolled_count++
-    uni.showToast({ title: '鎶ュ悕鎴愬姛', icon: 'success' })
+    schedule.enrolled_count = (schedule.enrolled_count || 0) + 1
+    uni.showToast({ title: '报名成功', icon: 'success' })
   } catch (error: any) {
-    uni.showToast({ title: error.message || '鎶ュ悕澶辫触', icon: 'none' })
+    uni.showToast({ title: error.message || '报名失败', icon: 'none' })
   }
 }
 
-// 绛惧埌
 async function checkinSchedule(schedule: any) {
   if (!userStore.currentStudent) return
 
   try {
     await scheduleApi.checkin(schedule.id, userStore.currentStudent.id)
-    uni.showToast({ title: '绛惧埌鎴愬姛', icon: 'success' })
+    uni.showToast({ title: '签到成功', icon: 'success' })
   } catch (error: any) {
-    uni.showToast({ title: error.message || '绛惧埌澶辫触', icon: 'none' })
+    uni.showToast({ title: error.message || '签到失败', icon: 'none' })
   }
 }
 </script>
 
 <style scoped>
-.page {
+.schedule-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: #f7f8fb;
+  padding: 20rpx;
   padding-bottom: 120rpx;
 }
 
-.date-picker {
-  display: flex;
-  align-items: center;
+.calendar-card {
   background: #fff;
-  padding: 20rpx;
+  border-radius: 24rpx;
+  padding: 18rpx;
+  box-shadow: 0 10rpx 22rpx rgba(31, 37, 51, 0.05);
 }
 
-.arrow {
-  width: 60rpx;
-  height: 60rpx;
+.calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14rpx;
+}
+
+.switch-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 16rpx;
+  background: #f4f6fb;
+  color: #738099;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
-  color: #999;
+  font-size: 28rpx;
 }
 
-.dates {
-  flex: 1;
-  display: flex;
-  justify-content: space-around;
+.month-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1f2533;
 }
 
-.date-item {
+.week-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8rpx;
+}
+
+.day-item {
+  border-radius: 16rpx;
+  padding: 10rpx 6rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16rpx 20rpx;
-  border-radius: 16rpx;
   position: relative;
 }
 
-.date-item.active {
-  background: #FF8800;
-}
-
-.date-item.active .weekday,
-.date-item.active .day {
-  color: #fff;
-}
-
-.date-item.today .day {
-  color: #FF8800;
-  font-weight: bold;
-}
-
-.date-item.active.today .day {
-  color: #fff;
+.day-item.active {
+  background: linear-gradient(135deg, #ffbd49, #ff9120);
+  box-shadow: 0 8rpx 16rpx rgba(255, 145, 32, 0.28);
 }
 
 .weekday {
-  font-size: 24rpx;
-  color: #999;
+  font-size: 20rpx;
+  color: #97a2b6;
 }
 
 .day {
-  font-size: 32rpx;
-  color: #333;
-  margin-top: 8rpx;
+  margin-top: 6rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #26314a;
+}
+
+.day-item.today .day {
+  color: #ff8d1f;
+}
+
+.day-item.active .weekday,
+.day-item.active .day {
+  color: #fff;
 }
 
 .dot {
-  width: 10rpx;
-  height: 10rpx;
-  background: #FF8800;
-  border-radius: 50%;
   position: absolute;
   bottom: 8rpx;
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  background: #ff8d1f;
 }
 
-.date-item.active .dot {
+.day-item.active .dot {
   background: #fff;
 }
 
 .schedule-list {
-  padding: 20rpx;
+  margin-top: 14rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
 }
 
 .schedule-card {
-  display: flex;
   background: #fff;
-  border-radius: 20rpx;
-  padding: 30rpx;
-  margin-bottom: 20rpx;
+  border-radius: 22rpx;
+  box-shadow: 0 10rpx 24rpx rgba(31, 37, 51, 0.05);
+  padding: 18rpx;
+  display: flex;
+  gap: 14rpx;
 }
 
 .time-line {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100rpx;
-}
-
-.time-line .time {
-  font-size: 26rpx;
-  color: #333;
-  font-weight: bold;
-}
-
-.time-line .line {
-  flex: 1;
-  width: 4rpx;
-  background: #e0e0e0;
-  margin: 10rpx 0;
-}
-
-.course-info {
-  flex: 1;
-  margin-left: 24rpx;
-}
-
-.course-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.course-name {
-  font-size: 32rpx;
-  font-weight: bold;
-  color: #333;
-}
-
-.status {
-  padding: 6rpx 16rpx;
-  border-radius: 16rpx;
-  font-size: 22rpx;
-}
-
-.status.scheduled {
-  background: #E8F5E9;
-  color: #FF8800;
-}
-
-.status.ongoing {
-  background: #FFF3E0;
-  color: #FF9800;
-}
-
-.status.completed {
-  background: #E3F2FD;
-  color: #2196F3;
-}
-
-.status.cancelled {
-  background: #FFEBEE;
-  color: #F44336;
-}
-
-.course-details {
-  margin-top: 16rpx;
-}
-
-.detail {
-  font-size: 24rpx;
-  color: #999;
-  margin-right: 20rpx;
-}
-
-.course-actions {
-  margin-top: 20rpx;
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-}
-
-.btn-enroll,
-.btn-checkin {
-  padding: 12rpx 40rpx;
-  border-radius: 30rpx;
-  font-size: 26rpx;
-  border: none;
-}
-
-.btn-enroll {
-  background: #FF8800;
-  color: #fff;
-}
-
-.btn-checkin {
-  background: #FF9800;
-  color: #fff;
-}
-
-.enrolled-text {
-  font-size: 26rpx;
-  color: #FF8800;
-}
-
-.empty {
+  width: 96rpx;
+  border-radius: 14rpx;
+  background: #fff8ee;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 120rpx 0;
+  gap: 6rpx;
+  padding: 10rpx 6rpx;
 }
 
-.empty .icon {
-  font-size: 100rpx;
-}
-
-.empty .text {
+.time-main {
   font-size: 28rpx;
-  color: #999;
-  margin-top: 20rpx;
+  font-weight: 700;
+  color: #1f2533;
+}
+
+.time-divider {
+  width: 2rpx;
+  height: 20rpx;
+  background: #e8dfd0;
+}
+
+.time-sub {
+  font-size: 22rpx;
+  color: #9099ab;
+}
+
+.course-info {
+  flex: 1;
+}
+
+.course-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.course-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1f2533;
+}
+
+.status {
+  font-size: 21rpx;
+  border-radius: 999rpx;
+  padding: 6rpx 14rpx;
+}
+
+.status.scheduled {
+  color: #df7f17;
+  background: #fff1df;
+}
+
+.status.ongoing {
+  color: #278ad6;
+  background: #e8f4ff;
+}
+
+.status.completed {
+  color: #239458;
+  background: #e6f5eb;
+}
+
+.status.cancelled {
+  color: #cc5c4e;
+  background: #ffebe8;
+}
+
+.course-meta {
+  margin-top: 10rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  font-size: 22rpx;
+  color: #8c95aa;
+}
+
+.course-actions {
+  margin-top: 12rpx;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.action-btn {
+  border: none;
+  border-radius: 999rpx;
+  padding: 10rpx 22rpx;
+  line-height: 1;
+  font-size: 22rpx;
+  color: #fff;
+}
+
+.action-btn::after {
+  border: none;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #ffbe4d, #ff9422);
+}
+
+.action-btn.success {
+  background: linear-gradient(135deg, #30b06b, #219357);
+}
+
+.enrolled-text {
+  font-size: 22rpx;
+  color: #8e97aa;
+}
+
+.empty-state {
+  margin-top: 14rpx;
+  border-radius: 22rpx;
+  background: #fff;
+  box-shadow: 0 10rpx 24rpx rgba(31, 37, 51, 0.05);
+  padding: 56rpx 24rpx;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 88rpx;
+  height: 88rpx;
+  margin: 0 auto;
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, #fff1dd, #ffdcb9);
+  color: #ff8d1f;
+  font-size: 36rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-title {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 28rpx;
+  color: #4f5870;
+}
+
+.empty-sub {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  color: #99a1b2;
 }
 </style>

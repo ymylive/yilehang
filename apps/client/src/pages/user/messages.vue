@@ -1,6 +1,5 @@
-﻿<template>
+<template>
   <view class="messages-page">
-    <!-- 娑堟伅鍒楄〃 -->
     <view class="message-list">
       <view
         v-for="msg in messages"
@@ -21,10 +20,9 @@
         <view class="unread-dot" v-if="!msg.is_read"></view>
       </view>
 
-      <!-- 绌虹姸鎬?-->
       <view v-if="messages.length === 0 && !loading" class="empty-state">
         <image src="/static/empty.png" mode="aspectFit" class="empty-image" />
-        <text class="empty-text">鏆傛棤娑堟伅</text>
+        <text class="empty-text">暂无消息</text>
       </view>
     </view>
   </view>
@@ -45,29 +43,28 @@ interface Message {
 const messages = ref<Message[]>([])
 const loading = ref(false)
 
-// 妯℃嫙娑堟伅鏁版嵁
 const mockMessages: Message[] = [
   {
     id: 1,
     type: 'booking',
-    title: '棰勭害鎴愬姛',
-    content: '鎮ㄥ凡鎴愬姛棰勭害鏄庡ぉ10:00-11:00鐨勭鏁欒锛屾暀缁冿細寮犳暀缁?,
+    title: '预约成功',
+    content: '您已成功预约明天10:00-11:00的私教课，教练：张教练。',
     is_read: false,
     created_at: new Date().toISOString()
   },
   {
     id: 2,
     type: 'reminder',
-    title: '涓婅鎻愰啋',
-    content: '鎮ㄩ绾︾殑璇剧▼灏嗗湪1灏忔椂鍚庡紑濮嬶紝璇峰噯鏃跺埌杈?,
+    title: '课程提醒',
+    content: '请准时参加今日16:00的课程，记得携带运动装备。',
     is_read: true,
     created_at: new Date(Date.now() - 3600000).toISOString()
   },
   {
     id: 3,
     type: 'feedback',
-    title: '鏁欑粌鍙嶉',
-    content: '寮犳暀缁冨鎮ㄧ殑璇剧▼杩涜浜嗗弽棣堬紝鐐瑰嚮鏌ョ湅璇︽儏',
+    title: '教练反馈',
+    content: '今天动作完成度很高，建议加强核心力量训练。',
     is_read: true,
     created_at: new Date(Date.now() - 86400000).toISOString()
   }
@@ -75,12 +72,12 @@ const mockMessages: Message[] = [
 
 function getTypeIcon(type: string): string {
   const map: Record<string, string> = {
-    booking: '馃搮',
-    reminder: '鈴?,
-    feedback: '馃摑',
-    system: '馃摙'
+    booking: '📅',
+    reminder: '⏰',
+    feedback: '📝',
+    system: '⚙'
   }
-  return map[type] || '馃搶'
+  return map[type] || '•'
 }
 
 function formatTime(dateStr: string): string {
@@ -88,10 +85,10 @@ function formatTime(dateStr: string): string {
   const now = new Date()
   const diff = now.getTime() - date.getTime()
 
-  if (diff < 60000) return '鍒氬垰'
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}鍒嗛挓鍓峘
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}灏忔椂鍓峘
-  if (diff < 604800000) return `${Math.floor(diff / 86400000)}澶╁墠`
+  if (diff < 60000) return '刚刚'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
+  if (diff < 604800000) return `${Math.floor(diff / 86400000)}天前`
 
   return `${date.getMonth() + 1}-${date.getDate()}`
 }
@@ -109,7 +106,6 @@ function viewMessage(msg: Message) {
 }
 
 onMounted(() => {
-  // 鍔犺浇娑堟伅鍒楄〃
   messages.value = mockMessages
 })
 </script>
@@ -160,67 +156,58 @@ onMounted(() => {
       background-color: #f3e5f5;
     }
   }
+}
 
-  .message-content {
-    flex: 1;
-    overflow: hidden;
+.message-content {
+  flex: 1;
+}
 
-    .message-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12rpx;
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8rpx;
+}
 
-      .message-title {
-        font-size: 30rpx;
-        font-weight: 600;
-        color: #333;
-      }
+.message-title {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 600;
+}
 
-      .message-time {
-        font-size: 24rpx;
-        color: #999;
-      }
-    }
+.message-time {
+  font-size: 22rpx;
+  color: #999;
+}
 
-    .message-body {
-      font-size: 26rpx;
-      color: #666;
-      line-height: 1.5;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-    }
-  }
+.message-body {
+  font-size: 24rpx;
+  color: #666;
+  line-height: 1.6;
+}
 
-  .unread-dot {
-    position: absolute;
-    top: 24rpx;
-    right: 24rpx;
-    width: 16rpx;
-    height: 16rpx;
-    background-color: #f44336;
-    border-radius: 50%;
-  }
+.unread-dot {
+  width: 12rpx;
+  height: 12rpx;
+  background-color: #FF3B30;
+  border-radius: 50%;
+  position: absolute;
+  top: 16rpx;
+  right: 16rpx;
 }
 
 .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  text-align: center;
   padding: 100rpx 0;
 
   .empty-image {
-    width: 160rpx;
-    height: 160rpx;
-    margin-bottom: 16rpx;
+    width: 200rpx;
+    height: 200rpx;
+    margin-bottom: 20rpx;
   }
 
   .empty-text {
-    font-size: 28rpx;
     color: #999;
+    font-size: 26rpx;
   }
 }
 </style>

@@ -1,20 +1,20 @@
-﻿<template>
+<template>
   <view class="review-page">
-    <!-- 璇剧▼淇℃伅 -->
+    <!-- 课程信息 -->
     <view class="course-info">
       <view class="info-row">
-        <text class="label">鏁欑粌</text>
+        <text class="label">教练</text>
         <text class="value">{{ coachName }}</text>
       </view>
       <view class="info-row">
-        <text class="label">璇剧▼鏃堕棿</text>
+        <text class="label">课程时间</text>
         <text class="value">{{ courseTime }}</text>
       </view>
     </view>
 
-    <!-- 璇勫垎 -->
+    <!-- 评分 -->
     <view class="rating-section">
-      <view class="section-title">璇剧▼璇勫垎</view>
+      <view class="section-title">课程评分</view>
       <view class="rating-stars">
         <view
           v-for="i in 5"
@@ -22,15 +22,15 @@
           class="star-wrapper"
           @click="rating = i"
         >
-          <text :class="['star', { active: i <= rating }]">鈽?/text>
+          <text :class="['star', { active: i <= rating }]">★</text>
         </view>
       </view>
       <view class="rating-text">{{ getRatingText(rating) }}</view>
     </view>
 
-    <!-- 鏍囩閫夋嫨 -->
+    <!-- 标签选择 -->
     <view class="tags-section">
-      <view class="section-title">閫夋嫨鏍囩</view>
+      <view class="section-title">标签选择</view>
       <view class="tags-list">
         <view
           v-for="tag in availableTags"
@@ -43,25 +43,25 @@
       </view>
     </view>
 
-    <!-- 璇勪环鍐呭 -->
+    <!-- 评价内容 -->
     <view class="content-section">
-      <view class="section-title">璇勪环鍐呭锛堥€夊～锛?/view>
+      <view class="section-title">评价内容</view>
       <textarea
         v-model="content"
-        placeholder="鍒嗕韩鎮ㄧ殑涓婅浣撻獙锛屽府鍔╁叾浠栧鍛樹簡瑙ｆ暀缁?.."
+        placeholder="说说孩子的表现、教练的指导或课程体验..."
         class="content-input"
         :maxlength="500"
       />
       <view class="word-count">{{ content.length }}/500</view>
     </view>
 
-    <!-- 鍖垮悕閫夐」 -->
+    <!-- 匿名评价 -->
     <view class="anonymous-section">
-      <wd-checkbox v-model="isAnonymous">鍖垮悕璇勪环</wd-checkbox>
-      <text class="anonymous-tip">鍖垮悕鍚庢暀缁冨皢鐪嬩笉鍒版偍鐨勫鍚?/text>
+      <wd-checkbox v-model="isAnonymous">匿名评价</wd-checkbox>
+      <text class="anonymous-tip">匿名后仅展示评价内容，不显示姓名</text>
     </view>
 
-    <!-- 鎻愪氦鎸夐挳 -->
+    <!-- 提交 -->
     <view class="submit-section">
       <wd-button
         type="primary"
@@ -70,7 +70,7 @@
         :loading="submitting"
         @click="submitReview"
       >
-        鎻愪氦璇勪环
+        提交评价
       </wd-button>
     </view>
   </view>
@@ -91,18 +91,17 @@ const isAnonymous = ref(false)
 const submitting = ref(false)
 
 const availableTags = [
-  '涓撲笟',
-  '鑰愬績',
-  '鍑嗘椂',
-  '鏈夎叮',
-  '璁ょ湡璐熻矗',
-  '璁茶В娓呮櫚',
-  '鍥犳潗鏂芥暀',
-  '姘涘洿濂?
+  '讲解清晰',
+  '耐心细致',
+  '专业度高',
+  '氛围好',
+  '动作纠正到位',
+  '互动有趣',
+  '孩子喜欢'
 ]
 
 function getRatingText(r: number): string {
-  const texts = ['', '寰堝樊', '杈冨樊', '涓€鑸?, '婊℃剰', '闈炲父婊℃剰']
+  const texts = ['', '非常不满意', '不满意', '一般', '满意', '非常满意']
   return texts[r] || ''
 }
 
@@ -122,16 +121,16 @@ async function loadBookingInfo() {
     const booking = await bookingApi.get(bookingId.value)
     coachName.value = booking.coach_name || ''
     const date = new Date(booking.booking_date)
-    const weekdays = ['鏃?, '涓€', '浜?, '涓?, '鍥?, '浜?, '鍏?]
-    courseTime.value = `${date.getMonth() + 1}鏈?{date.getDate()}鏃?鍛?{weekdays[date.getDay()]} ${booking.start_time.substring(0, 5)}-${booking.end_time.substring(0, 5)}`
+    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+    courseTime.value = `${date.getMonth() + 1}月${date.getDate()}日 ${weekdays[date.getDay()]} ${booking.start_time.substring(0, 5)}-${booking.end_time.substring(0, 5)}`
   } catch (error) {
-    console.error('鍔犺浇棰勭害淇℃伅澶辫触', error)
+    console.error('加载课程信息失败', error)
   }
 }
 
 async function submitReview() {
   if (rating.value === 0) {
-    uni.showToast({ title: '璇烽€夋嫨璇勫垎', icon: 'none' })
+    uni.showToast({ title: '请先打分', icon: 'none' })
     return
   }
 
@@ -145,13 +144,13 @@ async function submitReview() {
       is_anonymous: isAnonymous.value
     })
 
-    uni.showToast({ title: '璇勪环鎴愬姛', icon: 'success' })
+    uni.showToast({ title: '评价成功', icon: 'success' })
 
     setTimeout(() => {
       uni.navigateBack()
     }, 1500)
   } catch (error: any) {
-    uni.showToast({ title: error.message || '璇勪环澶辫触', icon: 'none' })
+    uni.showToast({ title: error.message || '评价失败', icon: 'none' })
   } finally {
     submitting.value = false
   }
@@ -207,99 +206,81 @@ onMounted(() => {
 }
 
 .section-title {
-  font-size: 32rpx;
-  font-weight: 600;
+  font-size: 30rpx;
   color: #333;
-  margin-bottom: 24rpx;
+  font-weight: 600;
+  margin-bottom: 16rpx;
 }
 
 .rating-stars {
   display: flex;
-  justify-content: center;
-  gap: 20rpx;
+  gap: 10rpx;
+}
 
-  .star-wrapper {
-    padding: 10rpx;
-  }
+.star {
+  font-size: 48rpx;
+  color: #ddd;
 
-  .star {
-    font-size: 60rpx;
-    color: #ddd;
-    transition: all 0.2s;
-
-    &.active {
-      color: #ffb800;
-      transform: scale(1.1);
-    }
+  &.active {
+    color: #FFB347;
   }
 }
 
 .rating-text {
-  text-align: center;
-  font-size: 28rpx;
-  color: #ff9800;
-  margin-top: 16rpx;
-  height: 40rpx;
+  font-size: 26rpx;
+  color: #999;
+  margin-top: 12rpx;
 }
 
 .tags-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
+  gap: 12rpx;
+}
 
-  .tag-item {
-    padding: 16rpx 28rpx;
-    background-color: #f5f5f5;
-    border-radius: 30rpx;
-    font-size: 26rpx;
-    color: #666;
-    border: 2rpx solid transparent;
+.tag-item {
+  padding: 10rpx 20rpx;
+  border-radius: 30rpx;
+  background: #f5f5f5;
+  font-size: 24rpx;
+  color: #666;
 
-    &.active {
-      background-color: #e8f5e9;
-      color: #FF8800;
-      border-color: #FF8800;
-    }
+  &.active {
+    background: #FF8800;
+    color: #fff;
   }
 }
 
 .content-input {
   width: 100%;
   height: 200rpx;
-  padding: 20rpx;
-  background-color: #f5f5f5;
+  border: 1rpx solid #eee;
   border-radius: 12rpx;
-  font-size: 28rpx;
+  padding: 20rpx;
+  font-size: 26rpx;
+  color: #333;
   box-sizing: border-box;
 }
 
 .word-count {
   text-align: right;
-  font-size: 24rpx;
   color: #999;
-  margin-top: 12rpx;
+  font-size: 22rpx;
+  margin-top: 8rpx;
 }
 
 .anonymous-section {
   display: flex;
   align-items: center;
-  background-color: #fff;
-  padding: 30rpx;
-
-  .anonymous-tip {
-    font-size: 24rpx;
-    color: #999;
-    margin-left: 16rpx;
-  }
+  gap: 12rpx;
+  padding: 20rpx 30rpx;
+  background: #fff;
+  margin-bottom: 20rpx;
+  font-size: 24rpx;
+  color: #666;
 }
 
 .submit-section {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 20rpx 30rpx;
-  background-color: #fff;
-  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.05);
+  padding: 0 30rpx;
 }
 </style>

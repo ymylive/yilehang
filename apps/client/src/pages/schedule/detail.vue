@@ -1,93 +1,73 @@
 ﻿<template>
   <view class="detail-page">
-    <!-- 璇剧▼淇℃伅鍗＄墖 -->
-    <view class="course-card">
-      <view class="course-header">
-        <view class="course-name">{{ booking?.course_name || '绉佹暀璇? }}</view>
-        <view :class="['course-status', booking?.status]">
-          {{ getStatusText(booking?.status) }}
-        </view>
+    <view class="booking-card" v-if="booking">
+      <view class="booking-head">
+        <text class="course-name">{{ booking.course_name || '课程详情' }}</text>
+        <text :class="['status-tag', booking.status]">{{ getStatusText(booking.status) }}</text>
       </view>
 
       <view class="info-list">
         <view class="info-item">
-          <text class="info-label">鏁欑粌</text>
-          <text class="info-value">{{ booking?.coach_name }}</text>
+          <text class="label">教练</text>
+          <text class="value">{{ booking.coach_name || '待定' }}</text>
         </view>
         <view class="info-item">
-          <text class="info-label">鏃ユ湡</text>
-          <text class="info-value">{{ formatDate(booking?.booking_date) }}</text>
+          <text class="label">日期</text>
+          <text class="value">{{ formatDate(booking.booking_date) }}</text>
         </view>
         <view class="info-item">
-          <text class="info-label">鏃堕棿</text>
-          <text class="info-value">{{ formatTime(booking?.start_time) }} - {{ formatTime(booking?.end_time) }}</text>
+          <text class="label">时间</text>
+          <text class="value">{{ formatClock(booking.start_time) }} - {{ formatClock(booking.end_time) }}</text>
         </view>
         <view class="info-item">
-          <text class="info-label">绫诲瀷</text>
-          <text class="info-value">{{ booking?.course_type === 'private' ? '绉佹暀璇? : '灏忕彮璇? }}</text>
+          <text class="label">课程类型</text>
+          <text class="value">{{ booking.course_type === 'private' ? '私教课' : '小班课' }}</text>
         </view>
-        <view class="info-item" v-if="booking?.remark">
-          <text class="info-label">澶囨敞</text>
-          <text class="info-value">{{ booking.remark }}</text>
+        <view class="info-item" v-if="booking.remark">
+          <text class="label">备注</text>
+          <text class="value">{{ booking.remark }}</text>
         </view>
       </view>
     </view>
 
-    <!-- 鏁欑粌鍙嶉 -->
     <view class="feedback-card" v-if="feedback">
-      <view class="card-title">鏁欑粌鍙嶉</view>
+      <view class="card-title">教练反馈</view>
       <view class="feedback-content">
         <view class="rating-row" v-if="feedback.performance_rating">
-          <text class="rating-label">琛ㄧ幇璇勫垎</text>
-          <view class="rating-stars">
-            <text v-for="i in 5" :key="i" :class="['star', { active: i <= feedback.performance_rating }]">鈽?/text>
-          </view>
+          <text class="rating-label">表现评分</text>
+          <text class="rating-stars">{{ renderStars(feedback.performance_rating) }}</text>
         </view>
-        <view class="feedback-text">{{ feedback.content }}</view>
+        <text class="content">{{ feedback.content }}</text>
         <view class="suggestions" v-if="feedback.suggestions">
-          <text class="suggestions-label">鏀硅繘寤鸿锛?/text>
+          <text class="suggestions-label">改进建议</text>
           <text class="suggestions-text">{{ feedback.suggestions }}</text>
         </view>
       </view>
     </view>
 
-    <!-- 鎿嶄綔鎸夐挳 -->
-    <view class="action-buttons">
-      <!-- 寰呬笂璇剧姸鎬?-->
-      <template v-if="booking?.status === 'confirmed' || booking?.status === 'pending'">
-        <wd-button type="warning" block @click="handleReschedule" v-if="canReschedule">
-          鏀规湡
-        </wd-button>
-        <wd-button type="error" block plain @click="handleCancel" v-if="canCancel">
-          鍙栨秷棰勭害
-        </wd-button>
+    <view class="action-card" v-if="booking">
+      <template v-if="booking.status === 'confirmed' || booking.status === 'pending'">
+        <button class="action-btn ghost" v-if="canReschedule" @click="handleReschedule">改期</button>
+        <button class="action-btn danger" v-if="canCancel" @click="openCancelPanel">取消预约</button>
       </template>
 
-      <!-- 宸插畬鎴愮姸鎬?-->
-      <template v-if="booking?.status === 'completed'">
-        <wd-button type="primary" block @click="goToReview" v-if="!hasReviewed">
-          璇勪环璇剧▼
-        </wd-button>
-        <view v-else class="reviewed-tip">鎮ㄥ凡璇勪环姝よ绋?/view>
+      <template v-if="booking.status === 'completed'">
+        <button class="action-btn primary" v-if="!hasReviewed" @click="goToReview">评价课程</button>
+        <view v-else class="reviewed-tip">已评价</view>
       </template>
     </view>
 
-    <!-- 鍙栨秷纭寮圭獥 -->
-    <wd-popup v-model="showCancelPopup" position="bottom" round>
-      <view class="cancel-popup">
-        <view class="popup-title">鍙栨秷棰勭害</view>
-        <view class="popup-tip">鍙栨秷鍚庤鏃跺皢鑷姩閫€杩?/view>
-        <textarea
-          v-model="cancelReason"
-          placeholder="璇疯緭鍏ュ彇娑堝師鍥狅紙閫夊～锛?
-          class="cancel-input"
-        />
-        <view class="popup-buttons">
-          <wd-button plain @click="showCancelPopup = false">鍐嶆兂鎯?/wd-button>
-          <wd-button type="error" @click="confirmCancel" :loading="cancelling">纭鍙栨秷</wd-button>
+    <view class="cancel-mask" v-if="showCancelPanel" @click="closeCancelPanel">
+      <view class="cancel-panel" @click.stop>
+        <text class="panel-title">取消预约</text>
+        <text class="panel-tip">可填写取消原因（选填）</text>
+        <textarea v-model="cancelReason" class="cancel-input" maxlength="200" placeholder="请输入取消原因" />
+        <view class="panel-actions">
+          <button class="panel-btn ghost" @click="closeCancelPanel">再想想</button>
+          <button class="panel-btn danger" :disabled="cancelling" @click="confirmCancel">{{ cancelling ? '处理中...' : '确认取消' }}</button>
         </view>
       </view>
-    </wd-popup>
+    </view>
   </view>
 </template>
 
@@ -126,63 +106,75 @@ const bookingId = ref(0)
 const booking = ref<Booking | null>(null)
 const feedback = ref<Feedback | null>(null)
 const hasReviewed = ref(false)
-const loading = ref(false)
 
-const showCancelPopup = ref(false)
+const showCancelPanel = ref(false)
 const cancelReason = ref('')
 const cancelling = ref(false)
 
-const weekdays = ['鏃?, '涓€', '浜?, '涓?, '鍥?, '浜?, '鍏?]
+const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
-// 鏄惁鍙互鍙栨秷锛堝紑璇惧墠2灏忔椂锛?const canCancel = computed(() => {
+const canCancel = computed(() => {
   if (!booking.value) return false
-  const bookingDateTime = new Date(`${booking.value.booking_date}T${booking.value.start_time}`)
+  const dateTime = new Date(`${booking.value.booking_date}T${booking.value.start_time}`)
   const now = new Date()
-  const diff = bookingDateTime.getTime() - now.getTime()
+  const diff = dateTime.getTime() - now.getTime()
   return diff > 2 * 60 * 60 * 1000
 })
 
-// 鏄惁鍙互鏀规湡
-const canReschedule = computed(() => {
-  return canCancel.value
-})
+const canReschedule = computed(() => canCancel.value)
 
-function getStatusText(status: string | undefined): string {
-  if (!status) return ''
+function getStatusText(status?: string) {
   const map: Record<string, string> = {
-    pending: '寰呯‘璁?,
-    confirmed: '宸茬‘璁?,
-    cancelled: '宸插彇娑?,
-    completed: '宸插畬鎴?,
-    no_show: '鏈埌'
+    pending: '待确认',
+    confirmed: '已确认',
+    cancelled: '已取消',
+    completed: '已完成',
+    no_show: '未到课'
   }
-  return map[status] || status
+  return map[status || ''] || status || ''
 }
 
-function formatDate(dateStr: string | undefined): string {
+function formatDate(dateStr?: string) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
-  return `${date.getMonth() + 1}鏈?{date.getDate()}鏃?鍛?{weekdays[date.getDay()]}`
+  return `${date.getMonth() + 1}月${date.getDate()}日 ${weekdays[date.getDay()]}`
 }
 
-function formatTime(timeStr: string | undefined): string {
-  if (!timeStr) return ''
-  return timeStr.substring(0, 5)
+function formatClock(timeStr?: string) {
+  if (!timeStr) return '--:--'
+  return timeStr.slice(0, 5)
+}
+
+function renderStars(score: number) {
+  const num = Math.max(0, Math.min(5, Math.round(score)))
+  return `${'★'.repeat(num)}${'☆'.repeat(5 - num)}`
 }
 
 async function loadBookingDetail() {
-  loading.value = true
   try {
     booking.value = await bookingApi.get(bookingId.value)
+
+    if (booking.value?.status === 'completed') {
+      const list = await reviewApi.getMyFeedbacks(1, 50)
+      const matched = (list || []).find((item: any) => item.booking_id === bookingId.value)
+      feedback.value = matched || null
+      hasReviewed.value = !!matched
+    } else {
+      feedback.value = null
+      hasReviewed.value = false
+    }
   } catch (error: any) {
-    uni.showToast({ title: error.message || '鍔犺浇澶辫触', icon: 'none' })
-  } finally {
-    loading.value = false
+    uni.showToast({ title: error.message || '加载预约失败', icon: 'none' })
   }
 }
 
-function handleCancel() {
-  showCancelPopup.value = true
+function openCancelPanel() {
+  showCancelPanel.value = true
+}
+
+function closeCancelPanel() {
+  showCancelPanel.value = false
+  cancelReason.value = ''
 }
 
 async function confirmCancel() {
@@ -191,13 +183,11 @@ async function confirmCancel() {
 
   try {
     await bookingApi.cancel(bookingId.value, cancelReason.value || undefined)
-    uni.showToast({ title: '鍙栨秷鎴愬姛', icon: 'success' })
-    showCancelPopup.value = false
-
-    // 鍒锋柊鏁版嵁
+    uni.showToast({ title: '取消成功', icon: 'success' })
+    closeCancelPanel()
     await loadBookingDetail()
   } catch (error: any) {
-    uni.showToast({ title: error.message || '鍙栨秷澶辫触', icon: 'none' })
+    uni.showToast({ title: error.message || '取消失败', icon: 'none' })
   } finally {
     cancelling.value = false
   }
@@ -211,9 +201,7 @@ function handleReschedule() {
 }
 
 function goToReview() {
-  uni.navigateTo({
-    url: `/pages/review/create?bookingId=${bookingId.value}`
-  })
+  uni.navigateTo({ url: `/pages/review/create?bookingId=${bookingId.value}` })
 }
 
 onMounted(() => {
@@ -221,195 +209,244 @@ onMounted(() => {
   const currentPage = pages[pages.length - 1]
   const options = (currentPage as any).$page?.options || {}
   bookingId.value = parseInt(options.id) || 0
-
-  if (bookingId.value) {
-    loadBookingDetail()
-  }
+  if (bookingId.value) loadBookingDetail()
 })
 </script>
 
 <style lang="scss" scoped>
 .detail-page {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background: #f7f8fb;
   padding: 20rpx;
-  padding-bottom: 40rpx;
+  padding-bottom: 120rpx;
 }
 
-.course-card,
-.feedback-card {
-  background-color: #fff;
-  border-radius: 16rpx;
-  padding: 30rpx;
-  margin-bottom: 20rpx;
+.booking-card,
+.feedback-card,
+.action-card {
+  border-radius: 22rpx;
+  background: #fff;
+  box-shadow: 0 10rpx 24rpx rgba(31, 37, 51, 0.05);
+  padding: 20rpx;
+  margin-bottom: 14rpx;
 }
 
-.course-header {
+.booking-head {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 24rpx;
-  padding-bottom: 24rpx;
-  border-bottom: 1rpx solid #f0f0f0;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
 
-  .course-name {
-    font-size: 36rpx;
-    font-weight: 600;
-    color: #333;
-  }
+.course-name {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1f2533;
+}
 
-  .course-status {
-    padding: 8rpx 20rpx;
-    border-radius: 20rpx;
-    font-size: 24rpx;
+.status-tag {
+  border-radius: 999rpx;
+  padding: 6rpx 14rpx;
+  font-size: 21rpx;
+}
 
-    &.pending,
-    &.confirmed {
-      background-color: #e8f5e9;
-      color: #FF8800;
-    }
+.status-tag.pending,
+.status-tag.confirmed {
+  background: #fff1df;
+  color: #df7f17;
+}
 
-    &.completed {
-      background-color: #e3f2fd;
-      color: #2196f3;
-    }
+.status-tag.completed {
+  background: #e6f5eb;
+  color: #239458;
+}
 
-    &.cancelled {
-      background-color: #ffebee;
-      color: #f44336;
-    }
-
-    &.no_show {
-      background-color: #fff3e0;
-      color: #ff9800;
-    }
-  }
+.status-tag.cancelled,
+.status-tag.no_show {
+  background: #ffebe8;
+  color: #cc5c4e;
 }
 
 .info-list {
-  .info-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 16rpx 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
 
-    .info-label {
-      font-size: 28rpx;
-      color: #999;
-    }
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 14rpx;
+  background: #f9fbff;
+  padding: 14rpx;
+}
 
-    .info-value {
-      font-size: 28rpx;
-      color: #333;
-    }
-  }
+.label {
+  font-size: 24rpx;
+  color: #8992a6;
+}
+
+.value {
+  font-size: 25rpx;
+  color: #2b3448;
+  font-weight: 600;
 }
 
 .card-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 20rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1f2533;
+  margin-bottom: 14rpx;
 }
 
-.feedback-content {
-  .rating-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 16rpx;
-
-    .rating-label {
-      font-size: 28rpx;
-      color: #666;
-      margin-right: 16rpx;
-    }
-
-    .rating-stars {
-      .star {
-        font-size: 32rpx;
-        color: #ddd;
-
-        &.active {
-          color: #ffb800;
-        }
-      }
-    }
-  }
-
-  .feedback-text {
-    font-size: 28rpx;
-    color: #333;
-    line-height: 1.6;
-    margin-bottom: 16rpx;
-  }
-
-  .suggestions {
-    padding: 16rpx;
-    background-color: #f5f5f5;
-    border-radius: 8rpx;
-
-    .suggestions-label {
-      font-size: 26rpx;
-      color: #666;
-    }
-
-    .suggestions-text {
-      font-size: 26rpx;
-      color: #333;
-    }
-  }
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 10rpx;
 }
 
-.action-buttons {
-  margin-top: 40rpx;
-
-  :deep(.wd-button) {
-    margin-bottom: 20rpx;
-  }
-
-  .reviewed-tip {
-    text-align: center;
-    font-size: 28rpx;
-    color: #999;
-    padding: 20rpx;
-  }
+.rating-label {
+  font-size: 24rpx;
+  color: #8992a6;
 }
 
-.cancel-popup {
-  padding: 40rpx;
+.rating-stars {
+  font-size: 24rpx;
+  letter-spacing: 2rpx;
+  color: #f3a11d;
+}
 
-  .popup-title {
-    font-size: 36rpx;
-    font-weight: 600;
-    color: #333;
-    text-align: center;
-    margin-bottom: 16rpx;
-  }
+.content {
+  font-size: 25rpx;
+  line-height: 1.6;
+  color: #4f5870;
+}
 
-  .popup-tip {
-    font-size: 26rpx;
-    color: #999;
-    text-align: center;
-    margin-bottom: 30rpx;
-  }
+.suggestions {
+  margin-top: 10rpx;
+  border-radius: 14rpx;
+  background: #fff8ee;
+  padding: 12rpx;
+}
 
-  .cancel-input {
-    width: 100%;
-    height: 160rpx;
-    padding: 20rpx;
-    background-color: #f5f5f5;
-    border-radius: 12rpx;
-    font-size: 28rpx;
-    box-sizing: border-box;
-    margin-bottom: 30rpx;
-  }
+.suggestions-label {
+  display: block;
+  font-size: 22rpx;
+  color: #de7f16;
+}
 
-  .popup-buttons {
-    display: flex;
-    gap: 20rpx;
+.suggestions-text {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #4f5870;
+}
 
-    :deep(.wd-button) {
-      flex: 1;
-    }
-  }
+.action-btn {
+  width: 100%;
+  border: none;
+  border-radius: 16rpx;
+  height: 84rpx;
+  line-height: 84rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  margin-bottom: 10rpx;
+}
+
+.action-btn::after {
+  border: none;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #ffbd49, #ff9120);
+  color: #fff;
+}
+
+.action-btn.ghost {
+  background: #fff8ee;
+  color: #d97810;
+}
+
+.action-btn.danger {
+  background: #fff1ef;
+  color: #d95b4a;
+}
+
+.reviewed-tip {
+  text-align: center;
+  font-size: 26rpx;
+  color: #9099ab;
+  padding: 8rpx 0;
+}
+
+.cancel-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+  z-index: 30;
+}
+
+.cancel-panel {
+  width: 100%;
+  border-radius: 24rpx 24rpx 0 0;
+  background: #fff;
+  padding: 24rpx;
+}
+
+.panel-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1f2533;
+}
+
+.panel-tip {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  color: #9099ab;
+}
+
+.cancel-input {
+  width: 100%;
+  min-height: 140rpx;
+  border-radius: 14rpx;
+  background: #f7f8fb;
+  padding: 14rpx;
+  margin-top: 12rpx;
+  box-sizing: border-box;
+  font-size: 24rpx;
+}
+
+.panel-actions {
+  margin-top: 12rpx;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10rpx;
+}
+
+.panel-btn {
+  border: none;
+  border-radius: 999rpx;
+  padding: 12rpx 24rpx;
+  font-size: 22rpx;
+}
+
+.panel-btn::after {
+  border: none;
+}
+
+.panel-btn.ghost {
+  background: #eff2f7;
+  color: #6d768c;
+}
+
+.panel-btn.danger {
+  background: #ffeceb;
+  color: #d95b4a;
 }
 </style>

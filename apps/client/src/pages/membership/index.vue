@@ -1,20 +1,20 @@
-﻿<template>
+<template>
   <view class="membership-page">
-    <!-- 璇炬椂浣欓鍗＄墖 -->
+    <!-- 余额卡片 -->
     <view class="balance-card">
       <view class="balance-header">
-        <text class="balance-title">璇炬椂浣欓</text>
-        <text class="balance-link" @click="goToTransactions">娑堣垂璁板綍 ></text>
+        <text class="balance-title">剩余课时</text>
+        <text class="balance-link" @click="goToTransactions">消费记录 ></text>
       </view>
       <view class="balance-value">
         <text class="value">{{ totalRemaining }}</text>
-        <text class="unit">娆?/text>
+        <text class="unit">次</text>
       </view>
     </view>
 
-    <!-- 鎴戠殑璇炬椂鍗″垪琛?-->
+    <!-- 我的会员卡 -->
     <view class="section">
-      <view class="section-title">鎴戠殑璇炬椂鍗?/view>
+      <view class="section-title">我的会员卡</view>
 
       <view v-if="memberships.length > 0" class="card-list">
         <view
@@ -31,33 +31,33 @@
           <view class="item-body">
             <view class="remaining">
               <text class="remaining-value">{{ item.remaining_times }}</text>
-              <text class="remaining-label">鍓╀綑娆℃暟</text>
+              <text class="remaining-label">剩余课时</text>
             </view>
             <view class="expire" v-if="item.expire_date">
-              <text class="expire-label">鏈夋晥鏈熻嚦</text>
+              <text class="expire-label">有效期至</text>
               <text class="expire-value">{{ formatDate(item.expire_date) }}</text>
             </view>
             <view class="expire" v-else>
-              <text class="expire-label">鏈夋晥鏈?/text>
-              <text class="expire-value">姘镐箙鏈夋晥</text>
+              <text class="expire-label">有效期至</text>
+              <text class="expire-value">永久有效</text>
             </view>
           </view>
           <view class="item-footer">
-            <text class="purchase-date">璐拱鏃堕棿锛歿{ formatDateTime(item.purchase_date) }}</text>
+            <text class="purchase-date">购买日期: {{ formatDateTime(item.purchase_date) }}</text>
           </view>
         </view>
       </view>
 
       <view v-else class="empty-state">
         <image src="/static/empty.png" mode="aspectFit" class="empty-image" />
-        <text class="empty-text">鏆傛棤璇炬椂鍗?/text>
+        <text class="empty-text">暂无会员卡</text>
       </view>
     </view>
 
-    <!-- 鍙喘涔扮殑璇炬椂鍗?-->
+    <!-- 购买会员卡 -->
     <view class="section">
-      <view class="section-title">璐拱璇炬椂鍗?/view>
-      <view class="section-subtitle">绾夸笅浠樻鍚庯紝绠＄悊鍛樺皢涓烘偍鍏呭€?/view>
+      <view class="section-title">购买会员卡</view>
+      <view class="section-subtitle">可咨询门店或联系教练获取优惠与套餐</view>
 
       <view class="purchase-list">
         <view
@@ -71,11 +71,11 @@
           </view>
           <view class="card-price">
             <view class="price-current">
-              <text class="currency">楼</text>
+              <text class="currency">¥</text>
               <text class="amount">{{ card.price }}</text>
             </view>
             <view class="price-original" v-if="card.original_price && card.original_price > card.price">
-              楼{{ card.original_price }}
+              ¥{{ card.original_price }}
             </view>
           </view>
         </view>
@@ -83,7 +83,7 @@
 
       <view class="contact-tip">
         <wd-icon name="phone" size="32rpx" />
-        <text>濡傞渶璐拱璇疯仈绯诲鏈嶆垨鍒板簵鍜ㄨ</text>
+        <text>购买与咨询请联系门店或教练</text>
       </view>
     </view>
   </view>
@@ -128,19 +128,19 @@ const totalRemaining = computed(() => {
 
 function getStatusText(status: string): string {
   const map: Record<string, string> = {
-    active: '浣跨敤涓?,
-    expired: '宸茶繃鏈?,
-    exhausted: '宸茬敤瀹?
+    active: '使用中',
+    expired: '已过期',
+    exhausted: '已用完'
   }
   return map[status] || status
 }
 
 function getCardDesc(card: MembershipCard): string {
   if (card.card_type === 'times' && card.total_times) {
-    return `${card.total_times}娆¤鏃禶
+    return `${card.total_times}次课程`
   }
   if (card.card_type === 'duration' && card.duration_days) {
-    return `${card.duration_days}澶╂湁鏁堟湡`
+    return `${card.duration_days}天有效`
   }
   return ''
 }
@@ -167,7 +167,7 @@ async function loadMemberships() {
   try {
     memberships.value = await membershipApi.list()
   } catch (error: any) {
-    uni.showToast({ title: error.message || '鍔犺浇澶辫触', icon: 'none' })
+    uni.showToast({ title: error.message || '加载失败', icon: 'none' })
   }
 }
 
@@ -175,7 +175,7 @@ async function loadAvailableCards() {
   try {
     availableCards.value = await membershipApi.getCards()
   } catch (error) {
-    console.error('鍔犺浇璇炬椂鍗＄被鍨嬪け璐?, error)
+    console.error('加载可购会员卡失败', error)
   }
 }
 
@@ -198,236 +198,182 @@ onMounted(() => {
   padding: 40rpx;
   border-radius: 20rpx;
   color: #fff;
+}
 
-  .balance-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30rpx;
+.balance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
 
-    .balance-title {
-      font-size: 28rpx;
-      opacity: 0.9;
-    }
+.balance-title {
+  font-size: 30rpx;
+}
 
-    .balance-link {
-      font-size: 26rpx;
-      opacity: 0.8;
-    }
-  }
+.balance-link {
+  font-size: 24rpx;
+  opacity: 0.9;
+}
 
-  .balance-value {
-    .value {
-      font-size: 80rpx;
-      font-weight: 600;
-    }
+.balance-value {
+  display: flex;
+  align-items: baseline;
+}
 
-    .unit {
-      font-size: 32rpx;
-      margin-left: 8rpx;
-    }
-  }
+.balance-value .value {
+  font-size: 64rpx;
+  font-weight: bold;
+}
+
+.balance-value .unit {
+  font-size: 28rpx;
+  margin-left: 8rpx;
 }
 
 .section {
-  background-color: #fff;
+  background: #fff;
   margin: 20rpx;
   padding: 30rpx;
-  border-radius: 16rpx;
+  border-radius: 20rpx;
+}
 
-  .section-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 8rpx;
-  }
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12rpx;
+}
 
-  .section-subtitle {
-    font-size: 24rpx;
-    color: #999;
-    margin-bottom: 24rpx;
-  }
+.section-subtitle {
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 20rpx;
 }
 
 .card-list {
-  .membership-item {
-    background-color: #f9f9f9;
-    border-radius: 12rpx;
-    padding: 24rpx;
-    margin-bottom: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
 
-    &:last-child {
-      margin-bottom: 0;
-    }
+.membership-item {
+  background: #f8f8f8;
+  border-radius: 16rpx;
+  padding: 24rpx;
+}
 
-    .item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20rpx;
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-      .card-name {
-        font-size: 30rpx;
-        font-weight: 600;
-        color: #333;
-      }
+.card-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
 
-      .card-status {
-        font-size: 24rpx;
-        padding: 6rpx 16rpx;
-        border-radius: 20rpx;
+.card-status {
+  padding: 6rpx 16rpx;
+  border-radius: 16rpx;
+  font-size: 22rpx;
+}
 
-        &.active {
-          background-color: #e8f5e9;
-          color: #FF8800;
-        }
+.card-status.active {
+  background: #E8F5E9;
+  color: #4CAF50;
+}
 
-        &.expired {
-          background-color: #ffebee;
-          color: #f44336;
-        }
+.card-status.expired,
+.card-status.exhausted {
+  background: #FFEBEE;
+  color: #F44336;
+}
 
-        &.exhausted {
-          background-color: #f5f5f5;
-          color: #999;
-        }
-      }
-    }
+.item-body {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16rpx;
+}
 
-    .item-body {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20rpx 0;
-      border-top: 1rpx dashed #e0e0e0;
-      border-bottom: 1rpx dashed #e0e0e0;
+.remaining-value {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #FF8800;
+}
 
-      .remaining {
-        .remaining-value {
-          font-size: 48rpx;
-          font-weight: 600;
-          color: #FF8800;
-        }
+.remaining-label {
+  font-size: 22rpx;
+  color: #666;
+  margin-left: 8rpx;
+}
 
-        .remaining-label {
-          display: block;
-          font-size: 24rpx;
-          color: #999;
-          margin-top: 4rpx;
-        }
-      }
+.expire-label {
+  font-size: 22rpx;
+  color: #999;
+}
 
-      .expire {
-        text-align: right;
+.expire-value {
+  font-size: 24rpx;
+  color: #333;
+  margin-top: 6rpx;
+}
 
-        .expire-label {
-          display: block;
-          font-size: 24rpx;
-          color: #999;
-        }
-
-        .expire-value {
-          font-size: 28rpx;
-          color: #333;
-        }
-      }
-    }
-
-    .item-footer {
-      margin-top: 16rpx;
-
-      .purchase-date {
-        font-size: 24rpx;
-        color: #999;
-      }
-    }
-  }
+.item-footer {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: #999;
 }
 
 .purchase-list {
-  .purchase-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 24rpx;
-    background-color: #f9f9f9;
-    border-radius: 12rpx;
-    margin-bottom: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
 
-    &:last-child {
-      margin-bottom: 0;
-    }
+.purchase-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f8f8;
+  border-radius: 16rpx;
+  padding: 20rpx;
+}
 
-    .card-info {
-      .card-name {
-        font-size: 30rpx;
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 8rpx;
-      }
+.card-info .card-name {
+  font-size: 28rpx;
+  color: #333;
+}
 
-      .card-desc {
-        font-size: 24rpx;
-        color: #999;
-      }
-    }
+.card-info .card-desc {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 6rpx;
+}
 
-    .card-price {
-      text-align: right;
+.card-price {
+  text-align: right;
+}
 
-      .price-current {
-        color: #f44336;
+.price-current {
+  font-size: 28rpx;
+  color: #FF8800;
+}
 
-        .currency {
-          font-size: 28rpx;
-        }
-
-        .amount {
-          font-size: 40rpx;
-          font-weight: 600;
-        }
-      }
-
-      .price-original {
-        font-size: 24rpx;
-        color: #999;
-        text-decoration: line-through;
-      }
-    }
-  }
+.price-original {
+  font-size: 22rpx;
+  color: #bbb;
+  text-decoration: line-through;
 }
 
 .contact-tip {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-top: 30rpx;
-  padding: 20rpx;
-  background-color: #fff3e0;
-  border-radius: 8rpx;
-  font-size: 26rpx;
-  color: #ff9800;
-
-  text {
-    margin-left: 12rpx;
-  }
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 60rpx 0;
-
-  .empty-image {
-    width: 160rpx;
-    height: 160rpx;
-    margin-bottom: 16rpx;
-  }
-
-  .empty-text {
-    font-size: 28rpx;
-    color: #999;
-  }
+  gap: 8rpx;
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  color: #666;
 }
 </style>

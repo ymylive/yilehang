@@ -10,50 +10,61 @@
         </view>
         <view class="hero-content">
           <view class="brand-pill">
-            <text class="pill-icon">鈽€锔?/text>
-            <text>鏄撲箰鑸稩TS鏅烘収浣撴暀</text>
+            <text class="pill-icon">⚡</text>
+            <text>易乐航 · KTS 智慧体教</text>
           </view>
-          <text class="hero-title">闈掓槬鍚戜笂 路 杩愬姩鏇村揩涔?/text>
-          <text class="hero-subtitle">涓撲笟鏁欑粌 + 绉戝璇炬椂 + 鏅鸿兘闄粌锛屾墦閫犲瀛愮殑杩愬姩鎴愰暱浣撶郴</text>
+          <text class="hero-title">青春向上 · 运动更快乐</text>
+          <text class="hero-subtitle">专业教练 + 科学课时 + 智能陪练，打造孩子的运动成长体系</text>
           <view class="hero-tags">
-            <view class="tag">涓撲笟鏁欑粌</view>
-            <view class="tag">鐏垫椿绾﹁</view>
-            <view class="tag">AI闄粌</view>
-            <view class="tag">瀹夊叏鍚堣</view>
+            <view class="tag">专业教练</view>
+            <view class="tag">灵活约课</view>
+            <view class="tag">AI陪练</view>
+            <view class="tag">安全合规</view>
           </view>
           <view class="hero-actions">
-            <button class="cta primary" @click="handleBooking">鍦ㄧ嚎棰勭害</button>
-            <button class="cta ghost" @click="openTrial">鍏嶈垂浣撻獙璇炬姤鍚?/button>
-            <button class="cta outline" @click="handleConsult">涓€閿挩璇?/button>
+            <button class="cta primary" @click="handleBooking">在线预约</button>
+            <button class="cta ghost" @click="openTrial">免费体验课报名</button>
+            <button class="cta outline" @click="handleConsult">一键咨询</button>
           </view>
           <view class="hero-metrics">
             <view class="metric">
               <text class="metric-value">98%</text>
-              <text class="metric-label">婊℃剰搴?/text>
+              <text class="metric-label">满意度</text>
             </view>
             <view class="metric">
               <text class="metric-value">12K+</text>
-              <text class="metric-label">绱涓婅</text>
+              <text class="metric-label">累计上课</text>
             </view>
             <view class="metric">
               <text class="metric-value">50+</text>
-              <text class="metric-label">鏄庢槦鏁欑粌</text>
+              <text class="metric-label">明星教练</text>
             </view>
           </view>
         </view>
-        <view class="hero-mascot">
-          <view class="mascot-core">
-            <view class="mascot-face">鈿?/view>
+        <view class="hero-sun" aria-hidden="true">
+          <view class="sun-glow"></view>
+          <view class="sun-core"></view>
+          <view class="sun-rays">
+            <view class="ray r1"></view>
+            <view class="ray r2"></view>
+            <view class="ray r3"></view>
+            <view class="ray r4"></view>
+            <view class="ray r5"></view>
+            <view class="ray r6"></view>
+            <view class="ray r7"></view>
+            <view class="ray r8"></view>
           </view>
-          <view class="mascot-ring"></view>
-          <view class="mascot-label">鑸粩 路 杩愬姩IP</view>
+          <view class="sun-orbit">
+            <view class="sun-spark s1"></view>
+            <view class="sun-spark s2"></view>
+          </view>
         </view>
       </view>
 
       <view class="marketing-section">
         <view class="section-header marketing">
-          <text class="section-title">鐜涓庡満棣?/text>
-          <text class="section-subtitle">瀹夊叏銆佸共鍑€銆佹槑浜紝瀛╁瓙杩愬姩鏇翠笓娉?/text>
+          <text class="section-title">环境与场馆</text>
+          <text class="section-subtitle">安全、干净、明亮，孩子运动更专注</text>
         </view>
         <view class="card-row">
           <view
@@ -71,8 +82,8 @@
 
       <view class="marketing-section">
         <view class="section-header marketing">
-          <text class="section-title">绮惧搧璇剧▼</text>
-          <text class="section-subtitle">娆″崱 / 鏈堝崱 / 绉佹暀 / 濂楅锛岃鐩栧鍦烘櫙</text>
+          <text class="section-title">精品课程</text>
+          <text class="section-subtitle">次卡 / 月卡 / 私教 / 套餐，覆盖多场景</text>
         </view>
         <view class="course-grid">
           <view
@@ -93,8 +104,8 @@
 
       <view class="marketing-section">
         <view class="section-header marketing">
-          <text class="section-title">鏁欑粌鍥㈤槦</text>
-          <text class="section-subtitle">澶氶」鐩璇侊紝骞冲潎5骞翠互涓婃暀瀛︾粡楠?/text>
+          <text class="section-title">教练团队</text>
+          <text class="section-subtitle">多项目认证，平均 5 年以上教学经验</text>
         </view>
         <view class="coach-row">
           <view
@@ -108,8 +119,8 @@
               <text class="coach-name">{{ coach.name }}</text>
               <text class="coach-desc">{{ coach.desc }}</text>
               <view class="coach-meta">
-                <text>猸?{{ coach.rating }}</text>
-                <text>{{ coach.years }}骞寸粡楠?/text>
+                <text>评分 {{ coach.rating }}</text>
+                <text>{{ coach.years }} 年经验</text>
               </view>
             </view>
           </view>
@@ -118,8 +129,8 @@
 
       <view class="marketing-section">
         <view class="section-header marketing">
-          <text class="section-title">浠锋牸鏂规</text>
-          <text class="section-subtitle">鐏垫椿璁¤垂锛屾敮鎸佸彂绁ㄤ笌缁垂鎻愰啋</text>
+          <text class="section-title">价格方案</text>
+          <text class="section-subtitle">灵活计费，支持发票与续费提醒</text>
         </view>
         <view class="price-grid">
           <view
@@ -141,8 +152,8 @@
 
       <view class="marketing-section">
         <view class="section-header marketing">
-          <text class="section-title">瀛﹀憳鍙ｇ</text>
-          <text class="section-subtitle">鐪熷疄瀹堕暱鍙嶉锛屽璐巼鎸佺画涓婂崌</text>
+          <text class="section-title">学员口碑</text>
+          <text class="section-subtitle">真实家长反馈，复购率持续上升</text>
         </view>
         <view class="review-grid">
           <view
@@ -154,7 +165,7 @@
             <text class="review-text">{{ review.text }}</text>
             <view class="review-footer">
               <text class="review-name">{{ review.name }}</text>
-              <text class="review-score">猸?{{ review.score }}</text>
+              <text class="review-score">评分 {{ review.score }}</text>
             </view>
           </view>
         </view>
@@ -163,29 +174,29 @@
       <view class="marketing-section ai-section">
         <view class="ai-card">
           <view class="ai-content">
-            <text class="ai-title">AI闄粌 路 鏅鸿兘鎴愰暱鍔╂墜</text>
-            <text class="ai-desc">璺崇怀鍔ㄤ綔璇嗗埆銆佸Э鎬佽瘎浼般€佽繍鍔ㄥ缓璁笌楗寤鸿锛屾敮鎸佸闀挎彁闂€?/text>
+            <text class="ai-title">AI陪练 · 智能成长助手</text>
+            <text class="ai-desc">跳绳动作识别、姿态评估、运动建议与饮食建议，支持家长提问。</text>
             <view class="ai-features">
-              <text class="ai-chip">鑷姩璁℃暟</text>
-              <text class="ai-chip">鍔ㄤ綔绾犳</text>
-              <text class="ai-chip">鎴愰暱鎶ュ憡</text>
-              <text class="ai-chip">瀹堕暱闂瓟</text>
+              <text class="ai-chip">自动计数</text>
+              <text class="ai-chip">动作纠正</text>
+              <text class="ai-chip">成长报告</text>
+              <text class="ai-chip">家长问答</text>
             </view>
           </view>
           <view class="ai-cta">
-            <button class="cta primary" @click="goTo('/pages/training/index')">浣撻獙AI闄粌</button>
-            <text class="ai-note">* AI妯″潡鍙€愭鍚敤</text>
+            <button class="cta primary" @click="goTo('/pages/training/index')">体验AI陪练</button>
+            <text class="ai-note">* AI模块可逐步启用</text>
           </view>
         </view>
       </view>
 
       <view class="marketing-section foot-cta">
         <view class="foot-card">
-          <text class="foot-title">鍑嗗濂藉紑濮嬩簡鍚楋紵</text>
-          <text class="foot-subtitle">涓€閿绾︼紝涓撳睘鏁欑粌涓哄瀛愯鍒掕绋嬨€?/text>
+          <text class="foot-title">准备好开始了吗？</text>
+          <text class="foot-subtitle">一键预约，专属教练为孩子规划课程。</text>
           <view class="foot-actions">
-            <button class="cta primary" @click="handleBooking">绔嬪嵆棰勭害</button>
-            <button class="cta ghost" @click="openTrial">棰嗗彇浣撻獙璇?/button>
+            <button class="cta primary" @click="handleBooking">立即预约</button>
+            <button class="cta ghost" @click="openTrial">领取体验课</button>
           </view>
         </view>
       </view>
@@ -193,193 +204,194 @@
       <view class="trial-modal" v-if="trialVisible">
         <view class="trial-card">
           <view class="trial-header">
-            <text>鍏嶈垂浣撻獙璇炬姤鍚?/text>
-            <text class="trial-close" @click="trialVisible = false">鉁?/text>
+            <text>免费体验课报名</text>
+            <text class="trial-close" @click="trialVisible = false">×</text>
           </view>
           <view class="trial-form">
-            <input class="trial-input" v-model="trialForm.name" placeholder="瀛╁瓙濮撳悕" />
-            <input class="trial-input" v-model="trialForm.phone" placeholder="瀹堕暱鎵嬫満鍙? />
-            <input class="trial-input" v-model="trialForm.age" placeholder="瀛╁瓙骞撮緞" />
+            <input class="trial-input" v-model="trialForm.name" placeholder="孩子姓名" />
+            <input class="trial-input" v-model="trialForm.phone" placeholder="家长手机号" />
+            <input class="trial-input" v-model="trialForm.age" placeholder="孩子年龄" />
           </view>
-          <button class="cta primary trial-submit" @click="submitTrial">鎻愪氦鎶ュ悕</button>
+          <button class="cta primary trial-submit" @click="submitTrial">提交报名</button>
         </view>
       </view>
     </view>
 
     <view v-else class="dashboard">
-      <!-- 椤堕儴鍖哄煙 -->
-    <view class="header-section">
-      <!-- 鑳屾櫙瑁呴グ -->
-      <view class="header-bg">
-        <view class="bg-shape shape1"></view>
-        <view class="bg-shape shape2"></view>
-        <view class="bg-shape shape3"></view>
-      </view>
-
-      <!-- 鐢ㄦ埛淇℃伅鏍?-->
-      <view class="user-bar">
-        <view class="user-info" @click="goToUser">
-          <view class="avatar-wrap">
-            <image class="avatar" :src="userStore.user?.avatar || '/static/default-avatar.png'" mode="aspectFill" />
-            <view class="avatar-badge">馃弮</view>
-          </view>
-          <view class="user-text">
-            <text class="greeting">{{ getGreeting() }}</text>
-            <text class="user-name">{{ currentStudentName }}</text>
-          </view>
-        </view>
-        <view class="header-actions">
-          <view class="action-btn" @click="scanQRCode">
-            <text class="action-icon">馃摲</text>
-          </view>
-        </view>
-      </view>
-
-      <!-- 璇炬椂鍗＄墖 -->
-      <view class="lesson-card">
-        <view class="lesson-info">
-          <view class="lesson-icon">鈴憋笍</view>
-          <view class="lesson-text">
-            <text class="lesson-label">鍓╀綑璇炬椂</text>
-            <text class="lesson-count">{{ userStore.currentStudent?.remaining_lessons || 0 }}</text>
-          </view>
-        </view>
-        <view class="lesson-action" @click="goTo('/pages/membership/index')">
-          <text>鍏呭€?/text>
-          <text class="arrow">鈫?/text>
-        </view>
-      </view>
-    </view>
-
-    <!-- 鍔熻兘鍏ュ彛 -->
-    <view class="feature-section">
-      <view class="feature-grid">
-        <view class="feature-card" @click="goTo('/pages/growth/index')">
-          <view class="feature-icon-wrap growth">
-            <text class="feature-icon">馃搳</text>
-          </view>
-          <text class="feature-name">鎴愰暱妗ｆ</text>
-          <text class="feature-desc">鏌ョ湅杩愬姩鏁版嵁</text>
+      <!-- 顶部区域 -->
+      <view class="header-section">
+        <!-- 背景装饰 -->
+        <view class="header-bg">
+          <view class="bg-shape shape1"></view>
+          <view class="bg-shape shape2"></view>
+          <view class="bg-shape shape3"></view>
         </view>
 
-        <view class="feature-card" @click="goTo('/pages/training/index')">
-          <view class="feature-icon-wrap training">
-            <text class="feature-icon">馃</text>
-          </view>
-          <text class="feature-name">AI闄粌</text>
-          <text class="feature-desc">鏅鸿兘杩愬姩鎸囧</text>
-        </view>
-
-        <view class="feature-card" @click="goTo('/pages/moments/index')">
-          <view class="feature-icon-wrap moments">
-            <text class="feature-icon">馃摳</text>
-          </view>
-          <text class="feature-name">绮惧僵鐬棿</text>
-          <text class="feature-desc">璁板綍鎴愰暱鏃跺埢</text>
-        </view>
-
-        <view class="feature-card" @click="goTo('/pages/booking/index')">
-          <view class="feature-icon-wrap orders">
-            <text class="feature-icon">馃Ь</text>
-          </view>
-          <text class="feature-name">鎴戠殑璁㈠崟</text>
-          <text class="feature-desc">棰勭害涓庢秷璐?/text>
-        </view>
-      </view>
-    </view>
-
-    <!-- 浠婃棩璇剧▼ -->
-    <view class="section">
-      <view class="section-header">
-        <view class="section-title">
-          <text class="title-icon">馃搮</text>
-          <text class="title-text">浠婃棩璇剧▼</text>
-        </view>
-        <view class="section-more" @click="goTo('/pages/schedule/index')">
-          <text>鍏ㄩ儴</text>
-          <text class="more-arrow">鈫?/text>
-        </view>
-      </view>
-
-      <view class="course-list" v-if="todayCourses.length">
-        <view class="course-item" v-for="course in todayCourses" :key="course.id">
-          <view class="course-time-block">
-            <text class="course-time">{{ formatTime(course.start_time) }}</text>
-            <text class="course-duration">{{ course.duration }}鍒嗛挓</text>
-          </view>
-          <view class="course-divider"></view>
-          <view class="course-detail">
-            <text class="course-name">{{ course.name }}</text>
-            <view class="course-meta">
-              <text class="coach-name">馃懆鈥嶐煆?{{ course.coach_name }}</text>
+        <!-- 用户信息栏 -->
+        <view class="user-bar">
+          <view class="user-info" @click="goToUser">
+            <view class="avatar-wrap">
+              <image class="avatar" :src="userStore.user?.avatar || '/static/default-avatar.png'" mode="aspectFill" />
+              <view class="avatar-badge">VIP</view>
+            </view>
+            <view class="user-text">
+              <text class="greeting">{{ getGreeting() }}</text>
+              <text class="user-name">{{ currentStudentName }}</text>
             </view>
           </view>
-          <view :class="['course-status', course.status]">
-            <text>{{ getStatusText(course.status) }}</text>
+          <view class="header-actions">
+            <view class="action-btn" @click="scanQRCode">
+              <text class="action-icon">📷</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 课时卡片 -->
+        <view class="lesson-card">
+          <view class="lesson-info">
+            <view class="lesson-icon">⏱</view>
+            <view class="lesson-text">
+              <text class="lesson-label">剩余课时</text>
+              <text class="lesson-count">{{ userStore.currentStudent?.remaining_lessons || 0 }}</text>
+            </view>
+          </view>
+          <view class="lesson-action" @click="goTo('/pages/membership/index')">
+            <text>充值</text>
+            <text class="arrow">→</text>
           </view>
         </view>
       </view>
 
-      <view class="empty-state" v-else>
-        <view class="empty-icon">馃専</view>
-        <text class="empty-text">浠婃棩鏆傛棤璇剧▼</text>
-        <text class="empty-hint">鍘婚绾︿竴鑺傝鍚?/text>
-      </view>
-    </view>
+      <!-- 功能入口 -->
+      <view class="feature-section">
+        <view class="feature-grid">
+          <view class="feature-card" @click="goTo('/pages/growth/index')">
+            <view class="feature-icon-wrap growth">
+              <text class="feature-icon">📈</text>
+            </view>
+            <text class="feature-name">成长档案</text>
+            <text class="feature-desc">查看运动数据</text>
+          </view>
 
-    <!-- 鏈懆缁熻 -->
-    <view class="section stats-section">
-      <view class="section-header">
-        <view class="section-title">
-          <text class="title-icon">馃搱</text>
-          <text class="title-text">鏈懆杩愬姩</text>
-        </view>
-      </view>
+          <view class="feature-card" @click="goTo('/pages/training/index')">
+            <view class="feature-icon-wrap training">
+              <text class="feature-icon">🤖</text>
+            </view>
+            <text class="feature-name">AI陪练</text>
+            <text class="feature-desc">智能运动指导</text>
+          </view>
 
-      <view class="stats-grid">
-        <view class="stat-card">
-          <view class="stat-icon-wrap sessions">
-            <text class="stat-icon">馃弸锔?/text>
+          <view class="feature-card" @click="goTo('/pages/moments/index')">
+            <view class="feature-icon-wrap moments">
+              <text class="feature-icon">✨</text>
+            </view>
+            <text class="feature-name">精彩瞬间</text>
+            <text class="feature-desc">记录成长时刻</text>
           </view>
-          <view class="stat-content">
-            <text class="stat-value">{{ weekStats.sessions }}</text>
-            <text class="stat-label">璁粌娆℃暟</text>
-          </view>
-        </view>
 
-        <view class="stat-card">
-          <view class="stat-icon-wrap duration">
-            <text class="stat-icon">鈴?/text>
-          </view>
-          <view class="stat-content">
-            <text class="stat-value">{{ weekStats.duration }}</text>
-            <text class="stat-label">璁粌鏃堕暱(鍒?</text>
-          </view>
-        </view>
-
-        <view class="stat-card">
-          <view class="stat-icon-wrap calories">
-            <text class="stat-icon">馃敟</text>
-          </view>
-          <view class="stat-content">
-            <text class="stat-value">{{ weekStats.calories }}</text>
-            <text class="stat-label">娑堣€楀崱璺噷</text>
+          <view class="feature-card" @click="goTo('/pages/booking/index')">
+            <view class="feature-icon-wrap orders">
+              <text class="feature-icon">🧾</text>
+            </view>
+            <text class="feature-name">我的订单</text>
+            <text class="feature-desc">预约与消费</text>
           </view>
         </view>
       </view>
 
-      <!-- 榧撳姳璇?-->
-      <view class="encourage-banner" v-if="weekStats.sessions > 0">
-        <text class="encourage-icon">馃挭</text>
-        <text class="encourage-text">{{ getEncourageText() }}</text>
-      </view>
-    </view>
+      <!-- 今日课程 -->
+      <view class="section">
+        <view class="section-header">
+          <view class="section-title">
+            <text class="title-icon">📅</text>
+            <text class="title-text">今日课程</text>
+          </view>
+          <view class="section-more" @click="goTo('/pages/schedule/index')">
+            <text>全部</text>
+            <text class="more-arrow">→</text>
+          </view>
+        </view>
 
-    <!-- 搴曢儴瀹夊叏鍖?-->
-    <view class="safe-bottom"></view>
+        <view class="course-list" v-if="todayCourses.length">
+          <view class="course-item" v-for="course in todayCourses" :key="course.id">
+            <view class="course-time-block">
+              <text class="course-time">{{ formatTime(course.start_time) }}</text>
+              <text class="course-duration">{{ course.duration }}分钟</text>
+            </view>
+            <view class="course-divider"></view>
+            <view class="course-detail">
+              <text class="course-name">{{ course.name }}</text>
+              <view class="course-meta">
+                <text class="coach-name">教练：{{ course.coach_name }}</text>
+              </view>
+            </view>
+            <view :class="['course-status', course.status]">
+              <text>{{ getStatusText(course.status) }}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="empty-state" v-else>
+          <view class="empty-icon">📅</view>
+          <text class="empty-text">今日暂无课程</text>
+          <text class="empty-hint">去预约一节课吧</text>
+        </view>
+      </view>
+
+      <!-- 本周统计 -->
+      <view class="section stats-section">
+        <view class="section-header">
+          <view class="section-title">
+            <text class="title-icon">🏃</text>
+            <text class="title-text">本周运动</text>
+          </view>
+        </view>
+
+        <view class="stats-grid">
+          <view class="stat-card">
+            <view class="stat-icon-wrap sessions">
+              <text class="stat-icon">🎯</text>
+            </view>
+            <view class="stat-content">
+              <text class="stat-value">{{ weekStats.sessions }}</text>
+              <text class="stat-label">训练次数</text>
+            </view>
+          </view>
+
+          <view class="stat-card">
+            <view class="stat-icon-wrap duration">
+              <text class="stat-icon">⏳</text>
+            </view>
+            <view class="stat-content">
+              <text class="stat-value">{{ weekStats.duration }}</text>
+              <text class="stat-label">训练时长(分钟)</text>
+            </view>
+          </view>
+
+          <view class="stat-card">
+            <view class="stat-icon-wrap calories">
+              <text class="stat-icon">🔥</text>
+            </view>
+            <view class="stat-content">
+              <text class="stat-value">{{ weekStats.calories }}</text>
+              <text class="stat-label">消耗卡路里</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 鼓励语 -->
+        <view class="encourage-banner" v-if="weekStats.sessions > 0">
+          <text class="encourage-icon">🎉</text>
+          <text class="encourage-text">{{ getEncourageText() }}</text>
+        </view>
+      </view>
+
+      <!-- 底部安全区 -->
+      <view class="safe-bottom"></view>
     </view>
   </view>
 </template>
+
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
@@ -390,7 +402,7 @@ import { trackEvent } from '@/utils/track'
 const userStore = useUserStore()
 
 const currentStudentName = computed(() => {
-  return userStore.currentStudent?.name || userStore.user?.nickname || '灏忔湅鍙?
+  return userStore.currentStudent?.name || userStore.user?.nickname || '小朋友'
 })
 
 const todayCourses = ref<any[]>([])
@@ -411,53 +423,53 @@ const trialForm = ref({
 const contactPhone = '400-888-1234'
 
 const envCards = [
-  { title: '闃冲厜鍦洪', desc: '鑷劧閲囧厜涓庡畨鍏ㄨ蒋鍨紝瀹堟姢姣忎竴姝?, tone: 'sun' },
-  { title: '鏅鸿兘璁惧', desc: '绉戝璁粌鍣ㄦ涓庣洃娴嬬郴缁?, tone: 'tech' },
-  { title: '浜插瓙绌洪棿', desc: '瀹堕暱浼戞伅鍖轰笌瑙傛懇鍖?, tone: 'warm' }
+  { title: '阳光场馆', desc: '自然采光与安全软装，呵护每一步', tone: 'sun' },
+  { title: '智能设备', desc: '科学训练器械与监测系统', tone: 'tech' },
+  { title: '亲子空间', desc: '家长休息区与观摩区', tone: 'warm' }
 ]
 
 const courseCards = [
-  { title: '绡悆鍩虹鐝?, desc: '鍔ㄤ綔瑙勮寖 + 浣撹兘鎻愬崌', icon: '馃弨', tag: '閫傚悎7-12宀? },
-  { title: '浣撹兘鎻愬崌璇?, desc: '鏍稿績鍔涢噺涓庡崗璋?, icon: '馃敟', tag: '鍏ㄨ兘璁粌' },
-  { title: '涓撻」绉佹暀', desc: '涓€瀵逛竴娣卞害璁粌', icon: '馃幆', tag: '鎴愰暱鍔犻€? },
-  { title: '杩愬姩绱犲吇璇?, desc: '浣撴€?涔犳儻鍏绘垚', icon: '馃尶', tag: '绋虫墡绋虫墦' }
+  { title: '篮球基础班', desc: '动作规范 + 体能提升', icon: '篮', tag: '适合7-12岁' },
+  { title: '体能提升课', desc: '核心力量与协调', icon: '能', tag: '全能训练' },
+  { title: '专项私教', desc: '一对一深度训练', icon: '专', tag: '成长加速' },
+  { title: '运动素养课', desc: '体态习惯养成', icon: '姿', tag: '稳扎稳打' }
 ]
 
 const coachCards = [
-  { name: '鐜嬫暀缁?, desc: '绡悆鍥藉浜岀骇 路 浣撹兘璁粌', rating: '4.9', years: 6, initial: '鐜?, tone: 'tone-a' },
-  { name: '闄堟暀缁?, desc: '浣撻€傝兘璁よ瘉 路 鍔ㄤ綔绾犳', rating: '4.8', years: 5, initial: '闄?, tone: 'tone-b' },
-  { name: '鏉庢暀缁?, desc: '闈掑皯骞翠笓椤?路 璇剧▼璁捐', rating: '4.9', years: 7, initial: '鏉?, tone: 'tone-c' }
+  { name: '王教练', desc: '篮球国家二级 · 体能训练', rating: '4.9', years: 6, initial: '王', tone: 'tone-a' },
+  { name: '陈教练', desc: '体适能认证 · 动作纠正', rating: '4.8', years: 5, initial: '陈', tone: 'tone-b' },
+  { name: '李教练', desc: '青少年专项 · 课程设计', rating: '4.9', years: 7, initial: '李', tone: 'tone-c' }
 ]
 
 const priceCards = [
-  { title: '娆″崱浣撻獙', price: '楼199', desc: '2娆′綋楠岃', tags: ['鐏垫椿鎺掕', '闅忕害闅忎笂'], hot: false },
-  { title: '鏈堝崱鎴愰暱', price: '楼899', desc: '12娆″皬鐝', tags: ['璇炬椂鎻愰啋', '鍙浆璧?], hot: true },
-  { title: '绉佹暀璁″垝', price: '楼1999', desc: '8娆＄鏁欒', tags: ['涓撳睘鏁欑粌', '鎴愰暱鎶ュ憡'], hot: false }
+  { title: '次卡体验', price: '¥199', desc: '2次体验课', tags: ['灵活排课', '随约随上'], hot: false },
+  { title: '月卡成长', price: '¥899', desc: '12次小班课', tags: ['课时提醒', '可转赠'], hot: true },
+  { title: '私教计划', price: '¥1999', desc: '8次私教课', tags: ['专属教练', '成长报告'], hot: false }
 ]
 
 const reviewCards = [
-  { name: '鍛ㄥ濡?, score: '4.9', text: '瀛╁瓙涓婅寰堢Н鏋侊紝鏁欑粌鍙嶉缁嗚嚧锛岃绋嬪畨鎺掍篃寰堢伒娲汇€? },
-  { name: '鏋楃埜鐖?, score: '5.0', text: '浣撹兘鏀瑰杽鏄庢樉锛岃绋嬬郴缁燂紝瀛╁瓙鏇磋嚜淇′簡銆? },
-  { name: '鏅撻洦濡堝', score: '4.8', text: '绾﹁鏂逛究锛屾彁閱掑強鏃讹紝鏁翠綋浣撻獙寰堣垝鏈嶃€? }
+  { name: '周妈妈', score: '4.9', text: '孩子上课积极，教练反馈细致，课程安排很灵活。' },
+  { name: '林爸爸', score: '5.0', text: '体能提升明显，课程体系化，孩子更自信了。' },
+  { name: '晓雨妈妈', score: '4.8', text: '约课方便，提醒及时，整体体验很舒服。' }
 ]
 
 function getGreeting() {
   const hour = new Date().getHours()
-  if (hour < 6) return '澶滄繁浜?
-  if (hour < 9) return '鏃╀笂濂?
-  if (hour < 12) return '涓婂崍濂?
-  if (hour < 14) return '涓崍濂?
-  if (hour < 18) return '涓嬪崍濂?
-  if (hour < 22) return '鏅氫笂濂?
-  return '澶滄繁浜?
+  if (hour < 6) return '夜深了'
+  if (hour < 9) return '早上好'
+  if (hour < 12) return '上午好'
+  if (hour < 14) return '中午好'
+  if (hour < 18) return '下午好'
+  if (hour < 22) return '晚上好'
+  return '夜深了'
 }
 
 function getEncourageText() {
   const sessions = weekStats.value.sessions
-  if (sessions >= 5) return '澶浜嗭紒鏈懆杩愬姩杈句汉灏辨槸浣狅紒'
-  if (sessions >= 3) return '缁х画淇濇寔锛屼綘鍋氬緱寰堝ソ锛?
-  if (sessions >= 1) return '濂界殑寮€濮嬶紝缁х画鍔犳补锛?
-  return '寮€濮嬩綘鐨勮繍鍔ㄤ箣鏃呭惂锛?
+  if (sessions >= 5) return '太棒了！本周运动达人就是你！'
+  if (sessions >= 3) return '继续保持，你做得很好！'
+  if (sessions >= 1) return '好的开始，继续加油！'
+  return '开始你的运动之旅吧！'
 }
 
 onMounted(async () => {
@@ -481,7 +493,7 @@ async function loadTodayCourses() {
     })
     todayCourses.value = res || []
   } catch (error) {
-    console.error('鍔犺浇璇剧▼澶辫触', error)
+    console.error('加载课程失败', error)
   }
 }
 
@@ -503,7 +515,7 @@ async function loadWeekStats() {
       calories: Math.round(weekData.reduce((sum: number, item: any) => sum + (item.calories_burned || 0), 0))
     }
   } catch (error) {
-    console.error('鍔犺浇缁熻澶辫触', error)
+    console.error('加载统计失败', error)
   }
 }
 
@@ -514,10 +526,10 @@ function formatTime(dateStr: string) {
 
 function getStatusText(status: string) {
   const map: Record<string, string> = {
-    scheduled: '寰呬笂璇?,
-    ongoing: '杩涜涓?,
-    completed: '宸插畬鎴?,
-    cancelled: '宸插彇娑?
+    scheduled: '待上课',
+    ongoing: '进行中',
+    completed: '已完成',
+    cancelled: '已取消'
   }
   return map[status] || status
 }
@@ -539,11 +551,11 @@ function openTrial() {
 
 function submitTrial() {
   if (!trialForm.value.name || !trialForm.value.phone) {
-    uni.showToast({ title: '璇峰～鍐欏鍚嶅拰鎵嬫満鍙?, icon: 'none' })
+    uni.showToast({ title: '请填写姓名和手机号', icon: 'none' })
     return
   }
   trackEvent('trial_submit', { ...trialForm.value })
-  uni.showToast({ title: '鎶ュ悕鎴愬姛锛屾垜浠細灏藉揩鑱旂郴', icon: 'none' })
+  uni.showToast({ title: '报名成功，我们会尽快联系', icon: 'none' })
   trialVisible.value = false
   trialForm.value = { name: '', phone: '', age: '' }
 }
@@ -554,7 +566,7 @@ function handleConsult() {
     uni.makePhoneCall({ phoneNumber: contactPhone })
     return
   }
-  uni.showToast({ title: '璇风◢鍚庡啀璇?, icon: 'none' })
+  uni.showToast({ title: '请稍后再试', icon: 'none' })
 }
 
 function goToUser() {
@@ -564,14 +576,14 @@ function goToUser() {
 function scanQRCode() {
   uni.scanCode({
     success: (res) => {
-      console.log('鎵爜缁撴灉', res)
+      console.log('扫码结果', res)
     }
   })
 }
 </script>
 
 <style scoped>
-/* 璁捐鍙橀噺 */
+/* 设计变量 */
 page {
   --c-primary: #FF8800;
   --c-secondary: #FFB347;
@@ -654,6 +666,8 @@ page {
   display: flex;
   flex-direction: column;
   gap: 20rpx;
+  max-width: 560rpx;
+  padding-right: 40rpx;
   animation: fadeUp 0.8s ease both;
 }
 
@@ -678,12 +692,14 @@ page {
   font-size: 48rpx;
   font-weight: 700;
   color: #FFFFFF;
+  text-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.18);
 }
 
 .hero-subtitle {
   font-size: 26rpx;
   color: rgba(255, 255, 255, 0.9);
   line-height: 1.6;
+  max-width: 520rpx;
 }
 
 .hero-tags {
@@ -763,45 +779,90 @@ page {
   color: rgba(255, 255, 255, 0.9);
 }
 
-.hero-mascot {
+.hero-sun {
   position: absolute;
-  right: 26rpx;
-  bottom: -40rpx;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  top: -78rpx;
+  right: -128rpx;
+  width: 340rpx;
+  height: 340rpx;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.88;
+  animation: sunFloat 6s ease-in-out infinite;
 }
 
-.mascot-core {
-  width: 160rpx;
-  height: 160rpx;
+.sun-glow {
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  background: #FFFFFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.2);
-  animation: float 4s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.34) 0%, rgba(255, 205, 108, 0.28) 34%, rgba(255, 140, 0, 0.1) 64%, transparent 78%);
+  filter: blur(12rpx);
+  opacity: 0.9;
+  animation: sunGlow 5s ease-in-out infinite;
 }
 
-.mascot-face {
-  font-size: 64rpx;
-}
-
-.mascot-ring {
-  width: 200rpx;
-  height: 200rpx;
+.sun-core {
+  position: absolute;
+  inset: 92rpx;
   border-radius: 50%;
-  border: 6rpx dashed rgba(255, 255, 255, 0.6);
-  margin-top: -180rpx;
-  animation: spin 12s linear infinite;
+  background: radial-gradient(circle at 30% 30%, #FFF6C8 0%, #FFD35A 38%, #FF9A1F 70%, #FF7A00 100%);
+  box-shadow: 0 0 30rpx rgba(255, 180, 60, 0.6), 0 0 70rpx rgba(255, 140, 0, 0.35);
+  animation: sunPulse 3.8s ease-in-out infinite;
 }
 
-.mascot-label {
-  margin-top: 12rpx;
-  font-size: 22rpx;
-  color: #FFFFFF;
+.sun-rays {
+  position: absolute;
+  inset: 54rpx;
+  border-radius: 50%;
+  animation: sunSpin 18s linear infinite;
+}
+
+.ray {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6rpx;
+  height: 46rpx;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 200, 92, 0.7), rgba(255, 140, 0, 0));
+  border-radius: 999rpx;
+  transform-origin: center -70rpx;
+  opacity: 0.9;
+}
+
+.ray.r1 { transform: translate(-50%, -50%) rotate(0deg); }
+.ray.r2 { transform: translate(-50%, -50%) rotate(45deg); }
+.ray.r3 { transform: translate(-50%, -50%) rotate(90deg); }
+.ray.r4 { transform: translate(-50%, -50%) rotate(135deg); }
+.ray.r5 { transform: translate(-50%, -50%) rotate(180deg); }
+.ray.r6 { transform: translate(-50%, -50%) rotate(225deg); }
+.ray.r7 { transform: translate(-50%, -50%) rotate(270deg); }
+.ray.r8 { transform: translate(-50%, -50%) rotate(315deg); }
+
+.sun-orbit {
+  position: absolute;
+  inset: 72rpx;
+  border-radius: 50%;
+  animation: sunOrbit 8s linear infinite;
+}
+
+.sun-spark {
+  position: absolute;
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #FFF6C8;
+  box-shadow: 0 0 12rpx rgba(255, 255, 255, 0.95);
+}
+
+.sun-spark.s1 {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.sun-spark.s2 {
+  bottom: 12rpx;
+  right: 36rpx;
 }
 
 .marketing-section {
@@ -1204,6 +1265,19 @@ page {
   margin-top: 20rpx;
 }
 
+@media screen and (max-width: 360px) {
+  .hero-content {
+    max-width: 500rpx;
+    padding-right: 20rpx;
+  }
+
+  .hero-sun {
+    right: -150rpx;
+    top: -90rpx;
+    opacity: 0.78;
+  }
+}
+
 @keyframes fadeUp {
   from {
     opacity: 0;
@@ -1230,6 +1304,53 @@ page {
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes sunFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(12rpx);
+  }
+}
+
+@keyframes sunGlow {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes sunPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes sunSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes sunOrbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
   }
 }
 
@@ -1278,7 +1399,7 @@ page {
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* 鐢ㄦ埛淇℃伅鏍?*/
+/* 用户信息栏 */
 .user-bar {
   position: relative;
   z-index: 10;
@@ -1602,7 +1723,7 @@ page {
   color: var(--c-text-light);
 }
 
-/* 绌虹姸鎬?*/
+/* 空状态 */
 .empty-state {
   text-align: center;
   padding: 50rpx 0;
@@ -1625,7 +1746,7 @@ page {
   color: var(--c-text-light);
 }
 
-/* 缁熻鍖哄潡 */
+/* 缁熻鍖哄潡 */
 .stats-section {
   background: linear-gradient(135deg, #FFB347 0%, #FF8800 100%);
 }
@@ -1685,7 +1806,7 @@ page {
   color: rgba(255, 255, 255, 0.9);
 }
 
-/* 榧撳姳妯箙 */
+/* 榧撳姳妯箙 */
 .encourage-banner {
   display: flex;
   align-items: center;
@@ -1707,7 +1828,7 @@ page {
   font-weight: 500;
 }
 
-/* 搴曢儴瀹夊叏鍖?*/
+/* 底部安全区 */
 .safe-bottom {
   height: 120rpx;
 }

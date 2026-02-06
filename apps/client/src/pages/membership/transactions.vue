@@ -1,6 +1,6 @@
-﻿<template>
+<template>
   <view class="transactions-page">
-    <!-- 绛涢€夋爣绛?-->
+    <!-- 筛选标签 -->
     <view class="filter-tabs">
       <view
         v-for="tab in tabs"
@@ -12,7 +12,7 @@
       </view>
     </view>
 
-    <!-- 浜ゆ槗鍒楄〃 -->
+    <!-- 记录列表 -->
     <view class="transaction-list">
       <view
         v-for="item in filteredTransactions"
@@ -27,24 +27,26 @@
           <view class="item-time">{{ formatDateTime(item.created_at) }}</view>
         </view>
         <view class="item-change" :class="{ positive: item.times_change > 0 }">
-          {{ item.times_change > 0 ? '+' : '' }}{{ item.times_change }}娆?        </view>
+          {{ item.times_change > 0 ? '+' : '' }}{{ item.times_change }}次
+        </view>
       </view>
 
-      <!-- 绌虹姸鎬?-->
+      <!-- 空状态 -->
       <view v-if="filteredTransactions.length === 0 && !loading" class="empty-state">
         <image src="/static/empty.png" mode="aspectFit" class="empty-image" />
-        <text class="empty-text">鏆傛棤璁板綍</text>
+        <text class="empty-text">暂无记录</text>
       </view>
 
-      <!-- 鍔犺浇鏇村 -->
+      <!-- 加载中 -->
       <view v-if="loading" class="loading-more">
         <wd-loading />
-        <text>鍔犺浇涓?..</text>
+        <text>加载中...</text>
       </view>
 
-      <!-- 鍔犺浇瀹屾垚 -->
+      <!-- 无更多 -->
       <view v-if="!loading && filteredTransactions.length > 0 && !hasMore" class="load-end">
-        娌℃湁鏇村浜?      </view>
+        没有更多记录了
+      </view>
     </view>
   </view>
 </template>
@@ -66,10 +68,10 @@ interface Transaction {
 }
 
 const tabs = [
-  { label: '鍏ㄩ儴', value: '' },
-  { label: '娑堣垂', value: 'consume' },
-  { label: '鍏呭€?, value: 'purchase' },
-  { label: '閫€娆?, value: 'refund' }
+  { label: '全部', value: '' },
+  { label: '消费', value: 'consume' },
+  { label: '充值', value: 'purchase' },
+  { label: '退款', value: 'refund' }
 ]
 
 const currentTab = ref('')
@@ -99,22 +101,22 @@ function getTypeIcon(type: string): string {
   const map: Record<string, string> = {
     purchase: '+',
     consume: '-',
-    refund: '鈫?,
-    gift: '馃巵',
-    manual: '鉁?
+    refund: '↩',
+    gift: '赠',
+    manual: '调'
   }
-  return map[type] || '鈥?
+  return map[type] || '•'
 }
 
 function getTypeText(type: string): string {
   const map: Record<string, string> = {
-    purchase: '璐拱璇炬椂',
-    consume: '棰勭害鎵ｈ垂',
-    refund: '鍙栨秷閫€杩?,
-    gift: '璧犻€佽鏃?,
-    manual: '鎵嬪姩璋冩暣'
+    purchase: '充值',
+    consume: '扣课',
+    refund: '退款',
+    gift: '赠送',
+    manual: '手动调整'
   }
-  return map[type] || '鍏朵粬'
+  return map[type] || '其他'
 }
 
 function formatDateTime(dateStr: string): string {
@@ -143,20 +145,20 @@ async function loadTransactions(refresh = false) {
     hasMore.value = data.length === pageSize
     page.value++
   } catch (error: any) {
-    uni.showToast({ title: error.message || '鍔犺浇澶辫触', icon: 'none' })
+    uni.showToast({ title: error.message || '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
 }
 
-// 鐩戝惉tab鍒囨崲鏃堕噸鏂板姞杞?watch(currentTab, () => {
-  // 鐢变簬鏄墠绔瓫閫夛紝涓嶉渶瑕侀噸鏂拌姹?})
+watch(currentTab, () => {
+  loadTransactions(true)
+})
 
 onMounted(() => {
   loadTransactions()
 })
 
-// 瑙﹀簳鍔犺浇鏇村
 onReachBottom(() => {
   if (hasMore.value && !loading.value) {
     loadTransactions()
@@ -201,114 +203,67 @@ onReachBottom(() => {
 .transaction-item {
   display: flex;
   align-items: center;
-  background-color: #fff;
+  background: #fff;
+  border-radius: 16rpx;
   padding: 24rpx;
-  border-radius: 12rpx;
   margin-bottom: 16rpx;
-
-  .item-icon {
-    width: 72rpx;
-    height: 72rpx;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32rpx;
-    font-weight: 600;
-    margin-right: 20rpx;
-
-    &.purchase {
-      background-color: #e8f5e9;
-      color: #FF8800;
-    }
-
-    &.consume {
-      background-color: #ffebee;
-      color: #f44336;
-    }
-
-    &.refund {
-      background-color: #e3f2fd;
-      color: #2196f3;
-    }
-
-    &.gift {
-      background-color: #fff3e0;
-      color: #ff9800;
-    }
-
-    &.manual {
-      background-color: #f3e5f5;
-      color: #9c27b0;
-    }
-
-    &.default {
-      background-color: #f5f5f5;
-      color: #999;
-    }
-  }
-
-  .item-info {
-    flex: 1;
-
-    .item-title {
-      font-size: 30rpx;
-      color: #333;
-      margin-bottom: 8rpx;
-    }
-
-    .item-time {
-      font-size: 24rpx;
-      color: #999;
-    }
-  }
-
-  .item-change {
-    font-size: 36rpx;
-    font-weight: 600;
-    color: #f44336;
-
-    &.positive {
-      color: #FF8800;
-    }
-  }
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 100rpx 0;
-
-  .empty-image {
-    width: 160rpx;
-    height: 160rpx;
-    margin-bottom: 16rpx;
-  }
-
-  .empty-text {
-    font-size: 28rpx;
-    color: #999;
-  }
-}
-
-.loading-more {
+.item-icon {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 30rpx;
-  color: #999;
-  font-size: 26rpx;
+  background: #f5f5f5;
+  margin-right: 16rpx;
+}
 
-  text {
-    margin-left: 10rpx;
+.item-info {
+  flex: 1;
+}
+
+.item-title {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.item-time {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 6rpx;
+}
+
+.item-change {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.item-change.positive {
+  color: #FF8800;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 80rpx 0;
+
+  .empty-image {
+    width: 200rpx;
+    height: 200rpx;
+    margin-bottom: 20rpx;
+  }
+
+  .empty-text {
+    color: #999;
+    font-size: 26rpx;
   }
 }
 
+.loading-more,
 .load-end {
   text-align: center;
-  padding: 30rpx;
   color: #999;
-  font-size: 26rpx;
+  padding: 20rpx 0;
 }
 </style>

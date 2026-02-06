@@ -1,18 +1,18 @@
-﻿<template>
+<template>
   <view class="page">
-    <!-- 瀛﹀憳淇℃伅鍗＄墖 -->
+    <!-- 学员信息 -->
     <view class="profile-card">
       <image class="avatar" :src="student?.avatar || '/static/default-avatar.png'" mode="aspectFill" />
       <view class="info">
-        <text class="name">{{ student?.name || '鏈粦瀹氬鍛? }}</text>
-        <text class="no">瀛﹀彿: {{ student?.student_no || '-' }}</text>
+        <text class="name">{{ student?.name || '小朋友' }}</text>
+        <text class="no">学号: {{ student?.student_no || '-' }}</text>
       </view>
     </view>
 
-    <!-- 浜旂淮闆疯揪鍥?-->
+    <!-- 体测雷达 -->
     <view class="section">
       <view class="section-header">
-        <text class="title">杩愬姩鑳藉姏璇勪及</text>
+        <text class="title">体测雷达</text>
         <text class="date" v-if="latestTest">{{ formatDate(latestTest.test_date) }}</text>
       </view>
       <view class="radar-container">
@@ -27,44 +27,44 @@
       </view>
     </view>
 
-    <!-- 浣撴祴鍘嗗彶 -->
+    <!-- 体测记录 -->
     <view class="section">
       <view class="section-header">
-        <text class="title">浣撴祴璁板綍</text>
-        <text class="more" @click="viewAllTests">鏌ョ湅鍏ㄩ儴 ></text>
+        <text class="title">体测记录</text>
+        <text class="more" @click="viewAllTests">查看全部 ></text>
       </view>
       <view class="test-list" v-if="fitnessTests.length">
         <view class="test-item" v-for="test in fitnessTests" :key="test.id" @click="viewTestDetail(test)">
           <view class="test-date">{{ formatDate(test.test_date) }}</view>
           <view class="test-info">
             <text class="bmi">BMI: {{ test.bmi || '-' }}</text>
-            <text class="hw">韬珮: {{ test.height }}cm / 浣撻噸: {{ test.weight }}kg</text>
+            <text class="hw">身高: {{ test.height }}cm / 体重: {{ test.weight }}kg</text>
           </view>
           <view class="arrow">></view>
         </view>
       </view>
       <view class="empty" v-else>
-        <text>鏆傛棤浣撴祴璁板綍</text>
+        <text>暂无体测记录</text>
       </view>
     </view>
 
-    <!-- 璁粌缁熻 -->
+    <!-- 成长统计 -->
     <view class="section">
       <view class="section-header">
-        <text class="title">璁粌缁熻</text>
+        <text class="title">成长统计</text>
       </view>
       <view class="stats-grid">
         <view class="stat-card">
           <text class="value">{{ growthData?.total_training_sessions || 0 }}</text>
-          <text class="label">鎬昏缁冩鏁?/text>
+          <text class="label">训练次数</text>
         </view>
         <view class="stat-card">
           <text class="value">{{ formatHours(growthData?.total_training_hours || 0) }}</text>
-          <text class="label">鎬昏缁冩椂闀?/text>
+          <text class="label">训练时长</text>
         </view>
         <view class="stat-card">
           <text class="value">{{ growthData?.fitness_tests_count || 0 }}</text>
-          <text class="label">浣撴祴娆℃暟</text>
+          <text class="label">体测次数</text>
         </view>
       </view>
     </view>
@@ -83,12 +83,12 @@ const growthData = ref<any>(null)
 const fitnessTests = ref<any[]>([])
 const latestTest = ref<any>(null)
 
-// 闆疯揪鍥鹃厤缃?const radarItems = [
-  { key: 'speed', label: '閫熷害', color: '#FF6384' },
-  { key: 'agility', label: '鐏垫晱', color: '#36A2EB' },
-  { key: 'endurance', label: '鑰愬姏', color: '#FFCE56' },
-  { key: 'strength', label: '鍔涢噺', color: '#4BC0C0' },
-  { key: 'flexibility', label: '鏌旈煣', color: '#9966FF' }
+const radarItems = [
+  { key: 'speed', label: '速度', color: '#FF6384' },
+  { key: 'agility', label: '敏捷', color: '#36A2EB' },
+  { key: 'endurance', label: '耐力', color: '#FFCE56' },
+  { key: 'strength', label: '力量', color: '#4BC0C0' },
+  { key: 'flexibility', label: '柔韧', color: '#9966FF' }
 ]
 
 onMounted(async () => {
@@ -103,23 +103,18 @@ async function loadData() {
   const studentId = userStore.currentStudent.id
 
   try {
-    // 鍔犺浇瀛﹀憳淇℃伅
     student.value = await studentApi.get(studentId)
-
-    // 鍔犺浇鎴愰暱妗ｆ
     growthData.value = await studentApi.getGrowth(studentId)
-
-    // 鍔犺浇浣撴祴鍘嗗彶
     fitnessTests.value = await growthApi.getFitnessHistory(studentId, 0, 5)
     if (fitnessTests.value.length) {
       latestTest.value = fitnessTests.value[0]
     }
   } catch (error) {
-    console.error('鍔犺浇鏁版嵁澶辫触', error)
+    console.error('加载成长数据失败', error)
   }
 }
 
-// 缁樺埗闆疯揪鍥?function drawRadarChart() {
+function drawRadarChart() {
   const ctx = uni.createCanvasContext('radarChart')
   const centerX = 150
   const centerY = 150
@@ -127,7 +122,6 @@ async function loadData() {
   const sides = 5
   const angleStep = (Math.PI * 2) / sides
 
-  // 缁樺埗鑳屾櫙缃戞牸
   ctx.setStrokeStyle('#e0e0e0')
   ctx.setLineWidth(1)
 
@@ -148,7 +142,6 @@ async function loadData() {
     ctx.stroke()
   }
 
-  // 缁樺埗杞寸嚎
   for (let i = 0; i < sides; i++) {
     const angle = i * angleStep - Math.PI / 2
     ctx.beginPath()
@@ -157,7 +150,6 @@ async function loadData() {
     ctx.stroke()
   }
 
-  // 缁樺埗鏁版嵁鍖哄煙
   const data = growthData.value?.current_radar || {}
   const values = [
     (data.speed || 0) / 100,
@@ -188,7 +180,7 @@ async function loadData() {
   ctx.fill()
   ctx.stroke()
 
-  // 缁樺埗鏁版嵁鐐?  ctx.setFillStyle('#FF8800')
+  ctx.setFillStyle('#FF8800')
   for (let i = 0; i < sides; i++) {
     const angle = i * angleStep - Math.PI / 2
     const r = radius * values[i]
@@ -199,10 +191,9 @@ async function loadData() {
     ctx.fill()
   }
 
-  // 缁樺埗鏍囩
   ctx.setFillStyle('#333')
   ctx.setFontSize(12)
-  const labels = ['閫熷害', '鐏垫晱', '鑰愬姏', '鍔涢噺', '鏌旈煣']
+  const labels = radarItems.map(item => item.label)
   for (let i = 0; i < sides; i++) {
     const angle = i * angleStep - Math.PI / 2
     const x = centerX + (radius + 20) * Math.cos(angle)
@@ -221,9 +212,9 @@ function formatDate(dateStr: string) {
 
 function formatHours(hours: number) {
   if (hours < 1) {
-    return `${Math.round(hours * 60)}鍒嗛挓`
+    return `${Math.round(hours * 60)}分钟`
   }
-  return `${hours.toFixed(1)}灏忔椂`
+  return `${hours.toFixed(1)}小时`
 }
 
 function viewAllTests() {
@@ -322,64 +313,53 @@ function viewTestDetail(test: any) {
   display: flex;
   align-items: center;
   gap: 8rpx;
-}
-
-.dot {
-  width: 16rpx;
-  height: 16rpx;
-  border-radius: 50%;
-}
-
-.legend-item .label {
   font-size: 24rpx;
   color: #666;
 }
 
-.legend-item .value {
-  font-size: 24rpx;
-  color: #333;
-  font-weight: bold;
+.legend-item .dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
 }
 
 .test-list {
-  margin-top: 10rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
 }
 
 .test-item {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 24rpx 0;
-  border-bottom: 1rpx solid #f0f0f0;
-}
-
-.test-item:last-child {
-  border-bottom: none;
+  padding: 20rpx;
+  border-radius: 16rpx;
+  background: #f8f8f8;
 }
 
 .test-date {
-  font-size: 28rpx;
+  font-size: 26rpx;
   color: #333;
-  width: 180rpx;
+  font-weight: 600;
 }
 
 .test-info {
   flex: 1;
-}
-
-.test-info .bmi {
-  font-size: 28rpx;
-  color: #FF8800;
-  display: block;
-}
-
-.test-info .hw {
+  margin-left: 20rpx;
+  color: #666;
   font-size: 24rpx;
-  color: #999;
 }
 
 .arrow {
-  color: #ccc;
   font-size: 28rpx;
+  color: #bbb;
+}
+
+.empty {
+  text-align: center;
+  color: #999;
+  padding: 20rpx 0;
 }
 
 .stats-grid {
@@ -389,28 +369,21 @@ function viewTestDetail(test: any) {
 }
 
 .stat-card {
-  text-align: center;
+  background: #f8f8f8;
+  border-radius: 16rpx;
   padding: 20rpx;
-  background: #f9f9f9;
-  border-radius: 12rpx;
+  text-align: center;
 }
 
 .stat-card .value {
-  font-size: 40rpx;
+  font-size: 32rpx;
   font-weight: bold;
   color: #FF8800;
-  display: block;
 }
 
 .stat-card .label {
-  font-size: 22rpx;
-  color: #999;
+  font-size: 24rpx;
+  color: #666;
   margin-top: 8rpx;
-}
-
-.empty {
-  text-align: center;
-  padding: 40rpx;
-  color: #999;
 }
 </style>
