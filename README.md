@@ -118,6 +118,23 @@ pnpm -C apps/coach build:mp-weixin
 - `/dashboard`
 - `/ai`
 
+## 登录与注册说明（小程序）
+
+- 微信登录：必须在微信小程序内完成授权，后端会校验微信登录凭证并同步微信昵称/头像。
+- 账号登录：支持 `用户名 / 手机号 / 邮箱 + 密码`。
+- 邮箱注册：支持邮箱验证码注册，并可设置用户名、手机号作为后续登录凭证。
+
+后端环境变量（`apps/api/.env`）至少需要配置：
+
+- `WECHAT_APPID`
+- `WECHAT_SECRET`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASSWORD`
+- `SMTP_FROM`
+- `ALLOW_WECHAT_LOGIN_WITHOUT_SECRET=false`
+
 ## 线上部署快照
 
 详见：`DEPLOYMENT_REPORT.md`

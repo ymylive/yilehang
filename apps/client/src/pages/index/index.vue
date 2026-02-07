@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="page">
     <view v-if="!userStore.isLoggedIn" class="marketing">
       <view class="hero">
@@ -18,7 +18,7 @@
           <view class="hero-tags">
             <view class="tag">专业教练</view>
             <view class="tag">灵活约课</view>
-            <view class="tag">AI陪练</view>
+            <view class="tag">体育+辅导</view>
             <view class="tag">安全合规</view>
           </view>
           <view class="hero-actions">
@@ -53,10 +53,6 @@
             <view class="ray r6"></view>
             <view class="ray r7"></view>
             <view class="ray r8"></view>
-          </view>
-          <view class="sun-orbit">
-            <view class="sun-spark s1"></view>
-            <view class="sun-spark s2"></view>
           </view>
         </view>
       </view>
@@ -157,7 +153,7 @@
         </view>
         <view class="review-grid">
           <view
-            v-for="(review, index) in reviewCards"
+            v-for="(review, index) in visibleReviewCards"
             :key="review.name"
             class="review-card"
             :style="{ animationDelay: `${index * 0.06}s` }"
@@ -171,32 +167,60 @@
         </view>
       </view>
 
-      <view class="marketing-section ai-section">
-        <view class="ai-card">
-          <view class="ai-content">
-            <text class="ai-title">AI陪练 · 智能成长助手</text>
-            <text class="ai-desc">跳绳动作识别、姿态评估、运动建议与饮食建议，支持家长提问。</text>
-            <view class="ai-features">
-              <text class="ai-chip">自动计数</text>
-              <text class="ai-chip">动作纠正</text>
-              <text class="ai-chip">成长报告</text>
-              <text class="ai-chip">家长问答</text>
-            </view>
+      <view class="marketing-section strategy-section">
+        <view class="section-header marketing">
+          <text class="section-title">1-2-3-4 实战架构</text>
+          <text class="section-subtitle">不是低端托管，而是社区青少年韧性成长中心</text>
+        </view>
+
+        <view class="position-card">
+          <view class="position-badge">1 个核心定位</view>
+          <text class="position-title">不只是“看娃”，更是“大脑激活码”</text>
+          <text class="position-desc">通过“体育 + 辅导”管理效率，让孩子更爱动、更会学，家长看得见进步。</text>
+        </view>
+
+        <view class="strategy-grid two-col">
+          <view class="strategy-card" v-for="item in costStrategies" :key="item.title">
+            <text class="strategy-k">{{ item.no }}</text>
+            <text class="strategy-title">{{ item.title }}</text>
+            <text class="strategy-desc">{{ item.desc }}</text>
+            <text class="strategy-win">{{ item.win }}</text>
           </view>
-          <view class="ai-cta">
-            <button class="cta primary" @click="goTo('/pages/training/index')">体验AI陪练</button>
-            <text class="ai-note">* AI模块可逐步启用</text>
+        </view>
+
+        <view class="strategy-grid three-col">
+          <view class="strategy-card" v-for="item in visibleProfitLoops" :key="item.title">
+            <text class="strategy-k">{{ item.no }}</text>
+            <text class="strategy-title">{{ item.title }}</text>
+            <text class="strategy-desc">{{ item.desc }}</text>
           </view>
+        </view>
+
+        <view class="strategy-grid two-col">
+          <view class="strategy-card" v-for="item in visibleEventPackaging" :key="item.title">
+            <text class="strategy-k">{{ item.no }}</text>
+            <text class="strategy-title">{{ item.title }}</text>
+            <text class="strategy-desc">{{ item.desc }}</text>
+          </view>
+        </view>
+
+        <view class="strategy-toggle-wrap">
+          <text class="strategy-toggle" @click="toggleStrategyDetail">
+            {{ showStrategyDetail ? '收起架构详情' : '展开完整架构' }}
+          </text>
         </view>
       </view>
 
       <view class="marketing-section foot-cta">
         <view class="foot-card">
-          <text class="foot-title">准备好开始了吗？</text>
+          <view class="foot-head">
+            <text class="foot-kicker">免费体验课</text>
+            <text class="foot-title">准备好开始了吗？</text>
+          </view>
           <text class="foot-subtitle">一键预约，专属教练为孩子规划课程。</text>
           <view class="foot-actions">
             <button class="cta primary" @click="handleBooking">立即预约</button>
-            <button class="cta ghost" @click="openTrial">领取体验课</button>
+            <button class="cta ghost" @click="openTrial">先领体验课</button>
           </view>
         </view>
       </view>
@@ -217,7 +241,7 @@
       </view>
     </view>
 
-    <view v-else class="dashboard">
+    <view v-else-if="isParentOrStudent" class="dashboard">
       <!-- 顶部区域 -->
       <view class="header-section">
         <!-- 背景装饰 -->
@@ -389,6 +413,72 @@
       <!-- 底部安全区 -->
       <view class="safe-bottom"></view>
     </view>
+
+    <view v-else-if="isCoach" class="role-dashboard coach">
+      <view class="role-hero">
+        <text class="role-title">教练工作空间</text>
+        <text class="role-subtitle">查看我的学员、课表与收入统计</text>
+      </view>
+      <view class="role-grid">
+        <view class="role-card tap-active" @click="goTo('/pages/coach/workbench/index')">
+          <text class="role-icon">📋</text>
+          <text class="role-name">工作台</text>
+          <text class="role-desc">今日安排与待办</text>
+        </view>
+        <view class="role-card tap-active" @click="goTo('/pages/coach/schedule/index')">
+          <text class="role-icon">📅</text>
+          <text class="role-name">我的课表</text>
+          <text class="role-desc">查看并处理约课</text>
+        </view>
+        <view class="role-card tap-active" @click="goTo('/pages/coach/students/index')">
+          <text class="role-icon">👥</text>
+          <text class="role-name">我的学员</text>
+          <text class="role-desc">跟进训练进度</text>
+        </view>
+        <view class="role-card tap-active" @click="goTo('/pages/coach/income/index')">
+          <text class="role-icon">💰</text>
+          <text class="role-name">收入统计</text>
+          <text class="role-desc">查看课时收益</text>
+        </view>
+      </view>
+    </view>
+
+    <view v-else-if="isMerchant" class="role-dashboard merchant">
+      <view class="role-hero">
+        <text class="role-title">商户工作空间</text>
+        <text class="role-subtitle">核销订单、查看统计与经营数据</text>
+      </view>
+      <view class="role-grid">
+        <view class="role-card tap-active" @click="goTo('/pages/merchant/index')">
+          <text class="role-icon">🏪</text>
+          <text class="role-name">商家工作台</text>
+          <text class="role-desc">今日核销与看板</text>
+        </view>
+        <view class="role-card tap-active" @click="goTo('/pages/merchant/verify')">
+          <text class="role-icon">📷</text>
+          <text class="role-name">扫码核销</text>
+          <text class="role-desc">快速处理兑换订单</text>
+        </view>
+        <view class="role-card tap-active" @click="goTo('/pages/merchant/orders')">
+          <text class="role-icon">📦</text>
+          <text class="role-name">订单管理</text>
+          <text class="role-desc">待核销与历史订单</text>
+        </view>
+        <view class="role-card tap-active" @click="goTo('/pages/merchant/stats')">
+          <text class="role-icon">📊</text>
+          <text class="role-name">数据统计</text>
+          <text class="role-desc">趋势与经营分析</text>
+        </view>
+      </view>
+    </view>
+
+    <view v-else class="role-dashboard fallback">
+      <view class="role-hero">
+        <text class="role-title">欢迎使用易乐航</text>
+        <text class="role-subtitle">请先登录或切换账号后继续</text>
+      </view>
+      <button class="cta primary" @click="goTo('/pages/user/login')">去登录</button>
+    </view>
   </view>
 </template>
 
@@ -401,11 +491,16 @@ import { trackEvent } from '@/utils/track'
 
 const userStore = useUserStore()
 
+const isParentOrStudent = computed(() => userStore.isParent || userStore.isStudent)
+const isCoach = computed(() => userStore.user?.role === 'coach')
+const isMerchant = computed(() => userStore.user?.role === 'merchant')
+
 const currentStudentName = computed(() => {
   return userStore.currentStudent?.name || userStore.user?.nickname || '小朋友'
 })
 
 const todayCourses = ref<any[]>([])
+const showStrategyDetail = ref(false)
 
 const weekStats = ref({
   sessions: 0,
@@ -452,6 +547,78 @@ const reviewCards = [
   { name: '林爸爸', score: '5.0', text: '体能提升明显，课程体系化，孩子更自信了。' },
   { name: '晓雨妈妈', score: '4.8', text: '约课方便，提醒及时，整体体验很舒服。' }
 ]
+
+const visibleReviewCards = computed(() => {
+  return showStrategyDetail.value ? reviewCards : reviewCards.slice(0, 2)
+})
+
+const costStrategies = [
+  {
+    no: 2,
+    title: '分布式社区厨房',
+    desc: '与口碑餐馆轮换供餐，透明可查，家长可实地感知。',
+    win: '风险外包 + 成本更稳 + 口味更优'
+  },
+  {
+    no: 3,
+    title: '“1+N”人才矩阵',
+    desc: '1位专业教练定SOP，N位大学生领队做陪伴与执行。',
+    win: '专业保障 + 榜样陪伴 + 轻资产扩张'
+  }
+]
+
+const profitLoops = [
+  {
+    no: 4,
+    title: '保分/进步奖学金',
+    desc: '围绕体测达标与进步返现，家长购买的是确定性。'
+  },
+  {
+    no: 5,
+    title: '能量支票体系',
+    desc: '运动积分可兑换合作商家权益，激发孩子自驱。'
+  },
+  {
+    no: 6,
+    title: '高毛利增值服务',
+    desc: '报告、装备、营地形成结构化增收，强化复购。'
+  }
+]
+
+const visibleProfitLoops = computed(() => {
+  return showStrategyDetail.value ? profitLoops : profitLoops.slice(0, 2)
+})
+
+const eventPackaging = [
+  {
+    no: 7,
+    title: '1+1 暖苗计划',
+    desc: '城市孩子运动成长，同时联动公益捐赠，价值可感。'
+  },
+  {
+    no: 8,
+    title: '真实数据闭环',
+    desc: '一物一码、照片回执、链路可追溯，杜绝伪公益质疑。'
+  },
+  {
+    no: 9,
+    title: '合规化运营',
+    desc: '劳务协议、食品留样、意外险公示，风控前置。'
+  },
+  {
+    no: 10,
+    title: '数字化资产',
+    desc: '英雄榜 + 成长曲线，家长看到“肉眼可见的进步”。'
+  }
+]
+
+const visibleEventPackaging = computed(() => {
+  return showStrategyDetail.value ? eventPackaging : eventPackaging.slice(0, 2)
+})
+
+function toggleStrategyDetail() {
+  showStrategyDetail.value = !showStrategyDetail.value
+}
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -608,16 +775,83 @@ page {
   padding-bottom: 140rpx;
 }
 
+.role-dashboard {
+  min-height: 100vh;
+  padding: 36rpx 24rpx 140rpx;
+  background: var(--c-bg-body);
+}
+
+.role-hero {
+  padding: 34rpx 28rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(135deg, #ffb347 0%, #ff8800 100%);
+  box-shadow: 0 12rpx 28rpx rgba(255, 136, 0, 0.2);
+}
+
+.role-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.role-subtitle {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.role-grid {
+  margin-top: 24rpx;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+}
+
+.role-card {
+  background: #ffffff;
+  border-radius: 22rpx;
+  padding: 24rpx 20rpx;
+  box-shadow: 0 8rpx 22rpx rgba(0, 0, 0, 0.06);
+}
+
+.role-icon {
+  display: block;
+  font-size: 44rpx;
+}
+
+.role-name {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--c-text-main);
+}
+
+.role-desc {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--c-text-light);
+}
+
+.role-dashboard.fallback .cta {
+  margin-top: 20rpx;
+  width: 100%;
+}
+
 .hero {
   position: relative;
-  padding: 80rpx 28rpx 60rpx;
+  padding: 80rpx 32rpx 64rpx;
   overflow: hidden;
 }
 
 .hero-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #FFB347 0%, #FF8800 60%, #FF7A18 100%);
+  background: linear-gradient(140deg, #FFA93A 0%, #FF8800 65%, #F97316 100%);
   border-radius: 0 0 80rpx 80rpx;
 }
 
@@ -625,15 +859,15 @@ page {
   position: absolute;
   inset: 0;
   background-image: radial-gradient(rgba(255, 255, 255, 0.16) 1rpx, transparent 1rpx);
-  background-size: 30rpx 30rpx;
-  opacity: 0.5;
+  background-size: 34rpx 34rpx;
+  opacity: 0.28;
 }
 
 .hero-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(6rpx);
-  opacity: 0.5;
+  filter: blur(12rpx);
+  opacity: 0.28;
 }
 
 .orb-1 {
@@ -667,7 +901,7 @@ page {
   flex-direction: column;
   gap: 20rpx;
   max-width: 560rpx;
-  padding-right: 40rpx;
+  padding-right: 210rpx;
   animation: fadeUp 0.8s ease both;
 }
 
@@ -676,12 +910,12 @@ page {
   display: flex;
   align-items: center;
   gap: 12rpx;
-  padding: 10rpx 20rpx;
+  padding: 10rpx 18rpx;
   border-radius: 999rpx;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.2);
   color: #FFFFFF;
-  font-size: 24rpx;
-  letter-spacing: 2rpx;
+  font-size: 22rpx;
+  letter-spacing: 1rpx;
 }
 
 .pill-icon {
@@ -689,10 +923,10 @@ page {
 }
 
 .hero-title {
-  font-size: 48rpx;
+  font-size: 46rpx;
   font-weight: 700;
   color: #FFFFFF;
-  text-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.18);
+  letter-spacing: 1rpx;
 }
 
 .hero-subtitle {
@@ -705,41 +939,52 @@ page {
 .hero-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 12rpx;
+  gap: 10rpx;
 }
 
 .tag {
-  padding: 8rpx 16rpx;
+  padding: 8rpx 14rpx;
   border-radius: 20rpx;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1rpx solid rgba(255, 255, 255, 0.22);
   color: #FFFFFF;
-  font-size: 22rpx;
+  font-size: 21rpx;
 }
 
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
+  gap: 12rpx;
   margin-top: 10rpx;
 }
 
 .cta {
-  border-radius: 999rpx;
-  padding: 20rpx 30rpx;
+  border-radius: 24rpx;
+  padding: 0 30rpx;
+  height: 88rpx;
   font-size: 26rpx;
   font-weight: 600;
   border: none;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.16s ease, opacity 0.16s ease, box-shadow 0.16s ease;
 }
 
 .cta::after {
   border: none;
 }
 
+.cta:active {
+  transform: scale(0.97);
+  opacity: 0.92;
+}
+
 .cta.primary {
   background: #FFFFFF;
   color: var(--c-primary);
-  box-shadow: 0 12rpx 24rpx rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12rpx 26rpx rgba(17, 24, 39, 0.16);
 }
 
 .cta.ghost {
@@ -762,10 +1007,11 @@ page {
 
 .metric {
   min-width: 150rpx;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 24rpx;
   padding: 16rpx;
   text-align: center;
+  border: 1rpx solid rgba(255, 255, 255, 0.18);
 }
 
 .metric-value {
@@ -780,113 +1026,90 @@ page {
 }
 
 .hero-sun {
-  position: absolute;
-  top: -78rpx;
-  right: -128rpx;
-  width: 340rpx;
-  height: 340rpx;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.88;
-  animation: sunFloat 6s ease-in-out infinite;
+  display: none;
 }
 
 .sun-glow {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.34) 0%, rgba(255, 205, 108, 0.28) 34%, rgba(255, 140, 0, 0.1) 64%, transparent 78%);
-  filter: blur(12rpx);
-  opacity: 0.9;
+  background: radial-gradient(circle, rgba(255, 248, 220, 0.35) 0%, rgba(255, 210, 122, 0.24) 40%, rgba(255, 138, 42, 0.12) 64%, transparent 80%);
+  filter: blur(8rpx);
+  opacity: 0.82;
+  mix-blend-mode: screen;
   animation: sunGlow 5s ease-in-out infinite;
 }
 
+
 .sun-core {
   position: absolute;
-  inset: 92rpx;
+  left: 50%;
+  top: 50%;
+  width: 78rpx;
+  height: 78rpx;
   border-radius: 50%;
+  transform: translate(-50%, -50%);
   background: radial-gradient(circle at 30% 30%, #FFF6C8 0%, #FFD35A 38%, #FF9A1F 70%, #FF7A00 100%);
-  box-shadow: 0 0 30rpx rgba(255, 180, 60, 0.6), 0 0 70rpx rgba(255, 140, 0, 0.35);
+  box-shadow: 0 0 22rpx rgba(255, 180, 60, 0.56), 0 0 44rpx rgba(255, 140, 0, 0.3);
   animation: sunPulse 3.8s ease-in-out infinite;
 }
 
 .sun-rays {
   position: absolute;
-  inset: 54rpx;
+  inset: 0;
   border-radius: 50%;
-  animation: sunSpin 18s linear infinite;
+  animation: sunSpin 16s linear infinite;
 }
 
 .ray {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 6rpx;
-  height: 46rpx;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 200, 92, 0.7), rgba(255, 140, 0, 0));
+  width: 4rpx;
+  height: 20rpx;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 200, 92, 0.72), rgba(255, 140, 0, 0));
   border-radius: 999rpx;
-  transform-origin: center -70rpx;
-  opacity: 0.9;
+  opacity: 0.74;
 }
 
-.ray.r1 { transform: translate(-50%, -50%) rotate(0deg); }
-.ray.r2 { transform: translate(-50%, -50%) rotate(45deg); }
-.ray.r3 { transform: translate(-50%, -50%) rotate(90deg); }
-.ray.r4 { transform: translate(-50%, -50%) rotate(135deg); }
-.ray.r5 { transform: translate(-50%, -50%) rotate(180deg); }
-.ray.r6 { transform: translate(-50%, -50%) rotate(225deg); }
-.ray.r7 { transform: translate(-50%, -50%) rotate(270deg); }
-.ray.r8 { transform: translate(-50%, -50%) rotate(315deg); }
+.ray.r1 { transform: translate(-50%, -50%) rotate(0deg) translateY(-52rpx); }
+.ray.r2 { transform: translate(-50%, -50%) rotate(45deg) translateY(-52rpx); }
+.ray.r3 { transform: translate(-50%, -50%) rotate(90deg) translateY(-52rpx); }
+.ray.r4 { transform: translate(-50%, -50%) rotate(135deg) translateY(-52rpx); }
+.ray.r5 { transform: translate(-50%, -50%) rotate(180deg) translateY(-52rpx); }
+.ray.r6 { transform: translate(-50%, -50%) rotate(225deg) translateY(-52rpx); }
+.ray.r7 { transform: translate(-50%, -50%) rotate(270deg) translateY(-52rpx); }
+.ray.r8 { transform: translate(-50%, -50%) rotate(315deg) translateY(-52rpx); }
 
-.sun-orbit {
-  position: absolute;
-  inset: 72rpx;
-  border-radius: 50%;
-  animation: sunOrbit 8s linear infinite;
-}
 
-.sun-spark {
-  position: absolute;
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  background: #FFF6C8;
-  box-shadow: 0 0 12rpx rgba(255, 255, 255, 0.95);
-}
 
-.sun-spark.s1 {
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-}
 
-.sun-spark.s2 {
-  bottom: 12rpx;
-  right: 36rpx;
-}
+
 
 .marketing-section {
-  padding: 0 28rpx;
-  margin-top: 40rpx;
+  padding: 0 32rpx;
+  margin-top: 56rpx;
 }
 
 .section-header.marketing {
-  margin-bottom: 20rpx;
+  margin-bottom: 24rpx;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6rpx;
+  gap: 8rpx;
 }
 
 .section-title {
-  font-size: 34rpx;
+  font-size: 38rpx;
   font-weight: 700;
-  color: var(--c-text-main);
+  color: #111827;
+  letter-spacing: 0.5rpx;
 }
 
 .section-subtitle {
   font-size: 24rpx;
-  color: var(--c-text-light);
-  margin-top: 8rpx;
+  color: #6B7280;
+  margin-top: 10rpx;
+  line-height: 1.6;
 }
 
 .card-row {
@@ -898,9 +1121,10 @@ page {
 .media-card {
   flex: 1 1 200rpx;
   background: #FFFFFF;
-  border-radius: 26rpx;
-  padding: 16rpx;
-  box-shadow: 0 10rpx 26rpx rgba(0, 0, 0, 0.06);
+  border-radius: 24rpx;
+  padding: 18rpx;
+  border: 1rpx solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 10rpx 24rpx rgba(15, 23, 42, 0.05);
   animation: fadeUp 0.8s ease both;
 }
 
@@ -944,7 +1168,8 @@ page {
   display: flex;
   align-items: center;
   gap: 16rpx;
-  box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 8rpx 20rpx rgba(15, 23, 42, 0.05);
   animation: fadeUp 0.8s ease both;
 }
 
@@ -996,7 +1221,8 @@ page {
   display: flex;
   gap: 16rpx;
   align-items: center;
-  box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 8rpx 20rpx rgba(15, 23, 42, 0.05);
   animation: fadeUp 0.8s ease both;
 }
 
@@ -1055,9 +1281,10 @@ page {
 
 .price-card {
   background: #FFFFFF;
-  border-radius: 26rpx;
+  border-radius: 24rpx;
   padding: 24rpx;
-  box-shadow: 0 10rpx 26rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 10rpx 24rpx rgba(15, 23, 42, 0.05);
   animation: fadeUp 0.8s ease both;
   position: relative;
 }
@@ -1101,15 +1328,16 @@ page {
 
 .review-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 16rpx;
 }
 
 .review-card {
-  background: #FFFFFF;
-  border-radius: 24rpx;
-  padding: 20rpx;
-  box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.06);
+  background: #FFFCF7;
+  border-radius: 10rpx 24rpx 24rpx 24rpx;
+  padding: 24rpx;
+  border: 1rpx solid rgba(251, 191, 36, 0.16);
+  box-shadow: 0 8rpx 18rpx rgba(15, 23, 42, 0.04);
   animation: fadeUp 0.8s ease both;
 }
 
@@ -1135,84 +1363,181 @@ page {
   color: var(--c-primary);
 }
 
-.ai-section {
-  margin-top: 50rpx;
+.strategy-section {
+  margin-top: 46rpx;
 }
 
-.ai-card {
-  background: linear-gradient(135deg, #FFB347 0%, #FF8800 100%);
+.position-card {
+  background: linear-gradient(140deg, #FFF7EC 0%, #FFECD3 100%);
   border-radius: 30rpx;
-  padding: 28rpx;
-  color: #FFFFFF;
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
-  box-shadow: 0 16rpx 30rpx rgba(255, 136, 0, 0.3);
+  padding: 24rpx;
+  box-shadow: 0 10rpx 26rpx rgba(255, 140, 0, 0.12);
+  margin-bottom: 18rpx;
 }
 
-.ai-title {
+.position-badge {
+  display: inline-block;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  background: #FFF;
+  color: #D97706;
+  font-size: 20rpx;
+  font-weight: 700;
+  margin-bottom: 12rpx;
+}
+
+.position-title {
+  display: block;
   font-size: 32rpx;
+  line-height: 1.45;
+  color: #7C2D12;
   font-weight: 700;
 }
 
-.ai-desc {
+.position-desc {
+  display: block;
+  margin-top: 10rpx;
   font-size: 24rpx;
-  opacity: 0.95;
+  color: #92400E;
   line-height: 1.6;
 }
 
-.ai-features {
+.strategy-grid {
+  display: grid;
+  gap: 14rpx;
+  margin-bottom: 14rpx;
+}
+
+.strategy-grid.two-col {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.strategy-grid.three-col {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.strategy-card {
+  background: #FFFBF5;
+  border-radius: 24rpx;
+  padding: 18rpx;
+  box-shadow: none;
+  border: 1rpx solid #FDE7C7;
   display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
+  flex-direction: column;
+  gap: 8rpx;
 }
 
-.ai-chip {
-  padding: 8rpx 16rpx;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 18rpx;
+.strategy-k {
+  min-width: 34rpx;
+  padding: 0 6rpx;
+  height: 34rpx;
+  border-radius: 999rpx;
+  background: #111827;
+  color: #fff;
+  font-size: 20rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.strategy-title {
+  font-size: 26rpx;
+  color: #111827;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.strategy-desc {
   font-size: 22rpx;
+  color: #4B5563;
+  line-height: 1.55;
 }
 
-.ai-cta {
+.strategy-win {
+  font-size: 20rpx;
+  color: #B45309;
+  line-height: 1.5;
+}
+
+.strategy-toggle-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 10rpx;
+}
+
+.strategy-toggle {
+  font-size: 24rpx;
+  color: var(--c-primary);
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: #fff3e0;
+}
+
+.foot-cta {
+  margin: 12rpx 0 52rpx;
+}
+
+.foot-card {
+  background: linear-gradient(140deg, #FF9C24 0%, #FF7A00 100%);
+  border-radius: 36rpx;
+  padding: 42rpx 34rpx;
+  box-shadow: 0 26rpx 54rpx -20rpx rgba(255, 122, 0, 0.48);
+  text-align: left;
+}
+
+.foot-head {
   display: flex;
   flex-direction: column;
   gap: 10rpx;
 }
 
-.ai-note {
+.foot-kicker {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 8rpx 14rpx;
   font-size: 20rpx;
-  opacity: 0.8;
-}
-
-.foot-cta {
-  margin-bottom: 40rpx;
-}
-
-.foot-card {
-  background: #FFFFFF;
-  border-radius: 30rpx;
-  padding: 28rpx;
-  box-shadow: 0 14rpx 26rpx rgba(0, 0, 0, 0.06);
-  text-align: center;
+  color: #9A3412;
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 999rpx;
+  font-weight: 700;
 }
 
 .foot-title {
-  font-size: 30rpx;
+  font-size: 38rpx;
   font-weight: 700;
-  color: var(--c-text-main);
+  color: #FFFFFF;
+  line-height: 1.35;
 }
 
 .foot-subtitle {
   font-size: 24rpx;
-  color: var(--c-text-light);
-  margin: 12rpx 0 20rpx;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 16rpx 0 24rpx;
+  line-height: 1.65;
 }
 
 .foot-actions {
   display: flex;
+  flex-direction: column;
   justify-content: center;
-  gap: 16rpx;
+  gap: 12rpx;
+}
+
+.foot-actions .cta {
+  width: 100%;
+}
+
+.foot-actions .cta.primary {
+  background: #FFFFFF;
+  color: #EA580C;
+  box-shadow: none;
+}
+
+.foot-actions .cta.ghost {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1rpx solid rgba(255, 255, 255, 0.45);
+  color: #FFFFFF;
 }
 
 .trial-modal {
@@ -1266,22 +1591,25 @@ page {
 }
 
 @media screen and (max-width: 360px) {
+  .strategy-grid.two-col,
+  .strategy-grid.three-col {
+    grid-template-columns: 1fr;
+  }
+
   .hero-content {
     max-width: 500rpx;
-    padding-right: 20rpx;
+    padding-right: 170rpx;
   }
 
   .hero-sun {
-    right: -150rpx;
-    top: -90rpx;
-    opacity: 0.78;
+    display: none;
   }
 }
 
 @keyframes fadeUp {
   from {
     opacity: 0;
-    transform: translateY(16rpx);
+    transform: translateY(8rpx);
   }
   to {
     opacity: 1;
@@ -1312,7 +1640,7 @@ page {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(12rpx);
+    transform: translateY(8rpx);
   }
 }
 
@@ -1329,10 +1657,10 @@ page {
 
 @keyframes sunPulse {
   0%, 100% {
-    transform: scale(1);
+    transform: translate(-50%, -50%) scale(1);
   }
   50% {
-    transform: scale(1.05);
+    transform: translate(-50%, -50%) scale(1.05);
   }
 }
 
@@ -1345,16 +1673,7 @@ page {
   }
 }
 
-@keyframes sunOrbit {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(-360deg);
-  }
-}
-
-/* 椤堕儴鍖哄煙 */
+/* 顶部区域 */
 .header-section {
   position: relative;
   padding: 0 30rpx 40rpx;
@@ -1476,7 +1795,7 @@ page {
   font-size: 40rpx;
 }
 
-/* 璇炬椂鍗＄墖 */
+/* 课时卡片 */
 .lesson-card {
   position: relative;
   z-index: 10;
@@ -1533,7 +1852,7 @@ page {
   margin-left: 8rpx;
 }
 
-/* 鍔熻兘鍏ュ彛 */
+/* 功能入口 */
 .feature-section {
   padding: 0 30rpx;
   margin-top: -20rpx;
@@ -1591,7 +1910,7 @@ page {
   color: var(--c-text-light);
 }
 
-/* 閫氱敤鍖哄潡 */
+/* 通用区块 */
 .section {
   margin: 30rpx;
   background: var(--c-bg-card);
@@ -1634,7 +1953,7 @@ page {
   margin-left: 6rpx;
 }
 
-/* 璇剧▼鍒楄〃 */
+/* 课程列表 */
 .course-list {
   display: flex;
   flex-direction: column;
@@ -1746,7 +2065,7 @@ page {
   color: var(--c-text-light);
 }
 
-/* 缁熻鍖哄潡 */
+/* 统计区域 */
 .stats-section {
   background: linear-gradient(135deg, #FFB347 0%, #FF8800 100%);
 }

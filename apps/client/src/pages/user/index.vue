@@ -23,6 +23,74 @@
     </view>
 
     <view class="content">
+      <!-- 商家工作台入口 -->
+      <view class="merchant-card" v-if="userStore.isLoggedIn && userStore.user?.role === 'merchant'">
+        <view class="section-head">
+          <text class="section-title">商家工作台</text>
+        </view>
+        <view class="merchant-actions">
+          <view class="merchant-action-item" @click="goTo('/pages/merchant/index')">
+            <view class="action-icon">🏪</view>
+            <text class="action-label">工作台</text>
+          </view>
+          <view class="merchant-action-item" @click="goTo('/pages/merchant/verify')">
+            <view class="action-icon">📷</view>
+            <text class="action-label">扫码核销</text>
+          </view>
+          <view class="merchant-action-item" @click="goTo('/pages/merchant/orders')">
+            <view class="action-icon">📋</view>
+            <text class="action-label">订单管理</text>
+          </view>
+          <view class="merchant-action-item" @click="goTo('/pages/merchant/stats')">
+            <view class="action-icon">📊</view>
+            <text class="action-label">数据统计</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 教练工作台入口 -->
+      <view class="coach-card" v-if="userStore.isLoggedIn && userStore.user?.role === 'coach'">
+        <view class="section-head">
+          <text class="section-title">教练工作台</text>
+        </view>
+        <view class="coach-actions">
+          <view class="coach-action-item" @click="goTo('/pages/coach/workbench/index')">
+            <view class="action-icon">📋</view>
+            <text class="action-label">工作台</text>
+          </view>
+          <view class="coach-action-item" @click="goTo('/pages/coach/schedule/index')">
+            <view class="action-icon">📅</view>
+            <text class="action-label">我的课表</text>
+          </view>
+          <view class="coach-action-item" @click="goTo('/pages/coach/students/index')">
+            <view class="action-icon">👥</view>
+            <text class="action-label">我的学员</text>
+          </view>
+          <view class="coach-action-item" @click="goTo('/pages/coach/income/index')">
+            <view class="action-icon">💰</view>
+            <text class="action-label">收入统计</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 学员信息卡片（学员角色） -->
+      <view class="student-card" v-if="userStore.isLoggedIn && userStore.isStudent">
+        <view class="section-head">
+          <text class="section-title">我的信息</text>
+        </view>
+        <view class="student-self-info">
+          <view class="info-row">
+            <text class="info-label">学号</text>
+            <text class="info-value">{{ userStore.user?.student?.student_no || '-' }}</text>
+          </view>
+          <view class="info-row">
+            <text class="info-label">剩余课时</text>
+            <text class="info-value highlight">{{ userStore.user?.student?.remaining_lessons || 0 }} 次</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 我的学员卡片（家长角色） -->
       <view class="student-card" v-if="userStore.isLoggedIn && userStore.isParent">
         <view class="section-head">
           <text class="section-title">我的学员</text>
@@ -42,7 +110,10 @@
               <text class="student-name">{{ student.name }}</text>
               <text class="student-meta">剩余课时 {{ student.remaining_lessons }}</text>
             </view>
-            <text class="student-mark" v-if="userStore.currentStudent?.id === student.id">已选</text>
+            <view class="student-actions">
+              <text class="student-mark" v-if="userStore.currentStudent?.id === student.id">已选</text>
+              <text class="create-account-btn" v-if="!student.user_id" @click.stop="createStudentAccount(student)">创建账号</text>
+            </view>
           </view>
         </view>
 
@@ -51,48 +122,54 @@
         </view>
       </view>
 
-      <view class="menu-card">
-        <view class="menu-item" @click="goTo('/pages/membership/index')">
+      <view class="menu-card" v-if="userStore.isLoggedIn && (userStore.isParent || userStore.isStudent)">
+        <view class="menu-item" @click="goTo('/pages/membership/index')" v-if="userStore.isParent || userStore.isStudent">
           <view class="menu-icon">卡</view>
           <text class="menu-label">我的会员卡</text>
           <text class="menu-badge" v-if="userStore.currentStudent?.remaining_lessons">{{ userStore.currentStudent.remaining_lessons }}次</text>
-          <text class="menu-arrow">&gt;</text>
+          <text class="menu-arrow">›</text>
+        </view>
+
+        <view class="menu-item" @click="goTo('/pages/chat/index')">
+          <view class="menu-icon">聊</view>
+          <text class="menu-label">聊天消息</text>
+          <text class="menu-arrow">›</text>
         </view>
 
         <view class="menu-item" @click="goTo('/pages/user/messages')">
           <view class="menu-icon">信</view>
-          <text class="menu-label">消息中心</text>
-          <text class="menu-arrow">&gt;</text>
+          <text class="menu-label">系统通知</text>
+          <text class="menu-arrow">›</text>
         </view>
 
-        <view class="menu-item" @click="goTo('/pages/user/orders')">
+        <view class="menu-item" @click="goTo('/pages/schedule/index')" v-if="userStore.isParent || userStore.isStudent">
           <view class="menu-icon">单</view>
-          <text class="menu-label">我的订单</text>
-          <text class="menu-arrow">&gt;</text>
+          <text class="menu-label">我的课表</text>
+          <text class="menu-arrow">›</text>
         </view>
 
-        <view class="menu-item" @click="goTo('/pages/user/coupons')">
+        <view class="menu-item" @click="goTo('/pages/membership/transactions')" v-if="userStore.isParent || userStore.isStudent">
           <view class="menu-icon">券</view>
-          <text class="menu-label">优惠券</text>
-          <text class="menu-arrow">&gt;</text>
+          <text class="menu-label">消费记录</text>
+          <text class="menu-arrow">›</text>
         </view>
 
-        <view class="menu-item" @click="goTo('/pages/user/feedback')">
+        <view class="menu-item" @click="goTo('/pages/review/create')" v-if="userStore.isStudent || userStore.isParent">
           <view class="menu-icon">意</view>
-          <text class="menu-label">意见反馈</text>
-          <text class="menu-arrow">&gt;</text>
+          <text class="menu-label">课程评价</text>
+          <text class="menu-arrow">›</text>
         </view>
 
-        <view class="menu-item" @click="goTo('/pages/user/settings')">
+        <view class="menu-item" @click="goTo('/pages/user/profile')">
           <view class="menu-icon">设</view>
-          <text class="menu-label">设置</text>
-          <text class="menu-arrow">&gt;</text>
+          <text class="menu-label">个人资料</text>
+          <text class="menu-arrow">›</text>
         </view>
 
-        <view class="menu-item" @click="goTo('/pages/user/about')">
+        <view class="menu-item" @click="goTo('/pages/index/index')">
           <view class="menu-icon">关</view>
-          <text class="menu-label">关于我们</text>
-          <text class="menu-arrow">&gt;</text>
+          <text class="menu-label">平台首页</text>
+          <text class="menu-arrow">›</text>
         </view>
       </view>
 
@@ -112,7 +189,7 @@ const userStore = useUserStore()
 const students = ref<any[]>([])
 
 onMounted(async () => {
-  if (userStore.isLoggedIn) {
+  if (userStore.isLoggedIn && userStore.isParent) {
     await loadStudents()
   }
 })
@@ -135,7 +212,8 @@ function getRoleText(role?: string) {
     parent: '家长',
     coach: '教练',
     admin: '管理员',
-    student: '学员'
+    student: '学员',
+    merchant: '商家'
   }
   return map[role || ''] || '用户'
 }
@@ -146,7 +224,11 @@ function selectStudent(student: any) {
 }
 
 function addStudent() {
-  uni.navigateTo({ url: '/pages/user/add-student' })
+  uni.navigateTo({ url: '/pages/user/create-student-account' })
+}
+
+function createStudentAccount(student: any) {
+  uni.navigateTo({ url: `/pages/user/create-student-account?id=${student.id}` })
 }
 
 function editProfile() {
@@ -384,6 +466,93 @@ function logout() {
   color: #dd7c16;
 }
 
+.student-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8rpx;
+}
+
+.create-account-btn {
+  font-size: 20rpx;
+  color: #fff;
+  background: linear-gradient(135deg, #ffbe52, #ff9120);
+  padding: 6rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.student-self-info {
+  padding: 10rpx 0;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.info-value {
+  font-size: 26rpx;
+  color: #333;
+  font-weight: 600;
+}
+
+.info-value.highlight {
+  color: #FF8800;
+}
+
+.merchant-card,
+.coach-card {
+  padding: 20rpx;
+  margin-bottom: 14rpx;
+  border-radius: 22rpx;
+  background: #fff;
+  box-shadow: 0 10rpx 24rpx rgba(31, 37, 51, 0.05);
+}
+
+.merchant-actions,
+.coach-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16rpx;
+}
+
+.merchant-action-item,
+.coach-action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  padding: 16rpx 0;
+  border-radius: 16rpx;
+  background: #f8f9fc;
+}
+
+.merchant-action-item:active,
+.coach-action-item:active {
+  background: #fff4e4;
+}
+
+.action-icon {
+  font-size: 40rpx;
+}
+
+.action-label {
+  font-size: 22rpx;
+  color: #666;
+}
+
 .student-empty {
   font-size: 24rpx;
   color: #98a1b4;
@@ -455,6 +624,11 @@ function logout() {
   color: #d95b4a;
   font-size: 30rpx;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
 }
 
 .logout-btn::after {

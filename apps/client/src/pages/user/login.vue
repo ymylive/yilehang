@@ -1,122 +1,68 @@
 <template>
-  <view class="page">
-    <view class="top-bg">
-      <view class="deco-circle c1"></view>
-      <view class="deco-circle c2"></view>
-      <view class="deco-circle c3"></view>
+  <view class="page page-enter anim-page-enter">
+    <view class="hero anim-fade-up">
+      <view class="hero-bubble bubble-1"></view>
+      <view class="hero-bubble bubble-2"></view>
+      <view class="hero-bubble bubble-3"></view>
+      <view class="brand">
+        <view class="logo-fallback">易</view>
+        <text class="title">易乐航</text>
+        <text class="subtitle">青春运动成长平台</text>
+      </view>
     </view>
 
-    <view class="brand-area">
-      <view class="logo-box">
-        <image class="logo-img" src="/static/logo.png" mode="aspectFit" />
-      </view>
-      <text class="app-name">易乐航</text>
-      <text class="app-slogan">让运动更快乐</text>
-    </view>
-
-    <view class="login-card">
-      <view class="tab-bar">
-        <view
-          :class="['tab-item', { active: loginMode === 'password' }]"
-          @click="loginMode = 'password'"
-        >
-          <text class="tab-text">密码登录</text>
-        </view>
-        <view
-          :class="['tab-item', { active: loginMode === 'code' }]"
-          @click="loginMode = 'code'"
-        >
-          <text class="tab-text">验证码登录</text>
-        </view>
-        <view class="tab-indicator" :style="{ left: loginMode === 'password' ? '0' : '50%' }"></view>
+    <view class="card anim-fade-up anim-delay-1">
+      <view class="mode-tabs">
+        <view :class="['mode-tab', { active: loginMode === 'wechat' }]" @click="loginMode = 'wechat'">微信登录</view>
+        <view :class="['mode-tab', { active: loginMode === 'account' }]" @click="loginMode = 'account'">账号登录</view>
       </view>
 
-      <view class="form-area">
-        <view class="input-group">
-          <text class="input-label">手机号</text>
-          <view class="input-wrapper">
-            <input
-              class="input-field"
-              type="number"
-              v-model="phone"
-              placeholder="请输入手机号"
-              :maxlength="11"
-              placeholder-class="placeholder"
-            />
-          </view>
-        </view>
+      <template v-if="loginMode === 'wechat'">
+        <text class="card-title">微信登录</text>
+        <text class="card-subtitle">授权后自动同步微信昵称和头像</text>
 
-        <view v-if="loginMode === 'password'" class="input-group">
-          <text class="input-label">密码</text>
-          <view class="input-wrapper">
-            <input
-              class="input-field"
-              :type="showPassword ? 'text' : 'password'"
-              v-model="password"
-              placeholder="请输入密码"
-              placeholder-class="placeholder"
-            />
-            <view class="input-suffix" @click="showPassword = !showPassword">
-              <text>{{ showPassword ? '隐藏' : '显示' }}</text>
-            </view>
-          </view>
-        </view>
-
-        <view v-else class="input-group">
-          <text class="input-label">验证码</text>
-          <view class="input-wrapper code-wrapper">
-            <input
-              class="input-field"
-              v-model="code"
-              placeholder="请输入验证码"
-              maxlength="6"
-              placeholder-class="placeholder"
-            />
-            <button
-              class="code-btn"
-              :class="{ disabled: codeSending || codeCountdown > 0 }"
-              @click="sendCode"
-              :disabled="codeSending || codeCountdown > 0"
-            >
-              {{ codeCountdown > 0 ? `${codeCountdown}s` : '获取验证码' }}
-            </button>
-          </view>
-        </view>
-
-        <button class="login-btn" @click="handleLogin" :loading="loading">
-          {{ loading ? '登录中...' : '登录' }}
+        <!-- #ifdef MP-WEIXIN -->
+        <button class="wechat-btn" :loading="loading" @click="wechatLogin">
+          {{ loading ? '登录中...' : '微信一键登录' }}
         </button>
+        <!-- #endif -->
 
-        <view class="quick-links">
-          <text class="link-text" @click="goRegister">注册账号</text>
-          <text v-if="loginMode === 'password'" class="link-text" @click="forgotPassword">忘记密码</text>
-        </view>
-      </view>
-    </view>
+        <!-- #ifndef MP-WEIXIN -->
+        <button class="wechat-btn" :loading="loading" @click="wechatLogin">
+          {{ loading ? '登录中...' : '微信一键登录' }}
+        </button>
+        <!-- #endif -->
+      </template>
 
-    <view class="other-login">
-      <view class="divider">
-        <view class="line"></view>
-        <text class="divider-text">其他登录方式</text>
-        <view class="line"></view>
-      </view>
-      <view class="social-login">
-        <view class="social-btn wechat" @click="wechatLogin">
-          <text class="social-icon">微信</text>
+      <template v-else>
+        <text class="card-title">账号登录</text>
+        <text class="card-subtitle">支持用户名 / 手机号 / 邮箱 + 密码</text>
+        <view class="input-box">
+          <input class="input-field" v-model="account" placeholder="请输入用户名 / 手机号 / 邮箱" />
         </view>
-      </view>
-    </view>
+        <view class="input-box">
+          <input class="input-field" :type="showPassword ? 'text' : 'password'" v-model="password" placeholder="请输入密码" />
+          <text class="toggle-pwd" @click="showPassword = !showPassword">{{ showPassword ? '隐藏' : '显示' }}</text>
+        </view>
+        <button class="account-btn" :loading="loading" @click="accountLogin">
+          {{ loading ? '登录中...' : '账号登录' }}
+        </button>
+      </template>
 
-    <view class="agreement">
-      <view class="checkbox-area" @click="agreed = !agreed">
-        <view :class="['checkbox', { checked: agreed }]">
-          <text v-if="agreed" class="check-icon">✓</text>
-        </view>
+      <view class="register-entry" @click="goRegister">
+        <text class="register-tip">没有账号？</text>
+        <text class="register-link">邮箱验证码注册</text>
       </view>
-      <text class="agree-text">我已阅读并同意</text>
-      <text class="agree-link" @click="viewAgreement('user')">《用户协议》</text>
-      <text class="agree-text">和</text>
-      <text class="agree-link" @click="viewAgreement('privacy')">《隐私政策》</text>
+
+      <view class="agreement">
+        <view class="checkbox" :class="{ checked: agreed }" @click="agreed = !agreed">
+          <text v-if="agreed">✓</text>
+        </view>
+        <text class="agreement-text">我已阅读并同意</text>
+        <text class="agreement-link" @click="viewAgreement('user')">《用户协议》</text>
+        <text class="agreement-text">和</text>
+        <text class="agreement-link" @click="viewAgreement('privacy')">《隐私政策》</text>
+      </view>
     </view>
   </view>
 </template>
@@ -126,77 +72,101 @@ import { ref } from 'vue'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
-
-const loginMode = ref<'password' | 'code'>('password')
-const phone = ref('')
-const password = ref('')
-const code = ref('')
-const showPassword = ref(false)
 const loading = ref(false)
 const agreed = ref(false)
-const codeSending = ref(false)
-const codeCountdown = ref(0)
+const loginMode = ref<'wechat' | 'account'>('wechat')
+const account = ref('')
+const password = ref('')
+const showPassword = ref(false)
 
-async function sendCode() {
-  if (!phone.value) {
-    uni.showToast({ title: '请输入手机号', icon: 'none' })
-    return
+function ensureAgreement() {
+  if (!agreed.value) {
+    uni.showToast({ title: '请先勾选用户协议', icon: 'none' })
+    return false
   }
-
-  const phoneRegex = /^1[3-9]\d{9}$/
-  if (!phoneRegex.test(phone.value)) {
-    uni.showToast({ title: '手机号格式不正确', icon: 'none' })
-    return
-  }
-
-  codeSending.value = true
-  try {
-    await userStore.sendSmsCode(phone.value)
-    uni.showToast({ title: '验证码已发送', icon: 'success' })
-    codeCountdown.value = 60
-    const timer = setInterval(() => {
-      codeCountdown.value--
-      if (codeCountdown.value <= 0) clearInterval(timer)
-    }, 1000)
-  } catch (error) {
-    uni.showToast({ title: '验证码发送失败', icon: 'none' })
-  } finally {
-    codeSending.value = false
-  }
+  return true
 }
 
-async function handleLogin() {
-  if (!phone.value) {
-    uni.showToast({ title: '请输入手机号', icon: 'none' })
+function getOrCreateDeviceId() {
+  const key = 'device_id'
+  const existing = uni.getStorageSync(key)
+  if (existing) return String(existing)
+
+  const generated = `dev-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  uni.setStorageSync(key, generated)
+  return generated
+}
+
+function routeByRole(role?: string) {
+  if (role === 'student') {
+    uni.switchTab({ url: '/pages/schedule/index' })
     return
   }
 
-  if (loginMode.value === 'password' && !password.value) {
+  if (role === 'coach') {
+    uni.navigateTo({ url: '/pages/coach/workbench/index' })
+    return
+  }
+
+  if (role === 'merchant') {
+    uni.navigateTo({ url: '/pages/merchant/index' })
+    return
+  }
+
+  uni.switchTab({ url: '/pages/index/index' })
+}
+
+async function doWechatOpenidLogin(withProfile = true) {
+  const loginRes: any = await new Promise((resolve, reject) => {
+    uni.login({ provider: 'weixin', success: resolve, fail: reject })
+  })
+
+  if (!loginRes?.code) {
+    throw new Error('未获取到微信登录凭证')
+  }
+
+  let userInfo: Record<string, any> | undefined
+  if (withProfile) {
+    try {
+      const profileRes: any = await new Promise((resolve, reject) => {
+        uni.getUserProfile({
+          desc: '用于完善用户资料',
+          success: resolve,
+          fail: reject
+        })
+      })
+      userInfo = profileRes?.userInfo
+    } catch (error: any) {
+      throw new Error(error?.errMsg?.includes('deny') ? '请允许获取微信信息后再登录' : '获取微信信息失败，请重试')
+    }
+  }
+
+  const deviceId = getOrCreateDeviceId()
+  await userStore.wechatLogin(loginRes.code, userInfo, deviceId)
+  const user = await userStore.fetchUserInfo()
+  routeByRole(user?.role)
+}
+
+async function accountLogin() {
+  if (loading.value) return
+  if (!ensureAgreement()) return
+
+  if (!account.value.trim()) {
+    uni.showToast({ title: '请输入用户名/手机号/邮箱', icon: 'none' })
+    return
+  }
+  if (!password.value) {
     uni.showToast({ title: '请输入密码', icon: 'none' })
-    return
-  }
-
-  if (loginMode.value === 'code' && !code.value) {
-    uni.showToast({ title: '请输入验证码', icon: 'none' })
-    return
-  }
-
-  if (!agreed.value) {
-    uni.showToast({ title: '请先同意用户协议与隐私政策', icon: 'none' })
     return
   }
 
   loading.value = true
   try {
-    if (loginMode.value === 'password') {
-      await userStore.login(phone.value, password.value)
-    } else {
-      await userStore.loginWithSms(phone.value, code.value)
-    }
-    await userStore.fetchUserInfo()
-    uni.switchTab({ url: '/pages/index/index' })
+    await userStore.login(account.value.trim(), password.value)
+    const user = await userStore.fetchUserInfo()
+    routeByRole(user?.role)
   } catch (error: any) {
-    uni.showToast({ title: error.message || '登录失败', icon: 'none' })
+    uni.showToast({ title: error?.message || '登录失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -206,265 +176,275 @@ function goRegister() {
   uni.navigateTo({ url: '/pages/user/register' })
 }
 
-function forgotPassword() {
-  uni.showToast({ title: '请联系管理员重置密码', icon: 'none' })
-}
+async function wechatLogin() {
+  if (loading.value) return
+  if (!ensureAgreement()) return
 
-function wechatLogin() {
-  uni.showToast({ title: '功能开发中', icon: 'none' })
+  // #ifndef MP-WEIXIN
+  uni.showToast({ title: '请在微信小程序中使用微信登录', icon: 'none' })
+  // #endif
+
+  // #ifdef MP-WEIXIN
+  loading.value = true
+  try {
+    await doWechatOpenidLogin(true)
+  } catch (error: any) {
+    uni.showToast({ title: error?.message || '微信登录失败', icon: 'none' })
+  } finally {
+    loading.value = false
+  }
+  // #endif
 }
 
 function viewAgreement(type: 'user' | 'privacy') {
-  uni.showToast({ title: type === 'user' ? '用户协议开发中' : '隐私政策开发中', icon: 'none' })
+  const title = type === 'user' ? '用户协议' : '隐私政策'
+  uni.showModal({ title, content: `${title}完善中，敬请期待`, showCancel: false })
 }
 </script>
 
 <style scoped>
 .page {
   min-height: 100vh;
-  background: #fff;
-  padding-bottom: 80rpx;
+  background: linear-gradient(180deg, #fff9f0 0%, #f8f9fb 56%);
+  padding-bottom: calc(56rpx + env(safe-area-inset-bottom));
 }
 
-.top-bg {
-  height: 260rpx;
-  background: linear-gradient(135deg, #FFB347, #FF8800);
+.hero {
+  height: 340rpx;
+  background: linear-gradient(135deg, #ffb347 0%, #ff8800 100%);
+  border-bottom-left-radius: 44rpx;
+  border-bottom-right-radius: 44rpx;
   position: relative;
   overflow: hidden;
 }
 
-.deco-circle {
+.hero-bubble {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.22);
 }
 
-.deco-circle.c1 {
-  width: 180rpx;
-  height: 180rpx;
-  top: -60rpx;
-  right: -40rpx;
+.bubble-1 {
+  width: 220rpx;
+  height: 220rpx;
+  right: -64rpx;
+  top: -82rpx;
 }
 
-.deco-circle.c2 {
+.bubble-2 {
+  width: 136rpx;
+  height: 136rpx;
+  left: -36rpx;
+  top: 140rpx;
+}
+
+.bubble-3 {
+  width: 92rpx;
+  height: 92rpx;
+  right: 140rpx;
+  top: 94rpx;
+}
+
+.brand {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding-top: calc(env(safe-area-inset-top) + 16rpx);
+}
+
+.logo-fallback {
   width: 120rpx;
   height: 120rpx;
-  bottom: 40rpx;
-  left: -40rpx;
-}
-
-.deco-circle.c3 {
-  width: 80rpx;
-  height: 80rpx;
-  bottom: 120rpx;
-  right: 80rpx;
-}
-
-.brand-area {
-  margin-top: -120rpx;
-  text-align: center;
-}
-
-.logo-box {
-  width: 140rpx;
-  height: 140rpx;
-  background: #fff;
   margin: 0 auto;
-  border-radius: 32rpx;
+  border-radius: 26rpx;
+  background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.08);
-}
-
-.logo-img {
-  width: 100rpx;
-  height: 100rpx;
-}
-
-.app-name {
-  font-size: 36rpx;
+  color: #ff8800;
+  font-size: 54rpx;
   font-weight: 700;
-  color: #333;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  display: block;
   margin-top: 16rpx;
-  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #ffffff;
 }
 
-.app-slogan {
-  font-size: 24rpx;
-  color: #999;
+.subtitle {
+  display: block;
   margin-top: 8rpx;
-}
-
-.login-card {
-  margin: 30rpx;
-  padding: 30rpx;
-  background: #fff;
-  border-radius: 24rpx;
-  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.06);
-}
-
-.tab-bar {
-  display: flex;
-  position: relative;
-  margin-bottom: 20rpx;
-  background: #f6f6f6;
-  border-radius: 30rpx;
-  overflow: hidden;
-}
-
-.tab-item {
-  flex: 1;
-  text-align: center;
-  padding: 16rpx 0;
-  font-size: 26rpx;
-  color: #666;
-  z-index: 1;
-}
-
-.tab-item.active {
-  color: #FF8800;
-  font-weight: 600;
-}
-
-.tab-indicator {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 50%;
-  background: #fff;
-  border-radius: 30rpx;
-  transition: left 0.2s ease;
-}
-
-.form-area .input-group {
-  margin-bottom: 20rpx;
-}
-
-.input-label {
   font-size: 24rpx;
-  color: #666;
-  margin-bottom: 8rpx;
-  display: block;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.input-wrapper {
+.card {
+  margin: -22rpx 24rpx 0;
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-shadow: 0 14rpx 36rpx rgba(255, 136, 0, 0.12);
+  padding: 30rpx 26rpx;
+}
+
+.mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10rpx;
+  margin-bottom: 20rpx;
+  background: #fff6e8;
+  border-radius: 16rpx;
+  padding: 8rpx;
+}
+
+.mode-tab {
+  height: 64rpx;
+  border-radius: 12rpx;
   display: flex;
   align-items: center;
-  background: #f6f6f6;
+  justify-content: center;
+  font-size: 24rpx;
+  color: #9f8a6e;
+}
+
+.mode-tab.active {
+  background: #fff;
+  color: #ff8800;
+  font-weight: 700;
+  box-shadow: 0 8rpx 16rpx rgba(255, 136, 0, 0.12);
+}
+
+.card-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+}
+
+.card-subtitle {
+  display: block;
+  margin-top: 10rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #9f8a6e;
+}
+
+.wechat-btn {
+  margin-top: 28rpx;
+  height: 88rpx;
+  border-radius: 999rpx;
+  background: #f2fdf5;
+  border: 1rpx solid #bee7cb;
+  color: #19a34a;
+  font-size: 30rpx;
+  font-weight: 700;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.wechat-btn::after {
+  border: none;
+}
+
+.input-box {
+  margin-top: 14rpx;
+  display: flex;
+  align-items: center;
   border-radius: 16rpx;
+  background: #f7f8fa;
   padding: 0 20rpx;
 }
 
 .input-field {
   flex: 1;
-  height: 90rpx;
-  font-size: 28rpx;
+  height: 86rpx;
+  font-size: 27rpx;
   color: #333;
 }
 
-.input-suffix {
+.toggle-pwd {
   font-size: 24rpx;
-  color: #FF8800;
+  color: #ff8800;
 }
 
-.code-wrapper .code-btn {
-  margin-left: 12rpx;
-  font-size: 24rpx;
-  color: #FF8800;
-  background: transparent;
-}
-
-.code-wrapper .code-btn.disabled {
-  color: #ccc;
-}
-
-.login-btn {
-  height: 90rpx;
-  border-radius: 16rpx;
-  background: #FF8800;
+.account-btn {
+  margin-top: 20rpx;
+  height: 88rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #ffb347, #ff8800);
   color: #fff;
   font-size: 30rpx;
-  margin-top: 10rpx;
-}
-
-.quick-links {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 16rpx;
-}
-
-.link-text {
-  font-size: 24rpx;
-  color: #999;
-}
-
-.other-login {
-  margin: 20rpx 30rpx;
-  text-align: center;
-}
-
-.divider {
+  font-weight: 700;
+  padding: 0;
   display: flex;
   align-items: center;
-  gap: 10rpx;
-  color: #999;
+  justify-content: center;
+  line-height: 1;
+}
+
+.account-btn::after {
+  border: none;
+}
+
+.register-entry {
+  margin-top: 18rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.register-tip {
   font-size: 22rpx;
-  margin-bottom: 20rpx;
+  color: #9f8a6e;
 }
 
-.divider .line {
-  flex: 1;
-  height: 1rpx;
-  background: #eee;
-}
-
-.social-login {
-  display: flex;
-  justify-content: center;
-}
-
-.social-btn {
-  width: 90rpx;
-  height: 90rpx;
-  border-radius: 50%;
-  background: #f6f6f6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26rpx;
-  color: #07C160;
+.register-link {
+  font-size: 22rpx;
+  color: #ff8800;
 }
 
 .agreement {
+  margin-top: 24rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6rpx;
-  font-size: 22rpx;
-  color: #999;
-  margin-top: 20rpx;
-  padding: 0 30rpx;
   flex-wrap: wrap;
+  gap: 6rpx;
 }
 
 .checkbox {
-  width: 28rpx;
-  height: 28rpx;
-  border-radius: 6rpx;
-  border: 1rpx solid #ccc;
+  width: 30rpx;
+  height: 30rpx;
+  border-radius: 8rpx;
+  border: 1rpx solid #d9c7ad;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #fff;
+  font-size: 20rpx;
+  background: #fff;
 }
 
 .checkbox.checked {
-  background: #FF8800;
-  border-color: #FF8800;
-  color: #fff;
+  background: #ff8800;
+  border-color: #ff8800;
 }
 
-.agree-link {
-  color: #FF8800;
+.agreement-text {
+  font-size: 22rpx;
+  color: #9f8a6e;
+}
+
+.agreement-link {
+  font-size: 22rpx;
+  color: #ff8800;
 }
 </style>
