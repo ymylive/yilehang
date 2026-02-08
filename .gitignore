@@ -42,3 +42,10 @@ unpackage/
 
 # Docker
 docker/data/
+
+# Local preview/temp artifacts
+.tmp_preview_condition.json
+preview_*_info.json
+preview_*_qr.png
+tmp_register_utf8.txt
+nul
