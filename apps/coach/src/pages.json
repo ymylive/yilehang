@@ -1,4 +1,4 @@
-﻿{
+{
   "pages": [
     {
       "path": "pages/workbench/index",
@@ -52,6 +52,18 @@
       "path": "pages/reviews/index",
       "style": {
         "navigationBarTitleText": "评价中心"
+      }
+    },
+    {
+      "path": "pages/chat/index",
+      "style": {
+        "navigationBarTitleText": "消息"
+      }
+    },
+    {
+      "path": "pages/chat/conversation",
+      "style": {
+        "navigationBarTitleText": "聊天"
       }
     },
     {

@@ -1,13 +1,21 @@
 """
 易乐航·ITS智慧体教云平台 - FastAPI 主入口
 """
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.api.v1.router import api_router
 from app.core.database import engine, Base
+
+
+# 确保上传目录存在
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(os.path.join(UPLOAD_DIR, "avatars"), exist_ok=True)
+os.makedirs(os.path.join(UPLOAD_DIR, "images"), exist_ok=True)
 
 
 @asynccontextmanager
@@ -39,6 +47,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 静态文件服务（上传的文件）
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # 注册路由
 app.include_router(api_router, prefix=settings.API_V1_STR)

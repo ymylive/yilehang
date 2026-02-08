@@ -1,0 +1,74 @@
+{
+  "name": "韧性成长中心商家端",
+  "appid": "__UNI__YILEHANG_MERCHANT",
+  "description": "社区青少年韧性成长中心 - 商家端（能量支票核销）",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "app-plus": {
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3,
+    "splashscreen": {
+      "alwaysShowBeforeRender": true,
+      "waiting": true,
+      "autoclose": true,
+      "delay": 0
+    },
+    "modules": {},
+    "distribute": {
+      "android": {
+        "permissions": [
+          "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.CAMERA\"/>"
+        ]
+      },
+      "ios": {},
+      "sdkConfigs": {}
+    }
+  },
+  "quickapp": {},
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "minified": true
+    },
+    "usingComponents": true,
+    "permission": {
+      "scope.camera": {
+        "desc": "用于扫描核销码"
+      }
+    }
+  },
+  "mp-alipay": {
+    "usingComponents": true
+  },
+  "mp-baidu": {
+    "usingComponents": true
+  },
+  "mp-toutiao": {
+    "usingComponents": true
+  },
+  "uniStatistics": {
+    "enable": false
+  },
+  "h5": {
+    "router": {
+      "mode": "history",
+      "base": "/merchant/"
+    },
+    "devServer": {
+      "port": 5175,
+      "proxy": {
+        "/api": {
+          "target": "http://localhost:8000",
+          "changeOrigin": true
+        }
+      }
+    }
+  },
+  "vueVersion": "3"
+}

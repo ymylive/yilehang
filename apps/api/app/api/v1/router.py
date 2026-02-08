@@ -13,12 +13,20 @@ from app.api.v1.endpoints import (
     reviews,
     dashboard,
     ai,
+    notifications,
+    upload,
+    chat,
+    energy,
+    merchants,
+    leaderboard,
+    roles,
 )
 
 api_router = APIRouter()
 
 # Core
 api_router.include_router(auth.router, prefix="/auth", tags=["Auth"])
+api_router.include_router(roles.router, prefix="/user", tags=["Roles"])
 api_router.include_router(students.router, prefix="/students", tags=["Students"])
 api_router.include_router(schedules.router, prefix="/schedules", tags=["Schedules"])
 api_router.include_router(training.router, prefix="/training", tags=["Training"])
@@ -35,3 +43,17 @@ api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboar
 
 # AI
 api_router.include_router(ai.router, prefix="/ai", tags=["AI"])
+
+# Notifications
+api_router.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
+
+# Upload
+api_router.include_router(upload.router, prefix="/upload", tags=["Upload"])
+
+# Chat
+api_router.include_router(chat.router, prefix="/chat", tags=["Chat"])
+
+# Energy System
+api_router.include_router(energy.router, prefix="/energy", tags=["Energy"])
+api_router.include_router(merchants.router, prefix="/merchants", tags=["Merchants"])
+api_router.include_router(leaderboard.router, prefix="/leaderboard", tags=["Leaderboard"])

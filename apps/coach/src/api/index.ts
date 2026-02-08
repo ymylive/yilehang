@@ -1,9 +1,16 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+const envBase = (import.meta.env.VITE_API_BASE_URL || '').trim()
+const isMpWeixin = typeof wx !== 'undefined' && typeof (globalThis as any).__wxConfig !== 'undefined'
+const BASE_URL = envBase || (isMpWeixin ? 'https://yilehang.cornna.xyz/api/v1' : '/api/v1')
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   data?: any
   params?: Record<string, any>
+}
+
+function shouldHandleUnauthorized(url: string): boolean {
+  const publicAuthPaths = ['/auth/login']
+  return !publicAuthPaths.includes(url)
 }
 
 async function request<T = any>(url: string, options: RequestOptions = {}): Promise<T> {
@@ -41,9 +48,14 @@ async function request<T = any>(url: string, options: RequestOptions = {}): Prom
         }
 
         if (res.statusCode === 401) {
-          uni.removeStorageSync('token')
-          uni.reLaunch({ url: '/pages/user/login' })
-          reject(new Error('\u767b\u5f55\u5df2\u8fc7\u671f'))
+          const detail = (res.data as any)?.detail || '\u672a\u6388\u6743'
+          if (token && shouldHandleUnauthorized(url)) {
+            uni.removeStorageSync('token')
+            uni.reLaunch({ url: '/pages/user/login' })
+            reject(new Error('\u767b\u5f55\u5df2\u8fc7\u671f'))
+            return
+          }
+          reject(new Error(typeof detail === 'string' ? detail : '\u8bf7\u6c42\u5931\u8d25'))
           return
         }
 
@@ -158,9 +170,52 @@ export const feedbackApi = {
 }
 
 export const authApi = {
-  login: (data: { phone: string; password: string }) => request('/auth/login', { method: 'POST', data }),
+  login: (data: { account: string; password: string }) => request('/auth/login', { method: 'POST', data }),
   getUserInfo: () => request('/auth/me'),
   logout: () => request('/auth/logout', { method: 'POST' })
+}
+
+export const chatApi = {
+  getConversations: (params?: { skip?: number; limit?: number }) =>
+    request('/chat/conversations', { params }),
+
+  createConversation: (data: { participant_id: number; student_id?: number; type?: string }) =>
+    request('/chat/conversations', { method: 'POST', data }),
+
+  getMessages: (conversationId: number, params?: { skip?: number; limit?: number }) =>
+    request(`/chat/conversations/${conversationId}/messages`, { params }),
+
+  sendMessage: (conversationId: number, data: { type?: string; content: string; reply_to_id?: number }) =>
+    request(`/chat/conversations/${conversationId}/messages`, { method: 'POST', data }),
+
+  markMessageRead: (messageId: number) =>
+    request(`/chat/messages/${messageId}/read`, { method: 'PUT' })
+}
+
+export const uploadApi = {
+  image: (filePath: string) => {
+    return new Promise((resolve, reject) => {
+      const token = uni.getStorageSync('token') || ''
+      uni.uploadFile({
+        url: BASE_URL + '/upload/image',
+        filePath,
+        name: 'file',
+        header: {
+          'Authorization': `Bearer ${token}`
+        },
+        success: (res) => {
+          if (res.statusCode === 200) {
+            resolve(JSON.parse(res.data))
+          } else {
+            reject(new Error('上传失败'))
+          }
+        },
+        fail: (err) => {
+          reject(new Error(err.errMsg || '上传失败'))
+        }
+      })
+    })
+  }
 }
 
 export default {
@@ -170,5 +225,7 @@ export default {
   schedule: scheduleApi,
   review: reviewApi,
   feedback: feedbackApi,
-  auth: authApi
+  auth: authApi,
+  chat: chatApi,
+  upload: uploadApi
 }

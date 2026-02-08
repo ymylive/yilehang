@@ -1,6 +1,6 @@
-<template>
-  <view class="workbench-page">
-    <view class="hero">
+﻿<template>
+  <view class="workbench-page page-enter">
+    <view class="hero anim-fade-up">
       <view class="hero-glow" aria-hidden="true"></view>
 
       <view class="hero-content">
@@ -31,29 +31,29 @@
       </view>
     </view>
 
-    <view class="quick-card">
-      <view class="quick-item" @click="goToSlots">
+    <view class="quick-card anim-fade-up anim-delay-1">
+      <view class="quick-item tap-active" @click="goToSlots">
         <view class="quick-icon">{{ t.slotIcon }}</view>
         <text class="quick-label">{{ t.slotManagement }}</text>
       </view>
-      <view class="quick-item" @click="goToStudents">
+      <view class="quick-item tap-active" @click="goToStudents">
         <view class="quick-icon">{{ t.studentIcon }}</view>
         <text class="quick-label">{{ t.studentManagement }}</text>
       </view>
-      <view class="quick-item" @click="goToIncome">
+      <view class="quick-item tap-active" @click="goToIncome">
         <view class="quick-icon">{{ t.incomeIcon }}</view>
         <text class="quick-label">{{ t.incomeStats }}</text>
       </view>
-      <view class="quick-item" @click="goToReviews">
+      <view class="quick-item tap-active" @click="goToReviews">
         <view class="quick-icon">{{ t.reviewIcon }}</view>
         <text class="quick-label">{{ t.reviewCenter }}</text>
       </view>
     </view>
 
-    <view class="section">
+    <view class="section anim-fade-up anim-delay-2">
       <view class="section-head">
         <text class="section-title">{{ t.todaySchedule }}</text>
-        <view class="section-link" @click="goToSchedule">
+        <view class="section-link tap-active" @click="goToSchedule">
           <text>{{ t.viewAll }}</text>
           <text class="arrow">&gt;</text>
         </view>
@@ -68,7 +68,7 @@
         <view
           v-for="lesson in todayLessons"
           :key="lesson.id"
-          class="lesson-item"
+          class="lesson-item tap-active"
           @click="goToLessonDetail(lesson.id)"
         >
           <view class="lesson-time">
@@ -421,7 +421,7 @@ onMounted(async () => {
 }
 
 .quick-card {
-  margin: -56rpx 24rpx 24rpx;
+  margin: -40rpx 24rpx 24rpx;
   padding: 18rpx 12rpx;
   border-radius: 24rpx;
   background: #fff;
@@ -661,3 +661,4 @@ onMounted(async () => {
   }
 }
 </style>
+

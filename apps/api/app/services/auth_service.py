@@ -34,6 +34,7 @@ class VerificationCodeStore:
 
     def __init__(self) -> None:
         self._codes: dict[str, dict] = {}
+        self._rate_limit: dict[str, list] = {}  # key -> list of timestamps
 
     def set_code(self, key: str, code: str, ttl_minutes: int = 5) -> None:
         self._codes[key] = {
@@ -65,6 +66,35 @@ class VerificationCodeStore:
             del self._codes[key]
             return None
         return stored["code"]
+
+    def check_rate_limit(self, key: str, max_attempts: int = 3, window_minutes: int = 5) -> Tuple[bool, Optional[int]]:
+        """Check if key has exceeded rate limit.
+
+        Returns:
+            (is_allowed, seconds_until_reset)
+        """
+        now = datetime.utcnow()
+        window_start = now - timedelta(minutes=window_minutes)
+
+        # Clean up old timestamps
+        if key in self._rate_limit:
+            self._rate_limit[key] = [
+                ts for ts in self._rate_limit[key]
+                if ts > window_start
+            ]
+        else:
+            self._rate_limit[key] = []
+
+        # Check if limit exceeded
+        if len(self._rate_limit[key]) >= max_attempts:
+            oldest_timestamp = min(self._rate_limit[key])
+            reset_time = oldest_timestamp + timedelta(minutes=window_minutes)
+            seconds_until_reset = int((reset_time - now).total_seconds())
+            return False, max(seconds_until_reset, 0)
+
+        # Record this attempt
+        self._rate_limit[key].append(now)
+        return True, None
 
 
 EMAIL_CODE_STORE = VerificationCodeStore()
@@ -306,10 +336,15 @@ class WechatService:
             if not settings.ALLOW_WECHAT_LOGIN_WITHOUT_SECRET:
                 WechatService._ensure_wechat_config()
             else:
+                # Security: Only allow fallback in DEBUG mode to prevent predictable ID attacks
+                if not settings.DEBUG:
+                    raise Exception("WeChat login fallback is disabled in production")
                 if not device_id:
                     raise Exception("WECHAT_SECRET not configured and device_id is missing")
-                fallback_openid = f"dev_openid_{device_id}"
-                logger.warning("[WeChat][DEV-FALLBACK] using fallback openid: %s", fallback_openid)
+                # Use cryptographically secure random ID instead of predictable pattern
+                import secrets
+                fallback_openid = f"dev_{secrets.token_hex(16)}"
+                logger.warning("[WeChat][DEV-FALLBACK] using fallback openid: %s", fallback_openid[:20])
                 return {"openid": fallback_openid, "session_key": "dev-fallback"}
         else:
             WechatService._ensure_wechat_config()

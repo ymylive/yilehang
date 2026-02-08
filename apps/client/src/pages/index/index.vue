@@ -1,58 +1,76 @@
 <template>
   <view class="page">
     <view v-if="!userStore.isLoggedIn" class="marketing">
-      <view class="hero">
+      <view class="hero hero-fullscreen">
         <view class="hero-bg">
           <view class="hero-orb orb-1"></view>
           <view class="hero-orb orb-2"></view>
           <view class="hero-orb orb-3"></view>
+          <view class="hero-orb orb-4"></view>
           <view class="hero-grid"></view>
         </view>
-        <view class="hero-content">
-          <view class="brand-pill">
-            <text class="pill-icon">⚡</text>
-            <text>易乐航 · KTS 智慧体教</text>
-          </view>
-          <text class="hero-title">青春向上 · 运动更快乐</text>
-          <text class="hero-subtitle">专业教练 + 科学课时 + 智能陪练，打造孩子的运动成长体系</text>
-          <view class="hero-tags">
-            <view class="tag">专业教练</view>
-            <view class="tag">灵活约课</view>
-            <view class="tag">体育+辅导</view>
-            <view class="tag">安全合规</view>
-          </view>
-          <view class="hero-actions">
-            <button class="cta primary" @click="handleBooking">在线预约</button>
-            <button class="cta ghost" @click="openTrial">免费体验课报名</button>
-            <button class="cta outline" @click="handleConsult">一键咨询</button>
-          </view>
-          <view class="hero-metrics">
-            <view class="metric">
-              <text class="metric-value">98%</text>
-              <text class="metric-label">满意度</text>
+        <view class="hero-content hero-content-center">
+          <view class="brand-logo">
+            <view class="logo-icon">易</view>
+            <view class="logo-text">
+              <text class="logo-name">易乐航 ITS</text>
+              <text class="logo-slogan">社区青少年韧性成长中心</text>
             </view>
-            <view class="metric">
-              <text class="metric-value">12K+</text>
-              <text class="metric-label">累计上课</text>
+          </view>
+          <text class="hero-title hero-title-large">重新定义放学两小时</text>
+          <text class="hero-subtitle hero-subtitle-center">不是"看娃托管" · 而是"大脑激活码"</text>
+          <view class="hero-features">
+            <view class="feature-item">
+              <text class="feature-icon">⚡</text>
+              <view class="feature-text">
+                <text class="feature-title">运动激活</text>
+                <text class="feature-desc">多巴胺提升专注</text>
+              </view>
             </view>
-            <view class="metric">
-              <text class="metric-value">50+</text>
-              <text class="metric-label">明星教练</text>
+            <view class="feature-item">
+              <text class="feature-icon">📈</text>
+              <view class="feature-text">
+                <text class="feature-title">可见进步</text>
+                <text class="feature-desc">成长肉眼可见</text>
+              </view>
+            </view>
+            <view class="feature-item">
+              <text class="feature-icon">🎁</text>
+              <view class="feature-text">
+                <text class="feature-title">能量激励</text>
+                <text class="feature-desc">汗水兑换奖励</text>
+              </view>
+            </view>
+          </view>
+          <view class="hero-actions hero-actions-center">
+            <button class="cta primary cta-large" @click="goToLogin">开启韧性成长之旅</button>
+          </view>
+          <view class="hero-stats">
+            <view class="stat-item">
+              <text class="stat-value">98%</text>
+              <text class="stat-label">满意度</text>
+            </view>
+            <view class="stat-divider"></view>
+            <view class="stat-item">
+              <text class="stat-value">12K+</text>
+              <text class="stat-label">累计上课</text>
+            </view>
+            <view class="stat-divider"></view>
+            <view class="stat-item">
+              <text class="stat-value">50+</text>
+              <text class="stat-label">明星教练</text>
             </view>
           </view>
         </view>
-        <view class="hero-sun" aria-hidden="true">
-          <view class="sun-glow"></view>
-          <view class="sun-core"></view>
-          <view class="sun-rays">
-            <view class="ray r1"></view>
-            <view class="ray r2"></view>
-            <view class="ray r3"></view>
-            <view class="ray r4"></view>
-            <view class="ray r5"></view>
-            <view class="ray r6"></view>
-            <view class="ray r7"></view>
-            <view class="ray r8"></view>
+        <view class="hero-bottom">
+          <view class="hero-bottom-actions">
+            <text class="hero-link" @click="openTrial">免费体验课</text>
+            <text class="hero-divider">|</text>
+            <text class="hero-link" @click="handleConsult">联系客服</text>
+          </view>
+          <view class="scroll-hint" @click="scrollToContent">
+            <text class="scroll-text">了解更多</text>
+            <text class="scroll-arrow">↓</text>
           </view>
         </view>
       </view>
@@ -736,6 +754,14 @@ function handleConsult() {
   uni.showToast({ title: '请稍后再试', icon: 'none' })
 }
 
+function goToLogin() {
+  uni.navigateTo({ url: '/pages/user/login' })
+}
+
+function scrollToContent() {
+  uni.pageScrollTo({ scrollTop: 800, duration: 300 })
+}
+
 function goToUser() {
   uni.switchTab({ url: '/pages/user/index' })
 }
@@ -846,6 +872,234 @@ page {
   position: relative;
   padding: 80rpx 32rpx 64rpx;
   overflow: hidden;
+}
+
+.hero.hero-fullscreen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 32rpx;
+}
+
+.hero.hero-fullscreen .hero-bg {
+  border-radius: 0;
+}
+
+.hero-content-center {
+  max-width: none;
+  padding-right: 0;
+  align-items: center;
+  text-align: center;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 40rpx;
+}
+
+.logo-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 20rpx;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  font-weight: 800;
+  color: var(--c-primary);
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.logo-name {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: 1rpx;
+}
+
+.logo-slogan {
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 4rpx;
+}
+
+.hero-title-large {
+  font-size: 56rpx;
+  line-height: 1.3;
+}
+
+.hero-subtitle-center {
+  text-align: center;
+  max-width: none;
+}
+
+.hero-actions-center {
+  justify-content: center;
+  width: 100%;
+}
+
+.cta-large {
+  width: 80%;
+  max-width: 560rpx;
+  height: 100rpx;
+  font-size: 32rpx;
+  border-radius: 999rpx;
+}
+
+.hero-features {
+  display: flex;
+  justify-content: center;
+  gap: 24rpx;
+  margin: 40rpx 0;
+  flex-wrap: wrap;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 20rpx;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 16rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+
+.feature-icon {
+  font-size: 32rpx;
+}
+
+.feature-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.feature-title {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.feature-desc {
+  font-size: 18rpx;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 2rpx;
+}
+
+.hero-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24rpx;
+  margin-top: 40rpx;
+  padding: 24rpx 32rpx;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 20rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.15);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.stat-label {
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 4rpx;
+}
+
+.stat-divider {
+  width: 1rpx;
+  height: 40rpx;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.hero-metrics-center {
+  justify-content: center;
+  width: 100%;
+}
+
+.hero-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 40rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.hero-bottom-actions {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.hero-link {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.hero-divider {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.scroll-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: bounce 2s infinite;
+}
+
+.scroll-text {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.scroll-arrow {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 4rpx;
+}
+
+.orb-4 {
+  width: 200rpx;
+  height: 200rpx;
+  bottom: 100rpx;
+  right: -60rpx;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10rpx);
+  }
+  60% {
+    transform: translateY(-5rpx);
+  }
 }
 
 .hero-bg {

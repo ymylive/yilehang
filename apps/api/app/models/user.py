@@ -45,6 +45,9 @@ class User(Base):
     # 关系
     student: Mapped[Optional["Student"]] = relationship("Student", back_populates="user", uselist=False, foreign_keys="[Student.user_id]")
     coach: Mapped[Optional["Coach"]] = relationship("Coach", back_populates="user", uselist=False)
+    roles: Mapped[List["Role"]] = relationship(
+        "Role", secondary="user_roles", back_populates="users"
+    )
 
 
 class Student(Base):
@@ -52,7 +55,7 @@ class Student(Base):
     __tablename__ = "students"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"))
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     student_no: Mapped[str] = mapped_column(String(20), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(50))
     phone: Mapped[Optional[str]] = mapped_column(String(20))  # 学员手机号
@@ -72,7 +75,7 @@ class Student(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # 关系
-    user: Mapped[Optional["User"]] = relationship("User", back_populates="student", foreign_keys=[user_id])
+    user: Mapped["User"] = relationship("User", back_populates="student", foreign_keys=[user_id])
     coach: Mapped[Optional["Coach"]] = relationship("Coach", back_populates="students")
     fitness_tests: Mapped[List["FitnessTest"]] = relationship("FitnessTest", back_populates="student")
     training_sessions: Mapped[List["TrainingSession"]] = relationship("TrainingSession", back_populates="student")
@@ -81,6 +84,8 @@ class Student(Base):
     bookings: Mapped[List["Booking"]] = relationship("Booking", back_populates="student")
     reviews: Mapped[List["Review"]] = relationship("Review", back_populates="student")
     coach_feedbacks: Mapped[List["CoachFeedback"]] = relationship("CoachFeedback", back_populates="student")
+    # 能量系统关系
+    energy_account: Mapped[Optional["EnergyAccount"]] = relationship("EnergyAccount", back_populates="student", uselist=False)
 
 
 class Coach(Base):

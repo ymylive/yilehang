@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>易乐航 ITS | 注册帮助</title>
+  <meta name="description" content="易乐航小程序注册与入驻帮助页面，支持家长、教练、商家三类角色引导。" />
+  <style>
+    :root {
+      --brand: #ff6d00;
+      --brand-deep: #e35300;
+      --mint: #0ec7b4;
+      --ink: #0f172a;
+      --sub: #475569;
+      --line: #ffdfbb;
+      --bg: #fff8f1;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(255, 178, 103, .26), transparent 36%),
+        radial-gradient(circle at 86% 14%, rgba(14, 199, 180, .14), transparent 30%),
+        linear-gradient(180deg, #fffcf8, #fff6ec 68%, #fffdf9);
+      min-height: 100vh;
+      line-height: 1.65;
+    }
+    .wrap { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: 30px 0 48px; }
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #9a3412;
+      font-weight: 700;
+      margin-bottom: 18px;
+      text-decoration: none;
+    }
+    .hero {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 24px;
+      background: rgba(255, 255, 255, .86);
+      box-shadow: 0 16px 34px rgba(255, 120, 27, .12);
+      backdrop-filter: blur(8px);
+      margin-bottom: 18px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: #fff;
+      border: 1px solid var(--line);
+      color: #9a3412;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    h1 { font-size: clamp(30px, 4.8vw, 48px); line-height: 1.08; margin-bottom: 10px; letter-spacing: -.6px; }
+    .sub { color: var(--sub); max-width: 760px; }
+
+    .roles {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 16px 0 4px;
+    }
+    .role-btn {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: #7c2d12;
+      font-weight: 800;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+    .role-btn.active {
+      color: #fff;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--brand), var(--brand-deep));
+      box-shadow: 0 8px 18px rgba(227, 83, 0, .28);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.9);
+      box-shadow: 0 12px 24px rgba(255, 132, 39, .1);
+      padding: 18px;
+    }
+    .card h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+      color: #9a3412;
+      letter-spacing: -.2px;
+    }
+    .steps { list-style: none; display: grid; gap: 10px; }
+    .steps li {
+      border: 1px dashed #f2bd86;
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #fff;
+      color: #374151;
+    }
+    .steps b { color: #9a3412; }
+
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .btn-main {
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), var(--brand-deep));
+      box-shadow: 0 10px 18px rgba(227, 83, 0, .25);
+    }
+    .btn-line {
+      color: #9a3412;
+      border: 1px solid #f7c894;
+      background: #fff;
+    }
+
+    .qr {
+      aspect-ratio: 1 / 1;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.95), rgba(255,247,234,.95)),
+        repeating-linear-gradient(90deg, rgba(255,193,128,.16) 0 1px, transparent 1px 18px);
+      color: #9a3412;
+      font-weight: 800;
+      text-align: center;
+      padding: 18px;
+    }
+    .hint { margin-top: 10px; color: #64748b; font-size: 14px; }
+
+    @media (max-width: 860px) {
+      .roles { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+      .wrap { padding-top: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <a class="back" href="index.html">← 返回官网</a>
+
+    <section class="hero">
+      <span class="chip">注册帮助中心</span>
+      <h1 id="heroTitle">家长注册与体验课报名</h1>
+      <p class="sub" id="heroDesc">通过小程序完成账号注册后，即可预约体验课、查看排课与成长反馈。</p>
+
+      <div class="roles" role="tablist" aria-label="角色切换">
+        <button class="role-btn" data-role="parent">我是家长</button>
+        <button class="role-btn" data-role="coach">我是教练</button>
+        <button class="role-btn" data-role="merchant">我是商家</button>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2 id="flowTitle">三步完成报名</h2>
+        <ul class="steps" id="stepList"></ul>
+        <div class="actions">
+          <a class="btn btn-main" id="primaryAction" href="javascript:void(0)">打开小程序注册</a>
+          <a class="btn btn-line" id="secondaryAction" href="javascript:void(0)">联系人工协助</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="qr" id="qrPanel">请使用微信扫码进入<br/>易乐航小程序</div>
+        <p class="hint" id="hintText">若扫码后页面未自动跳转，请在小程序内搜索“易乐航 ITS”进入。</p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const copyMap = {
+        parent: {
+          heroTitle: '家长注册与体验课报名',
+          heroDesc: '通过小程序完成账号注册后，即可预约体验课、查看排课与成长反馈。',
+          flowTitle: '三步完成报名',
+          steps: [
+            '微信扫码进入小程序，选择<b>家长注册</b>并完成手机号验证。',
+            '在“体验课”页面选择时段，提交孩子基础信息与诉求。',
+            '等待教务确认后入班，后续可在小程序查看课表、评价与消费记录。'
+          ],
+          primary: '家长去注册',
+          secondary: '联系报名顾问',
+          qr: '请使用微信扫码进入\n易乐航小程序（家长入口）',
+          hint: '建议准备：孩子年级、体测目标、可上课时间段。'
+        },
+        coach: {
+          heroTitle: '教练入驻与认证指引',
+          heroDesc: '完成教练身份认证与排课资料提交后，即可开通排课、学员管理与收入看板。',
+          flowTitle: '三步完成入驻',
+          steps: [
+            '微信扫码进入小程序，选择<b>教练注册</b>并完成实名认证。',
+            '提交执教经历、擅长方向、可授课时段与所在区域。',
+            '平台审核通过后开通教练工作台，开始接收学员预约与排课。'
+          ],
+          primary: '教练去入驻',
+          secondary: '联系入驻经理',
+          qr: '请使用微信扫码进入\n易乐航小程序（教练入口）',
+          hint: '建议准备：资质证明、执教照片、可排课时间。'
+        },
+        merchant: {
+          heroTitle: '商家合作入驻指引',
+          heroDesc: '加入“能量支票”合作体系，打通到店兑换与复购追踪，获得稳定社区引流。',
+          flowTitle: '三步完成合作',
+          steps: [
+            '微信扫码进入小程序，选择<b>商家合作申请</b>并提交门店信息。',
+            '填写可兑换商品/服务、核销规则、营业时间与联系人。',
+            '平台审核并签约后，门店接入“能量支票”兑换，开始接收到店客流。'
+          ],
+          primary: '商家申请合作',
+          secondary: '联系商务经理',
+          qr: '请使用微信扫码进入\n易乐航小程序（商家入口）',
+          hint: '建议准备：门店地址、主打商品、可承接的优惠方案。'
+        }
+      };
+
+      const roleButtons = Array.from(document.querySelectorAll('.role-btn'));
+      const heroTitle = document.getElementById('heroTitle');
+      const heroDesc = document.getElementById('heroDesc');
+      const flowTitle = document.getElementById('flowTitle');
+      const stepList = document.getElementById('stepList');
+      const primaryAction = document.getElementById('primaryAction');
+      const secondaryAction = document.getElementById('secondaryAction');
+      const qrPanel = document.getElementById('qrPanel');
+      const hintText = document.getElementById('hintText');
+
+      const params = new URLSearchParams(window.location.search);
+      const roleFromUrl = params.get('role');
+      let activeRole = copyMap[roleFromUrl] ? roleFromUrl : 'parent';
+
+      function render(role) {
+        const copy = copyMap[role];
+        heroTitle.textContent = copy.heroTitle;
+        heroDesc.textContent = copy.heroDesc;
+        flowTitle.textContent = copy.flowTitle;
+        stepList.innerHTML = copy.steps.map((s) => `<li>${s}</li>`).join('');
+        primaryAction.textContent = copy.primary;
+        secondaryAction.textContent = copy.secondary;
+        qrPanel.innerHTML = copy.qr.replace('\n', '<br/>');
+        hintText.textContent = copy.hint;
+
+        primaryAction.href = `weixin://`;
+        secondaryAction.href = `tel:4000000000`;
+
+        roleButtons.forEach((button) => {
+          const active = button.dataset.role === role;
+          button.classList.toggle('active', active);
+          button.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+
+        const nextUrl = `${window.location.pathname}?role=${role}`;
+        window.history.replaceState({}, '', nextUrl);
+      }
+
+      roleButtons.forEach((button) => {
+        button.addEventListener('click', function () {
+          const role = button.dataset.role;
+          if (!copyMap[role]) return;
+          activeRole = role;
+          render(activeRole);
+        });
+      });
+
+      render(activeRole);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": { "navigationBarTitleText": "易乐航" }
+    },
+    {
+      "path": "pages/brand/intro",
+      "style": { "navigationBarTitleText": "平台介绍" }
+    },
+    {
+      "path": "pages/user/login",
+      "style": { "navigationBarTitleText": "登录" }
+    },
+    {
+      "path": "pages/user/register",
+      "style": { "navigationBarTitleText": "注册" }
+    },
+    {
+      "path": "pages/user/index",
+      "style": { "navigationBarTitleText": "我的" }
+    },
+    {
+      "path": "pages/user/profile",
+      "style": { "navigationBarTitleText": "个人资料" }
+    },
+    {
+      "path": "pages/user/messages",
+      "style": { "navigationBarTitleText": "消息通知", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/chat/index",
+      "style": { "navigationBarTitleText": "消息" }
+    },
+    {
+      "path": "pages/chat/conversation",
+      "style": { "navigationBarTitleText": "聊天" }
+    }
+  ],
+  "subPackages": [
+    {
+      "root": "pages/booking",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "约课" } },
+        { "path": "coach-detail", "style": { "navigationBarTitleText": "教练详情" } },
+        { "path": "select-time", "style": { "navigationBarTitleText": "选择时段" } },
+        { "path": "confirm", "style": { "navigationBarTitleText": "确认预约" } }
+      ]
+    },
+    {
+      "root": "pages/schedule",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "我的课表" } },
+        { "path": "detail", "style": { "navigationBarTitleText": "课程详情" } }
+      ]
+    },
+    {
+      "root": "pages/growth",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "成长档案" } },
+        { "path": "history", "style": { "navigationBarTitleText": "体测历史", "enablePullDownRefresh": true } },
+        { "path": "detail", "style": { "navigationBarTitleText": "体测详情" } }
+      ]
+    },
+    {
+      "root": "pages/training",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "AI陪练" } },
+        { "path": "session", "style": { "navigationBarTitleText": "训练中", "navigationStyle": "custom" } }
+      ]
+    },
+    {
+      "root": "pages/membership",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "我的课时卡" } },
+        { "path": "transactions", "style": { "navigationBarTitleText": "消费记录" } }
+      ]
+    },
+    {
+      "root": "pages/energy",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "能量中心" } },
+        { "path": "redeem", "style": { "navigationBarTitleText": "兑换商城" } },
+        { "path": "orders", "style": { "navigationBarTitleText": "我的兑换" } }
+      ]
+    },
+    {
+      "root": "pages/leaderboard",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "排行榜" } }
+      ]
+    },
+    {
+      "root": "pages/moments",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "精彩瞬间" } }
+      ]
+    },
+    {
+      "root": "pages/review",
+      "pages": [
+        { "path": "create", "style": { "navigationBarTitleText": "课程评价" } }
+      ]
+    },
+    {
+      "root": "pages/coach",
+      "pages": [
+        { "path": "workbench/index", "style": { "navigationBarTitleText": "工作台" } },
+        { "path": "schedule/index", "style": { "navigationBarTitleText": "教练课表" } },
+        { "path": "schedule/detail", "style": { "navigationBarTitleText": "课程详情" } },
+        { "path": "students/index", "style": { "navigationBarTitleText": "我的学员" } },
+        { "path": "students/detail", "style": { "navigationBarTitleText": "学员详情" } },
+        { "path": "students/feedback", "style": { "navigationBarTitleText": "提交反馈" } },
+        { "path": "slots/manage", "style": { "navigationBarTitleText": "可约时段" } },
+        { "path": "income/index", "style": { "navigationBarTitleText": "收入统计" } },
+        { "path": "reviews/index", "style": { "navigationBarTitleText": "评价中心" } }
+      ]
+    },
+    {
+      "root": "pages/admin",
+      "pages": [
+        { "path": "dashboard/index", "style": { "navigationBarTitleText": "数据看板" } },
+        { "path": "users/index", "style": { "navigationBarTitleText": "用户管理" } },
+        { "path": "users/detail", "style": { "navigationBarTitleText": "用户详情" } },
+        { "path": "analytics/index", "style": { "navigationBarTitleText": "数据分析" } }
+      ]
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "易乐航",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F5F5F5"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#999999",
+    "selectedColor": "#FF8800",
+    "borderStyle": "black",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页" },
+      { "pagePath": "pages/user/index", "text": "我的" }
+    ]
+  }
+}

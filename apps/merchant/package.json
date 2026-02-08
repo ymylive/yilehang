@@ -1,0 +1,33 @@
+{
+  "name": "@yilehang/merchant",
+  "version": "1.0.0",
+  "description": "易乐航·ITS智慧体教云平台 - 商家端（能量支票核销）",
+  "type": "module",
+  "scripts": {
+    "dev:h5": "uni -p h5",
+    "dev:mp-weixin": "uni -p mp-weixin",
+    "build:h5": "uni build -p h5",
+    "build:mp-weixin": "uni build -p mp-weixin"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-alpha-5000020260131001",
+    "@dcloudio/uni-components": "3.0.0-alpha-5000020260131001",
+    "@dcloudio/uni-h5": "3.0.0-alpha-5000020260131001",
+    "@dcloudio/uni-mp-weixin": "3.0.0-alpha-5000020260131001",
+    "vue": "^3.4.21",
+    "pinia": "^2.1.7",
+    "wot-design-uni": "^1.2.0"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "^3.4.8",
+    "@dcloudio/uni-automator": "3.0.0-alpha-5000020260131001",
+    "@dcloudio/uni-cli-shared": "3.0.0-alpha-5000020260131001",
+    "@dcloudio/uni-stacktracey": "3.0.0-alpha-5000020260131001",
+    "@dcloudio/vite-plugin-uni": "3.0.0-alpha-5000020260131001",
+    "@types/node": "^20.11.5",
+    "@vue/tsconfig": "^0.5.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.12",
+    "vue-tsc": "^1.8.27"
+  }
+}

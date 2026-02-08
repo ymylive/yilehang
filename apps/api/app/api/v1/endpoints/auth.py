@@ -221,6 +221,19 @@ async def login(login_data: UserLogin, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login/email/send", summary="Send email verification code")
 async def send_email_code(data: EmailCodeRequest):
+    from app.services.auth_service import EMAIL_CODE_STORE
+
+    # Check rate limit: 3 attempts per 5 minutes
+    is_allowed, seconds_until_reset = EMAIL_CODE_STORE.check_rate_limit(
+        f"email_send:{data.email}", max_attempts=3, window_minutes=5
+    )
+
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many requests. Please try again in {seconds_until_reset} seconds."
+        )
+
     result = await EmailService.send_code_with_detail(data.email)
     if not result.get("success"):
         raise HTTPException(
@@ -613,6 +626,12 @@ async def create_student_account(
 async def dev_get_email_code(email: str):
     """Dev-only endpoint to retrieve the current verification code for testing.
     Should be disabled in production."""
+    from app.core.config import settings
+    if not settings.DEBUG:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Endpoint not available"
+        )
     from app.services.auth_service import EMAIL_CODE_STORE
     code = EMAIL_CODE_STORE.get_code(email)
     if not code:

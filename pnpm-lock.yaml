@@ -68,15 +68,6 @@ importers:
       '@dcloudio/uni-mp-weixin':
         specifier: 3.0.0-alpha-5000020260131001
         version: 3.0.0-alpha-5000020260131001(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(postcss@8.5.6)(rollup@4.57.1)(vue@3.5.27(typescript@5.9.3))
-      '@mediapipe/camera_utils':
-        specifier: ^0.3.1675466862
-        version: 0.3.1675466862
-      '@mediapipe/drawing_utils':
-        specifier: ^0.3.1675466124
-        version: 0.3.1675466124
-      '@mediapipe/pose':
-        specifier: ^0.5.1675469404
-        version: 0.5.1675469404
       pinia:
         specifier: ^2.1.7
         version: 2.3.1(typescript@5.9.3)(vue@3.5.27(typescript@5.9.3))
@@ -173,21 +164,115 @@ importers:
         specifier: ^1.8.27
         version: 1.8.27(typescript@5.9.3)
 
-  packages/ai-core:
+  apps/merchant:
     dependencies:
-      '@mediapipe/camera_utils':
-        specifier: ^0.3.1675466862
-        version: 0.3.1675466862
-      '@mediapipe/drawing_utils':
-        specifier: ^0.3.1675466124
-        version: 0.3.1675466124
-      '@mediapipe/pose':
-        specifier: ^0.5.1675469404
-        version: 0.5.1675469404
+      '@dcloudio/uni-app':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@dcloudio/types@3.4.29)(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(postcss@8.5.6)(rollup@4.57.1)(vue@3.5.27(typescript@5.9.3))
+      '@dcloudio/uni-components':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(postcss@8.5.6)(rollup@4.57.1)(vue@3.5.27(typescript@5.9.3))
+      '@dcloudio/uni-h5':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(postcss@8.5.6)(rollup@4.57.1)(vue@3.5.27(typescript@5.9.3))
+      '@dcloudio/uni-mp-weixin':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(postcss@8.5.6)(rollup@4.57.1)(vue@3.5.27(typescript@5.9.3))
+      pinia:
+        specifier: ^2.1.7
+        version: 2.3.1(typescript@5.9.3)(vue@3.5.27(typescript@5.9.3))
+      vue:
+        specifier: ^3.4.21
+        version: 3.5.27(typescript@5.9.3)
+      wot-design-uni:
+        specifier: ^1.2.0
+        version: 1.14.0(vue@3.5.27(typescript@5.9.3))
     devDependencies:
+      '@dcloudio/types':
+        specifier: ^3.4.8
+        version: 3.4.29
+      '@dcloudio/uni-automator':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(jest-environment-node@27.5.1)(jest@27.0.4)(postcss@8.5.6)(rollup@4.57.1)(vue@3.5.27(typescript@5.9.3))
+      '@dcloudio/uni-cli-shared':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(postcss@8.5.6)(rollup@4.57.1)(vue@3.5.27(typescript@5.9.3))
+      '@dcloudio/uni-stacktracey':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001
+      '@dcloudio/vite-plugin-uni':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(postcss@8.5.6)(rollup@4.57.1)(vite@5.4.21(@types/node@20.19.31)(sass@1.97.3)(terser@5.46.0))(vue@3.5.27(typescript@5.9.3))
+      '@types/node':
+        specifier: ^20.11.5
+        version: 20.19.31
+      '@vue/tsconfig':
+        specifier: ^0.5.1
+        version: 0.5.1
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
+      vite:
+        specifier: ^5.0.12
+        version: 5.4.21(@types/node@20.19.31)(sass@1.97.3)(terser@5.46.0)
+      vue-tsc:
+        specifier: ^1.8.27
+        version: 1.8.27(typescript@5.9.3)
+
+  apps/unified-miniapp:
+    dependencies:
+      '@dcloudio/uni-app':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@dcloudio/types@3.4.29)(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(postcss@8.5.6)(rollup@4.57.1)(vue@3.5.27(typescript@5.9.3))
+      '@dcloudio/uni-components':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(postcss@8.5.6)(rollup@4.57.1)(vue@3.5.27(typescript@5.9.3))
+      '@dcloudio/uni-h5':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(postcss@8.5.6)(rollup@4.57.1)(vue@3.5.27(typescript@5.9.3))
+      '@dcloudio/uni-mp-weixin':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(postcss@8.5.6)(rollup@4.57.1)(vue@3.5.27(typescript@5.9.3))
+      pinia:
+        specifier: ^2.1.7
+        version: 2.3.1(typescript@5.9.3)(vue@3.5.27(typescript@5.9.3))
+      vue:
+        specifier: ^3.4.21
+        version: 3.5.27(typescript@5.9.3)
+      wot-design-uni:
+        specifier: ^1.2.0
+        version: 1.14.0(vue@3.5.27(typescript@5.9.3))
+    devDependencies:
+      '@dcloudio/types':
+        specifier: ^3.4.8
+        version: 3.4.29
+      '@dcloudio/uni-automator':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(jest-environment-node@27.5.1)(jest@27.0.4)(postcss@8.5.6)(rollup@4.57.1)(vue@3.5.27(typescript@5.9.3))
+      '@dcloudio/uni-cli-shared':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(postcss@8.5.6)(rollup@4.57.1)(vue@3.5.27(typescript@5.9.3))
+      '@dcloudio/uni-stacktracey':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001
+      '@dcloudio/vite-plugin-uni':
+        specifier: 3.0.0-alpha-5000020260131001
+        version: 3.0.0-alpha-5000020260131001(@vueuse/core@10.11.1(vue@3.5.27(typescript@5.9.3)))(postcss@8.5.6)(rollup@4.57.1)(vite@5.4.21(@types/node@20.19.31)(sass@1.97.3)(terser@5.46.0))(vue@3.5.27(typescript@5.9.3))
+      '@types/node':
+        specifier: ^20.11.5
+        version: 20.19.31
+      '@vue/tsconfig':
+        specifier: ^0.5.1
+        version: 0.5.1
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      vite:
+        specifier: ^5.0.12
+        version: 5.4.21(@types/node@20.19.31)(sass@1.97.3)(terser@5.46.0)
+      vue-tsc:
+        specifier: ^1.8.27
+        version: 1.8.27(typescript@5.9.3)
 
 packages:
 
@@ -1449,15 +1534,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@mediapipe/camera_utils@0.3.1675466862':
-    resolution: {integrity: sha512-siuXBoUxWo9WL0MeAxIxvxY04bvbtdNl7uCxoJxiAiRtNnCYrurr7Vl5VYQ94P7Sq0gVq6PxIDhWWeZ/pLnSzw==}
-
-  '@mediapipe/drawing_utils@0.3.1675466124':
-    resolution: {integrity: sha512-/IWIB/iYRMtiUKe3k7yGqvwseWHCOqzVpRDfMgZ6gv9z7EEimg6iZbRluoPbcNKHbYSxN5yOvYTzUYb8KVf22Q==}
-
-  '@mediapipe/pose@0.5.1675469404':
-    resolution: {integrity: sha512-DFZsNWTsSphRIZppnUCuunzBiHP2FdJXR9ehc7mMi4KG+oPaOH0Em3d6kr7Py+TSyTXC1doH88KcF28k2sBxsQ==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -5827,12 +5903,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@mediapipe/camera_utils@0.3.1675466862': {}
-
-  '@mediapipe/drawing_utils@0.3.1675466124': {}
-
-  '@mediapipe/pose@0.5.1675469404': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:

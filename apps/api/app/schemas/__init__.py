@@ -1,7 +1,7 @@
-﻿"""Schema exports."""
+"""Schema exports."""
 from app.schemas.user import (
     UserBase, UserCreate, UserLogin, WechatLogin, WechatPhoneLogin,
-    SmsCodeRequest, SmsCodeLogin, SmsRegister,
+    EmailCodeRequest, EmailCodeLogin, EmailRegister,
     PasswordReset, PasswordChange,
     UserUpdate, UserResponse, UserDetailResponse, Token, TokenRefresh,
     StudentBase, StudentCreate, StudentRegister, StudentUpdate, StudentResponse, StudentDetailResponse,
@@ -36,11 +36,43 @@ from app.schemas.ai import (
     AiAdviceRequest, AiAdviceResponse,
     AiChatRequest, AiChatResponse,
 )
+from app.schemas.notification import (
+    NotificationBase, NotificationCreate, NotificationResponse,
+    NotificationListResponse, NotificationReadRequest,
+)
+from app.schemas.chat import (
+    ConversationCreate, ConversationResponse, ConversationListResponse,
+    MessageCreate, MessageResponse, MessageListResponse,
+    UserBrief,
+)
+from app.schemas.energy import (
+    EnergyRuleBase, EnergyRuleCreate, EnergyRuleUpdate, EnergyRuleResponse,
+    EnergyAccountResponse, EnergyAccountSummary,
+    EnergyTransactionResponse, EnergyTransactionList,
+    EnergyEarnRequest, EnergyEarnResponse,
+    EnergySpendRequest, EnergySpendResponse,
+    LeaderboardEntry, LeaderboardResponse,
+)
+from app.schemas.merchant import (
+    MerchantBase, MerchantCreate, MerchantUpdate, MerchantResponse,
+    MerchantListResponse, MerchantDetailResponse,
+    RedeemItemBase, RedeemItemCreate, RedeemItemUpdate, RedeemItemResponse, RedeemItemListResponse,
+    RedeemOrderCreate, RedeemOrderResponse, RedeemOrderListResponse,
+    RedeemOrderVerifyRequest, RedeemOrderVerifyResponse,
+    MerchantStatsResponse, MerchantUserResponse,
+)
+from app.schemas.role import (
+    RoleBase, RoleResponse, UserRolesResponse,
+    PermissionBase, PermissionResponse, UserPermissionsResponse,
+    MenuBase, MenuResponse, UserMenusResponse,
+    SwitchRoleRequest, SwitchRoleResponse,
+    ApiResponse,
+)
 
 __all__ = [
     # User
     "UserBase", "UserCreate", "UserLogin", "WechatLogin", "WechatPhoneLogin",
-    "SmsCodeRequest", "SmsCodeLogin", "SmsRegister",
+    "EmailCodeRequest", "EmailCodeLogin", "EmailRegister",
     "PasswordReset", "PasswordChange",
     "UserUpdate", "UserResponse", "UserDetailResponse", "Token", "TokenRefresh",
     "StudentBase", "StudentCreate", "StudentRegister", "StudentUpdate", "StudentResponse", "StudentDetailResponse",
@@ -70,4 +102,31 @@ __all__ = [
     "JumpRopeAnalyzeRequest", "JumpRopeAnalyzeResponse",
     "AiAdviceRequest", "AiAdviceResponse",
     "AiChatRequest", "AiChatResponse",
+    # Notification
+    "NotificationBase", "NotificationCreate", "NotificationResponse",
+    "NotificationListResponse", "NotificationReadRequest",
+    # Chat
+    "ConversationCreate", "ConversationResponse", "ConversationListResponse",
+    "MessageCreate", "MessageResponse", "MessageListResponse",
+    "UserBrief",
+    # Energy
+    "EnergyRuleBase", "EnergyRuleCreate", "EnergyRuleUpdate", "EnergyRuleResponse",
+    "EnergyAccountResponse", "EnergyAccountSummary",
+    "EnergyTransactionResponse", "EnergyTransactionList",
+    "EnergyEarnRequest", "EnergyEarnResponse",
+    "EnergySpendRequest", "EnergySpendResponse",
+    "LeaderboardEntry", "LeaderboardResponse",
+    # Merchant
+    "MerchantBase", "MerchantCreate", "MerchantUpdate", "MerchantResponse",
+    "MerchantListResponse", "MerchantDetailResponse",
+    "RedeemItemBase", "RedeemItemCreate", "RedeemItemUpdate", "RedeemItemResponse", "RedeemItemListResponse",
+    "RedeemOrderCreate", "RedeemOrderResponse", "RedeemOrderListResponse",
+    "RedeemOrderVerifyRequest", "RedeemOrderVerifyResponse",
+    "MerchantStatsResponse", "MerchantUserResponse",
+    # RBAC
+    "RoleBase", "RoleResponse", "UserRolesResponse",
+    "PermissionBase", "PermissionResponse", "UserPermissionsResponse",
+    "MenuBase", "MenuResponse", "UserMenusResponse",
+    "SwitchRoleRequest", "SwitchRoleResponse",
+    "ApiResponse",
 ]

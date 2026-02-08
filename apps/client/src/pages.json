@@ -1,118 +1,258 @@
-﻿{
+{
   "pages": [
     {
       "path": "pages/index/index",
       "style": {
-        "navigationBarTitleText": "涔愯埅鎴愰暱"
+        "navigationBarTitleText": "乐航成长"
       }
     },
     {
       "path": "pages/booking/index",
       "style": {
-        "navigationBarTitleText": "绾﹁"
+        "navigationBarTitleText": "约课"
       }
     },
     {
       "path": "pages/booking/coach-detail",
       "style": {
-        "navigationBarTitleText": "鏁欑粌璇︽儏"
+        "navigationBarTitleText": "教练详情"
       }
     },
     {
       "path": "pages/booking/select-time",
       "style": {
-        "navigationBarTitleText": "閫夋嫨鏃舵"
+        "navigationBarTitleText": "选择时段"
       }
     },
     {
       "path": "pages/booking/confirm",
       "style": {
-        "navigationBarTitleText": "纭棰勭害"
+        "navigationBarTitleText": "确认预约"
       }
     },
     {
       "path": "pages/growth/index",
       "style": {
-        "navigationBarTitleText": "鎴愰暱妗ｆ"
+        "navigationBarTitleText": "成长档案"
+      }
+    },
+    {
+      "path": "pages/growth/history",
+      "style": {
+        "navigationBarTitleText": "体测历史",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/growth/detail",
+      "style": {
+        "navigationBarTitleText": "体测详情"
       }
     },
     {
       "path": "pages/training/index",
       "style": {
-        "navigationBarTitleText": "AI闄粌"
+        "navigationBarTitleText": "AI陪练"
       }
     },
     {
       "path": "pages/training/session",
       "style": {
-        "navigationBarTitleText": "璁粌涓?,
+        "navigationBarTitleText": "训练中",
         "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/schedule/index",
       "style": {
-        "navigationBarTitleText": "鎴戠殑璇捐〃"
+        "navigationBarTitleText": "我的课表"
       }
     },
     {
       "path": "pages/schedule/detail",
       "style": {
-        "navigationBarTitleText": "璇剧▼璇︽儏"
+        "navigationBarTitleText": "课程详情"
       }
     },
     {
       "path": "pages/membership/index",
       "style": {
-        "navigationBarTitleText": "鎴戠殑璇炬椂鍗?
+        "navigationBarTitleText": "我的课时卡"
       }
     },
     {
       "path": "pages/membership/transactions",
       "style": {
-        "navigationBarTitleText": "娑堣垂璁板綍"
+        "navigationBarTitleText": "消费记录"
       }
     },
     {
       "path": "pages/review/create",
       "style": {
-        "navigationBarTitleText": "璇剧▼璇勪环"
+        "navigationBarTitleText": "课程评价"
       }
     },
     {
       "path": "pages/moments/index",
       "style": {
-        "navigationBarTitleText": "绮惧僵鐬棿"
+        "navigationBarTitleText": "精彩瞬间"
+      }
+    },
+    {
+      "path": "pages/energy/index",
+      "style": {
+        "navigationBarTitleText": "能量中心"
+      }
+    },
+    {
+      "path": "pages/energy/redeem",
+      "style": {
+        "navigationBarTitleText": "兑换商城"
+      }
+    },
+    {
+      "path": "pages/energy/orders",
+      "style": {
+        "navigationBarTitleText": "我的兑换"
+      }
+    },
+    {
+      "path": "pages/leaderboard/index",
+      "style": {
+        "navigationBarTitleText": "排行榜"
+      }
+    },
+    {
+      "path": "pages/chat/index",
+      "style": {
+        "navigationBarTitleText": "消息"
+      }
+    },
+    {
+      "path": "pages/chat/conversation",
+      "style": {
+        "navigationBarTitleText": "聊天"
       }
     },
     {
       "path": "pages/user/index",
       "style": {
-        "navigationBarTitleText": "鎴戠殑"
+        "navigationBarTitleText": "我的"
       }
     },
     {
       "path": "pages/user/login",
       "style": {
-        "navigationBarTitleText": "鐧诲綍"
+        "navigationBarTitleText": "登录"
       }
     },
     {
       "path": "pages/user/register",
       "style": {
-        "navigationBarTitleText": "娉ㄥ唽"
+        "navigationBarTitleText": "注册"
       }
     },
     {
       "path": "pages/user/messages",
       "style": {
-        "navigationBarTitleText": "娑堟伅閫氱煡"
+        "navigationBarTitleText": "消息通知",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/user/profile",
+      "style": {
+        "navigationBarTitleText": "个人资料"
+      }
+    },
+    {
+      "path": "pages/user/create-student-account",
+      "style": {
+        "navigationBarTitleText": "创建学员账号"
+      }
+    },
+    {
+      "path": "pages/coach/workbench/index",
+      "style": {
+        "navigationBarTitleText": "工作台"
+      }
+    },
+    {
+      "path": "pages/coach/schedule/index",
+      "style": {
+        "navigationBarTitleText": "我的课表"
+      }
+    },
+    {
+      "path": "pages/coach/schedule/detail",
+      "style": {
+        "navigationBarTitleText": "课程详情"
+      }
+    },
+    {
+      "path": "pages/coach/students/index",
+      "style": {
+        "navigationBarTitleText": "我的学员"
+      }
+    },
+    {
+      "path": "pages/coach/students/detail",
+      "style": {
+        "navigationBarTitleText": "学员详情"
+      }
+    },
+    {
+      "path": "pages/coach/students/feedback",
+      "style": {
+        "navigationBarTitleText": "提交反馈"
+      }
+    },
+    {
+      "path": "pages/coach/slots/manage",
+      "style": {
+        "navigationBarTitleText": "可约时段"
+      }
+    },
+    {
+      "path": "pages/coach/income/index",
+      "style": {
+        "navigationBarTitleText": "收入统计"
+      }
+    },
+    {
+      "path": "pages/coach/reviews/index",
+      "style": {
+        "navigationBarTitleText": "评价中心"
+      }
+    },
+    {
+      "path": "pages/merchant/index",
+      "style": {
+        "navigationBarTitleText": "商家工作台"
+      }
+    },
+    {
+      "path": "pages/merchant/verify",
+      "style": {
+        "navigationBarTitleText": "扫码核销"
+      }
+    },
+    {
+      "path": "pages/merchant/orders",
+      "style": {
+        "navigationBarTitleText": "兑换订单"
+      }
+    },
+    {
+      "path": "pages/merchant/stats",
+      "style": {
+        "navigationBarTitleText": "数据统计"
       }
     }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "涔愯埅鎴愰暱",
+    "navigationBarTitleText": "乐航成长",
     "navigationBarBackgroundColor": "#FFFFFF",
     "backgroundColor": "#F5F5F5"
   },
@@ -124,23 +264,23 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "棣栭〉"
+        "text": "首页"
       },
       {
         "pagePath": "pages/booking/index",
-        "text": "绾﹁"
+        "text": "约课"
       },
       {
         "pagePath": "pages/growth/index",
-        "text": "鎴愰暱"
+        "text": "成长"
       },
       {
         "pagePath": "pages/schedule/index",
-        "text": "璇捐〃"
+        "text": "课表"
       },
       {
         "pagePath": "pages/user/index",
-        "text": "鎴戠殑"
+        "text": "我的"
       }
     ]
   }

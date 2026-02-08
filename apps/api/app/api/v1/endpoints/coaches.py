@@ -1,6 +1,7 @@
 """
 教练相关API端点（扩展）
 """
+import json
 from datetime import date, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -21,6 +22,34 @@ from app.services.booking_service import BookingService, ReviewService
 router = APIRouter()
 
 
+def parse_specialty(specialty: Optional[str]) -> Optional[List[str]]:
+    """Parse specialty field - handles both JSON array and comma-separated string."""
+    if not specialty:
+        return None
+    try:
+        # Try JSON first
+        result = json.loads(specialty)
+        if isinstance(result, list):
+            return result
+        return [str(result)]
+    except (json.JSONDecodeError, TypeError):
+        # Fall back to comma-separated string
+        return [s.strip() for s in specialty.split(",") if s.strip()]
+
+
+def parse_json_field(value: Optional[str]) -> Optional[List[str]]:
+    """Parse JSON field safely."""
+    if not value:
+        return None
+    try:
+        result = json.loads(value)
+        if isinstance(result, list):
+            return result
+        return [str(result)]
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+
 @router.get("", response_model=List[CoachDetailResponse])
 async def get_coaches(
     specialty: Optional[str] = Query(None, description="专长筛选"),
@@ -29,62 +58,96 @@ async def get_coaches(
     db: AsyncSession = Depends(get_db)
 ):
     """获取教练列表"""
-    query = select(Coach).where(Coach.status == "active")
-
+    # 构建基础查询
+    base_query = select(Coach).where(Coach.status == "active")
     if specialty:
-        query = query.where(Coach.specialty.contains(specialty))
+        base_query = base_query.where(Coach.specialty.contains(specialty))
 
-    query = query.offset((page - 1) * page_size).limit(page_size)
-    result = await db.execute(query)
+    # 分页获取教练ID列表
+    coach_ids_query = base_query.offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(coach_ids_query)
     coaches = result.scalars().all()
 
+    if not coaches:
+        return []
+
+    coach_ids = [c.id for c in coaches]
+
+    # 一次性查询所有统计数据
+    # 学员数统计（去重）
+    students_subq = (
+        select(
+            Booking.coach_id,
+            func.count(func.distinct(Booking.student_id)).label('student_count')
+        )
+        .where(Booking.coach_id.in_(coach_ids))
+        .group_by(Booking.coach_id)
+        .subquery()
+    )
+
+    # 课程数统计
+    lessons_subq = (
+        select(
+            Booking.coach_id,
+            func.count(Booking.id).label('lesson_count')
+        )
+        .where(
+            Booking.coach_id.in_(coach_ids),
+            Booking.status == BookingStatus.COMPLETED.value
+        )
+        .group_by(Booking.coach_id)
+        .subquery()
+    )
+
+    # 评分统计
+    reviews_subq = (
+        select(
+            Review.coach_id,
+            func.avg(Review.rating).label('avg_rating'),
+            func.count(Review.id).label('review_count')
+        )
+        .where(Review.coach_id.in_(coach_ids))
+        .group_by(Review.coach_id)
+        .subquery()
+    )
+
+    # 合并统计数据
+    stats_query = (
+        select(
+            Coach.id,
+            func.coalesce(students_subq.c.student_count, 0).label('total_students'),
+            func.coalesce(lessons_subq.c.lesson_count, 0).label('total_lessons'),
+            func.coalesce(reviews_subq.c.avg_rating, 0.0).label('avg_rating'),
+            func.coalesce(reviews_subq.c.review_count, 0).label('review_count')
+        )
+        .select_from(Coach)
+        .outerjoin(students_subq, Coach.id == students_subq.c.coach_id)
+        .outerjoin(lessons_subq, Coach.id == lessons_subq.c.coach_id)
+        .outerjoin(reviews_subq, Coach.id == reviews_subq.c.coach_id)
+        .where(Coach.id.in_(coach_ids))
+    )
+
+    stats_result = await db.execute(stats_query)
+    stats_dict = {row.id: row for row in stats_result}
+
+    # 构建响应
     response = []
     for coach in coaches:
-        # 获取统计信息
-        # 学员数
-        student_count = await db.execute(
-            select(func.count()).select_from(
-                select(Booking.student_id)
-                .where(Booking.coach_id == coach.id)
-                .distinct()
-                .subquery()
-            )
-        )
-        total_students = student_count.scalar() or 0
-
-        # 课程数
-        lesson_count = await db.execute(
-            select(func.count()).where(
-                Booking.coach_id == coach.id,
-                Booking.status == BookingStatus.COMPLETED.value
-            )
-        )
-        total_lessons = lesson_count.scalar() or 0
-
-        # 评分
-        rating_result = await db.execute(
-            select(func.avg(Review.rating), func.count(Review.id))
-            .where(Review.coach_id == coach.id)
-        )
-        rating_row = rating_result.one()
-        avg_rating = float(rating_row[0]) if rating_row[0] else 0.0
-        review_count = rating_row[1] or 0
-
-        import json
+        stats = stats_dict.get(coach.id)
         response.append(CoachDetailResponse(
             id=coach.id,
             coach_no=coach.coach_no,
             name=coach.name,
             avatar=coach.avatar,
-            specialty=json.loads(coach.specialty) if coach.specialty else None,
+            specialty=parse_specialty(coach.specialty),
             introduction=coach.introduction,
-            certificates=json.loads(coach.certificates) if coach.certificates else None,
+            certificates=parse_json_field(coach.certificates),
             years_of_experience=coach.years_of_experience,
             hourly_rate=float(coach.hourly_rate) if coach.hourly_rate else None,
-            total_students=total_students,
-            total_lessons=total_lessons,
-            avg_rating=round(avg_rating, 1),
-            review_count=review_count
+            total_students=int(stats.total_students) if stats else 0,
+            total_lessons=int(stats.total_lessons) if stats else 0,
+            avg_rating=round(float(stats.avg_rating), 1) if stats else 0.0,
+            review_count=int(stats.review_count) if stats else 0
         ))
 
     return response
@@ -127,15 +190,14 @@ async def get_coach_detail(
     avg_rating = float(rating_row[0]) if rating_row[0] else 0.0
     review_count = rating_row[1] or 0
 
-    import json
     return CoachDetailResponse(
         id=coach.id,
         coach_no=coach.coach_no,
         name=coach.name,
         avatar=coach.avatar,
-        specialty=json.loads(coach.specialty) if coach.specialty else None,
+        specialty=parse_specialty(coach.specialty),
         introduction=coach.introduction,
-        certificates=json.loads(coach.certificates) if coach.certificates else None,
+        certificates=parse_json_field(coach.certificates),
         years_of_experience=coach.years_of_experience,
         hourly_rate=float(coach.hourly_rate) if coach.hourly_rate else None,
         total_students=total_students,
@@ -581,6 +643,9 @@ async def get_income_details(
         except:
             pass
 
+    # Use selectinload to eagerly load student data and avoid N+1 queries
+    from sqlalchemy.orm import selectinload
+    query = query.options(selectinload(Booking.student))
     query = query.order_by(Booking.booking_date.desc())
     query = query.offset((page - 1) * page_size).limit(page_size)
 
@@ -592,8 +657,6 @@ async def get_income_details(
 
     details = []
     for booking in bookings:
-        # 获取学员信息
-        student = await db.get(Student, booking.student_id)
         income = hourly_rate * commission_rate
 
         details.append({
@@ -601,7 +664,7 @@ async def get_income_details(
             "booking_date": booking.booking_date.isoformat(),
             "start_time": booking.start_time.strftime("%H:%M"),
             "end_time": booking.end_time.strftime("%H:%M"),
-            "student_name": student.name if student else "未知学员",
+            "student_name": booking.student.name if booking.student else "未知学员",
             "hourly_rate": hourly_rate,
             "commission_rate": commission_rate,
             "income": round(income, 2),
@@ -649,27 +712,47 @@ async def get_my_students(
     students_result = await db.execute(students_query)
     students = students_result.scalars().all()
 
+    if not students:
+        return {"items": [], "page": page, "page_size": page_size}
+
+    student_ids = [s.id for s in students]
+
+    # 批量查询所有学生的课程统计
+    lessons_stats = await db.execute(
+        select(
+            Booking.student_id,
+            func.count(Booking.id).label('lesson_count')
+        )
+        .where(
+            Booking.coach_id == coach.id,
+            Booking.student_id.in_(student_ids),
+            Booking.status == BookingStatus.COMPLETED.value
+        )
+        .group_by(Booking.student_id)
+    )
+    lessons_dict = {row.student_id: row.lesson_count for row in lessons_stats}
+
+    # 批量查询所有学生的最近上课时间
+    last_lessons_subq = (
+        select(
+            Booking.student_id,
+            func.max(Booking.booking_date).label('last_date')
+        )
+        .where(
+            Booking.coach_id == coach.id,
+            Booking.student_id.in_(student_ids),
+            Booking.status == BookingStatus.COMPLETED.value
+        )
+        .group_by(Booking.student_id)
+    )
+    last_lessons_result = await db.execute(last_lessons_subq)
+    last_lessons_dict = {row.student_id: row.last_date for row in last_lessons_result}
+
+    # 构建响应
     student_list = []
     for student in students:
-        # 获取该学员的课程统计
-        lesson_count = await db.execute(
-            select(func.count()).where(
-                Booking.coach_id == coach.id,
-                Booking.student_id == student.id,
-                Booking.status == BookingStatus.COMPLETED.value
-            )
-        )
-        total_lessons = lesson_count.scalar() or 0
-
-        # 获取最近一次上课时间
-        last_lesson = await db.execute(
-            select(Booking.booking_date).where(
-                Booking.coach_id == coach.id,
-                Booking.student_id == student.id,
-                Booking.status == BookingStatus.COMPLETED.value
-            ).order_by(Booking.booking_date.desc()).limit(1)
-        )
-        last_date = last_lesson.scalar_one_or_none()
+        total_lessons = lessons_dict.get(student.id, 0)
+        last_date = last_lessons_dict.get(student.id)
 
         student_list.append({
             "id": student.id,
@@ -794,13 +877,15 @@ async def get_my_schedule(
     if status:
         query = query.where(Booking.status == status)
 
+    # Use selectinload to eagerly load student data and avoid N+1 queries
+    from sqlalchemy.orm import selectinload
+    query = query.options(selectinload(Booking.student))
     query = query.order_by(Booking.booking_date, Booking.start_time)
     bookings_result = await db.execute(query)
     bookings = bookings_result.scalars().all()
 
     schedule = []
     for booking in bookings:
-        student = await db.get(Student, booking.student_id)
         schedule.append({
             "id": booking.id,
             "booking_date": booking.booking_date.isoformat(),
@@ -808,7 +893,7 @@ async def get_my_schedule(
             "end_time": booking.end_time.strftime("%H:%M"),
             "status": booking.status,
             "student_id": booking.student_id,
-            "student_name": student.name if student else "未知学员",
+            "student_name": booking.student.name if booking.student else "未知学员",
             "notes": booking.notes,
             "created_at": booking.created_at.isoformat()
         })

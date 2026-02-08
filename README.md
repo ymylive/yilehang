@@ -8,6 +8,8 @@
 
 - 学员端（`apps/client`）：约课、课表、课时卡、训练记录、消息通知
 - 教练端（`apps/coach`）：工作台、排课、学员管理、反馈、收入、评价
+- 商家端（`apps/merchant`）：兑换订单处理、核销、经营统计
+- 统一多角色端（`apps/unified-miniapp`）：按角色动态呈现页面与权限
 - 管理后台（`apps/admin`）：经营数据、用户管理、运营看板
 
 后端服务位于 `apps/api`，使用 FastAPI + PostgreSQL 提供统一 API。
@@ -18,6 +20,8 @@
 
 - 学员端：预约流程、课表、训练模块、会员卡与消费记录、基础评价流程
 - 教练端：工作台、课表与详情、学员列表与详情、学习反馈、收入明细、评价回复、个人中心
+- 商家端：兑换订单列表、扫码核销、商家数据看板
+- 统一小程序：家长/学员/教练/管理员多角色路由与页面权限控制
 - 后端：认证、教练、学员、预约、会员卡、评价、数据看板、AI 占位接口
 - 部署：Docker 化（API + PostgreSQL + Nginx）并已启用 HTTPS
 
@@ -26,6 +30,8 @@
 - 教练端主要页面由 Mock 数据切换为真实 API
 - 学员端与教练端统一橙黄主视觉与交互动效
 - 关键文案与展示逻辑统一，降低编码导致的乱码风险
+- 新增消息、通知、上传、能量体系、商家兑换与排行榜相关 API/页面
+- 接入 RBAC 角色权限模型，支持按角色分发菜单与页面能力
 
 ## 仓库结构
 
@@ -34,8 +40,12 @@ yilehang/
 |- apps/
 |  |- client/          # 学员端小程序（UniApp）
 |  |- coach/           # 教练端小程序（UniApp）
+|  |- merchant/        # 商家端小程序（UniApp）
+|  |- unified-miniapp/ # 统一多角色小程序（UniApp）
 |  |- admin/           # 管理后台（Vue3 + Vite）
+|  |- web/             # 官网静态资源
 |  \- api/             # 后端服务（FastAPI）
+|- website/            # 官网构建产物/部署目录
 |- packages/
 |  |- ui/
 |  |- utils/
@@ -50,6 +60,7 @@ yilehang/
 ## 技术栈
 
 - 学员端/教练端：UniApp + Vue3 + TypeScript + Pinia + Wot Design Uni
+- 商家端/统一小程序：UniApp + Vue3 + TypeScript + Pinia
 - 管理后台：Vue3 + TypeScript + Element Plus + ECharts
 - 后端：FastAPI + SQLAlchemy + PostgreSQL
 - 部署：Docker Compose + Nginx + acme.sh（Cloudflare DNS 验证）
@@ -81,6 +92,7 @@ cp .env.example .env
 pnpm dev:api      # FastAPI，默认 :8000
 pnpm dev:client   # 学员端 H5 调试
 pnpm dev:coach    # 教练端 H5 调试
+pnpm dev:merchant # 商家端 H5 调试
 pnpm dev:admin    # 管理后台
 ```
 
@@ -89,6 +101,7 @@ pnpm dev:admin    # 管理后台
 ```bash
 pnpm -C apps/client build:mp-weixin
 pnpm -C apps/coach build:mp-weixin
+pnpm -C apps/merchant build:h5
 ```
 
 微信开发者工具导入目录：
@@ -117,6 +130,15 @@ pnpm -C apps/coach build:mp-weixin
 - `/reviews`
 - `/dashboard`
 - `/ai`
+- `/user`（角色相关）
+- `/notifications`
+- `/upload`
+- `/chat`
+- `/energy`
+- `/merchants`
+- `/leaderboard`
+
+角色-页面映射与权限说明见：`docs/role_pages_mapping.md`
 
 ## 登录与注册说明（小程序）
 

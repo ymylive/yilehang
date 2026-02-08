@@ -13,7 +13,10 @@ from app.core.database import engine, Base
 from app.models import (
     User, Student, Coach, Course, Schedule, Enrollment,
     MembershipCard, StudentMembership, CoachAvailableSlot,
-    Booking, Transaction, Review, CoachFeedback
+    Booking, Transaction, Review, CoachFeedback,
+    Notification, Conversation, Message,
+    EnergyRule, EnergyAccount, EnergyTransaction,
+    Merchant, MerchantUser, RedeemItem, RedeemOrder
 )
 
 

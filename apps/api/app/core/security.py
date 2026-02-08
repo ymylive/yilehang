@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from jose import JWTError, jwt
+import bcrypt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -12,15 +13,24 @@ from fastapi.security import OAuth2PasswordBearer
 from app.core.config import settings
 
 # 密码加密上下文
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256", "bcrypt"], deprecated="auto")
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """验证密码"""
-    return pwd_context.verify(plain_password, hashed_password)
+    """????????? passlib???????? bcrypt ???"""
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception:
+        # passlib + bcrypt>=4 may throw backend errors; fallback to raw bcrypt.
+        try:
+            if hashed_password.startswith("$2"):
+                return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+        except Exception:
+            return False
+        return False
 
 
 def get_password_hash(password: str) -> str:
@@ -51,6 +61,15 @@ def decode_token(token: str) -> dict:
             detail="无效的认证凭据",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+def decode_access_token(token: str) -> Optional[dict]:
+    """解码访问令牌（不抛出异常，返回None表示无效）"""
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        return payload
+    except JWTError:
+        return None
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):

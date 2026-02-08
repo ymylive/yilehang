@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     ]
 
     # WeChat Mini Program
-    WECHAT_APPID: str = "wxdbd150a0458a3c7c"
+    WECHAT_APPID: str = ""
     WECHAT_SECRET: str = ""
     ALLOW_WECHAT_LOGIN_WITHOUT_SECRET: bool = False
 

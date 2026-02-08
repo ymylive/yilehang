@@ -1,4 +1,4 @@
-﻿/**
+/**
  * User store
  */
 import { defineStore } from 'pinia'
@@ -8,6 +8,7 @@ import { authApi } from '@/api'
 interface User {
   id: number
   phone: string | null
+  email: string | null
   nickname: string | null
   avatar: string | null
   role: string
@@ -34,6 +35,7 @@ export const useUserStore = defineStore('user', () => {
   const isStudent = computed(() => user.value?.role === 'student')
   const isCoach = computed(() => user.value?.role === 'coach')
   const hasPhone = computed(() => !!user.value?.phone)
+  const hasEmail = computed(() => !!user.value?.email)
   const hasWechat = computed(() => !!user.value?.wechat_bindded)
 
   function initFromStorage() {
@@ -67,81 +69,85 @@ export const useUserStore = defineStore('user', () => {
     uni.setStorageSync('user', JSON.stringify(userData))
   }
 
-  async function login(phone: string, password: string) {
+  async function login(account: string, password: string) {
     try {
-      const res = await authApi.login(phone, password)
+      const res = await authApi.login(account, password)
       saveLoginState(res.access_token, res.user)
       return res
     } catch (error: any) {
-      throw new Error(error.message || 'Login failed')
+      throw new Error(error.message || '登录失败')
     }
   }
 
-  async function loginWithSms(phone: string, code: string) {
+  async function loginWithEmail(email: string, code: string) {
     try {
-      const res = await authApi.loginWithSms(phone, code)
+      const res = await authApi.loginWithEmail(email, code)
       saveLoginState(res.access_token, res.user)
       return res
     } catch (error: any) {
-      throw new Error(error.message || 'Login failed')
+      throw new Error(error.message || '登录失败')
     }
   }
 
-  async function wechatLogin(code: string, userInfo?: any) {
+  async function wechatLogin(code: string, userInfo?: any, deviceId?: string) {
     try {
-      const res = await authApi.wechatLogin(code, userInfo)
+      const res = await authApi.wechatLogin(code, userInfo, deviceId)
       saveLoginState(res.access_token, res.user)
       return res
     } catch (error: any) {
-      throw new Error(error.message || 'WeChat login failed')
+      throw new Error(error.message || '微信登录失败')
     }
   }
 
-  async function wechatPhoneLogin(code: string, phoneCode: string) {
+  async function wechatPhoneLogin(code: string, phoneCode: string, deviceId?: string) {
     try {
-      const res = await authApi.wechatPhoneLogin(code, phoneCode)
+      const res = await authApi.wechatPhoneLogin(code, phoneCode, deviceId)
       saveLoginState(res.access_token, res.user)
       return res
     } catch (error: any) {
-      throw new Error(error.message || 'Login failed')
+      throw new Error(error.message || '登录失败')
     }
   }
 
-  async function register(phone: string, password: string, role: string = 'parent', nickname?: string) {
+  async function register(email: string, password: string, role: string = 'parent', nickname?: string, phone?: string) {
     try {
-      const res = await authApi.register(phone, password, role, nickname)
+      const res = await authApi.register(email, password, role, nickname, phone)
       saveLoginState(res.access_token, res.user)
       return res
     } catch (error: any) {
-      throw new Error(error.message || 'Register failed')
+      throw new Error(error.message || '注册失败')
     }
   }
 
-  async function registerWithSms(phone: string, code: string, password: string, role: string = 'parent', nickname?: string) {
+  async function registerWithEmail(email: string, code: string, password: string, role: string = 'parent', nickname?: string, phone?: string) {
     try {
-      const res = await authApi.registerWithSms(phone, code, password, role, nickname)
+      const res = await authApi.registerWithEmail(email, code, password, role, nickname, phone)
       saveLoginState(res.access_token, res.user)
       return res
     } catch (error: any) {
-      throw new Error(error.message || 'Register failed')
+      throw new Error(error.message || '注册失败')
     }
   }
 
-  async function sendSmsCode(phone: string) {
+  async function sendEmailCode(email: string) {
     try {
-      await authApi.sendSmsCode(phone)
+      const res: any = await authApi.sendEmailCode(email)
+      return {
+        success: true,
+        delivery: res?.delivery || 'smtp',
+        devCode: res?.dev_code || ''
+      }
+    } catch (error: any) {
+      throw new Error(error.message || '发送失败')
+    }
+  }
+
+  async function resetPassword(email: string, code: string, newPassword: string) {
+    try {
+      await authApi.resetPassword(email, code, newPassword)
       return true
     } catch (error: any) {
-      throw new Error(error.message || 'Send failed')
-    }
-  }
-
-  async function resetPassword(phone: string, code: string, newPassword: string) {
-    try {
-      await authApi.resetPassword(phone, code, newPassword)
-      return true
-    } catch (error: any) {
-      throw new Error(error.message || 'Reset failed')
+      throw new Error(error.message || '重置失败')
     }
   }
 
@@ -158,14 +164,14 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  async function updateUserInfo(data: { nickname?: string; avatar?: string }) {
+  async function updateUserInfo(data: { nickname?: string; avatar?: string; phone?: string }) {
     try {
       const res = await authApi.updateUserInfo(data)
       user.value = res
       uni.setStorageSync('user', JSON.stringify(res))
       return res
     } catch (error: any) {
-      throw new Error(error.message || 'Update failed')
+      throw new Error(error.message || '更新失败')
     }
   }
 
@@ -187,6 +193,11 @@ export const useUserStore = defineStore('user', () => {
     uni.setStorageSync('currentStudent', JSON.stringify(student))
   }
 
+  function setUser(userData: any) {
+    user.value = userData
+    uni.setStorageSync('user', JSON.stringify(userData))
+  }
+
   function checkLogin(): boolean {
     if (!token.value) {
       uni.navigateTo({ url: '/pages/user/login' })
@@ -205,20 +216,22 @@ export const useUserStore = defineStore('user', () => {
     isStudent,
     isCoach,
     hasPhone,
+    hasEmail,
     hasWechat,
     initFromStorage,
     login,
-    loginWithSms,
+    loginWithEmail,
     wechatLogin,
     wechatPhoneLogin,
     register,
-    registerWithSms,
-    sendSmsCode,
+    registerWithEmail,
+    sendEmailCode,
     resetPassword,
     fetchUserInfo,
     updateUserInfo,
     logout,
     setCurrentStudent,
+    setUser,
     checkLogin
   }
 })

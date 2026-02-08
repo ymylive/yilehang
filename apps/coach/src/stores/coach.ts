@@ -21,7 +21,11 @@ export const useCoachStore = defineStore('coach', () => {
 
   async function login(phone: string, password: string) {
     try {
-      const res = await authApi.login({ phone, password })
+      const account = phone.trim()
+      const res = await authApi.login({ account, password })
+      if (res.user?.role !== 'coach') {
+        throw new Error('Only coach accounts are allowed')
+      }
       token.value = res.access_token
       uni.setStorageSync('token', res.access_token)
       await fetchProfile()
