@@ -212,3 +212,13 @@ chore: 工具链/构建维护
 - `scripts/setup_ssl.py`
 
 并结合 `DEPLOYMENT_REPORT.md` 对照线上配置执行。
+
+## Deployment Update (2026-02-09)
+
+- Re-deployed services after VPS reboot on `82.158.88.34`.
+- Production domain/API kept on `https://yilehang.cornna.xyz`.
+- SSL re-issued and installed via `acme.sh` using Cloudflare DNS validation.
+- Miniapp production env template updated in `deploy/miniapp/env.example`:
+  - `VITE_API_BASE_URL=https://yilehang.cornna.xyz/api/v1`
+  - `VITE_WS_URL=wss://yilehang.cornna.xyz/api/v1/chat/ws`
+  - `VITE_UPLOAD_URL=https://yilehang.cornna.xyz/api/v1/upload`

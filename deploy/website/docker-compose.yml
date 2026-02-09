@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  website:
+    build:
+      context: ../..
+      dockerfile: deploy/website/Dockerfile
+    container_name: yilehang-website
+    ports:
+      - "80:80"
+    volumes:
+      # ACME challenge directory for Let's Encrypt SSL renewal
+      - acme-data:/var/www/acme
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  acme-data:

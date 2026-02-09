@@ -31,3 +31,8 @@ All notable changes to this project will be documented in this file.
 - Fixed garbled arrow text in user menu (`>` rendering issue in mini program view).
 - Fixed button text vertical alignment issue for user logout and login action buttons.
 - Fixed partial garbled comments/text fragments in homepage style section.
+
+### Operations
+- Re-deployed production services after server reboot on `82.158.88.34`.
+- Renewed and installed SSL for `yilehang.cornna.xyz` via `acme.sh` (Cloudflare DNS).
+- Updated miniapp production API/WebSocket/upload endpoints in `deploy/miniapp/env.example` to `yilehang.cornna.xyz`.

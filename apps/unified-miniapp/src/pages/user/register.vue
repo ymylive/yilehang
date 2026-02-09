@@ -100,6 +100,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { routeByRole } from '@/utils/role-guard'
 
 const userStore = useUserStore()
 
@@ -221,26 +222,6 @@ async function submitRegister() {
   }
 }
 
-
-function routeByRole(role?: string) {
-  if (role === 'student') {
-    uni.switchTab({ url: '/pages/schedule/index' })
-    return
-  }
-
-  if (role === 'coach') {
-    uni.navigateTo({ url: '/pages/coach/workbench/index' })
-    return
-  }
-
-  if (role === 'merchant') {
-    uni.navigateTo({ url: '/pages/merchant/index' })
-    return
-  }
-
-  // parent 默认进入首页
-  uni.switchTab({ url: '/pages/index/index' })
-}
 function goLogin() {
   uni.navigateBack()
 }

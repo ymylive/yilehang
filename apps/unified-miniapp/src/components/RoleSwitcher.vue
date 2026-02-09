@@ -27,10 +27,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { usePermissionStore } from '@/stores/permission'
 import { getRoleHomePage, type UserRole } from '@/utils/role-guard'
 
 const userStore = useUserStore()
+const permissionStore = usePermissionStore()
 const showPanel = ref(false)
+const switching = ref(false)
 
 const ROLE_LABELS: Record<string, string> = {
   admin: '管理员',
@@ -39,12 +42,18 @@ const ROLE_LABELS: Record<string, string> = {
   student: '学员'
 }
 
-const currentRole = computed(() => userStore.user?.role || '')
+const currentRole = computed(() => permissionStore.activeRole || userStore.user?.role || '')
 const roleName = computed(() => ROLE_LABELS[currentRole.value] || '未知')
 
-const availableRoles = computed(() =>
-  Object.entries(ROLE_LABELS).map(([value, label]) => ({ value, label }))
-)
+const availableRoles = computed(() => {
+  // If permission store has roles from backend, use those; otherwise show all
+  if (permissionStore.roleCodes.length > 0) {
+    return permissionStore.roleCodes
+      .filter(code => ROLE_LABELS[code])
+      .map(code => ({ value: code, label: ROLE_LABELS[code] }))
+  }
+  return Object.entries(ROLE_LABELS).map(([value, label]) => ({ value, label }))
+})
 
 const showSwitcher = computed(() => !!userStore.isLoggedIn)
 
@@ -52,7 +61,7 @@ function togglePanel() {
   showPanel.value = !showPanel.value
 }
 
-function switchRole(role: string) {
+async function switchRole(role: string) {
   if (role === currentRole.value) {
     showPanel.value = false
     return
@@ -61,13 +70,22 @@ function switchRole(role: string) {
   uni.showModal({
     title: '切换角色',
     content: `确定切换到${ROLE_LABELS[role]}角色？`,
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
-        const newUser = { ...userStore.user, role }
-        userStore.setUser(newUser)
-        const homePage = getRoleHomePage(role as UserRole)
-        uni.reLaunch({ url: homePage })
-        showPanel.value = false
+        switching.value = true
+        try {
+          await permissionStore.switchRole(role)
+          // Sync role to user store
+          userStore.setUser({ ...userStore.user, role })
+          const homePage = getRoleHomePage(role as UserRole)
+          uni.reLaunch({ url: homePage })
+        } catch (error: any) {
+          console.error('Switch role failed:', error)
+          uni.showToast({ title: error.message || '切换角色失败', icon: 'none' })
+        } finally {
+          switching.value = false
+          showPanel.value = false
+        }
       }
     }
   })

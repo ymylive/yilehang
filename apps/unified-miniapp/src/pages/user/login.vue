@@ -15,11 +15,13 @@
       <view class="mode-tabs">
         <view :class="['mode-tab', { active: loginMode === 'wechat' }]" @click="loginMode = 'wechat'">微信登录</view>
         <view :class="['mode-tab', { active: loginMode === 'account' }]" @click="loginMode = 'account'">账号登录</view>
+        <view :class="['mode-tab', { active: loginMode === 'email' }]" @click="loginMode = 'email'">邮箱登录</view>
       </view>
 
+      <!-- 微信登录 -->
       <template v-if="loginMode === 'wechat'">
         <text class="card-title">微信登录</text>
-        <text class="card-subtitle">授权后自动同步微信昵称和头像</text>
+        <text class="card-subtitle">微信授权后快速登录</text>
 
         <!-- #ifdef MP-WEIXIN -->
         <button class="wechat-btn" :loading="loading" @click="wechatLogin">
@@ -28,13 +30,15 @@
         <!-- #endif -->
 
         <!-- #ifndef MP-WEIXIN -->
-        <button class="wechat-btn" :loading="loading" @click="wechatLogin">
-          {{ loading ? '登录中...' : '微信一键登录' }}
-        </button>
+        <view class="h5-wechat-tip">
+          <text class="tip-text">微信登录仅支持在微信小程序中使用</text>
+          <text class="tip-sub">请切换到"账号登录"或"邮箱登录"</text>
+        </view>
         <!-- #endif -->
       </template>
 
-      <template v-else>
+      <!-- 账号密码登录 -->
+      <template v-else-if="loginMode === 'account'">
         <text class="card-title">账号登录</text>
         <text class="card-subtitle">支持用户名 / 手机号 / 邮箱 + 密码</text>
         <view class="input-box">
@@ -46,6 +50,24 @@
         </view>
         <button class="account-btn" :loading="loading" @click="accountLogin">
           {{ loading ? '登录中...' : '账号登录' }}
+        </button>
+      </template>
+
+      <!-- 邮箱验证码登录 -->
+      <template v-else>
+        <text class="card-title">邮箱登录</text>
+        <text class="card-subtitle">输入邮箱获取验证码，快速登录</text>
+        <view class="input-box">
+          <input class="input-field" type="text" v-model="email" placeholder="请输入邮箱地址" />
+        </view>
+        <view class="input-box code-box-wrap">
+          <input class="input-field" type="number" v-model="emailCode" placeholder="请输入验证码" maxlength="6" />
+          <button class="code-btn" :disabled="countdown > 0 || sendingCode" @click="sendCode">
+            {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
+          </button>
+        </view>
+        <button class="account-btn" :loading="loading" @click="emailLogin">
+          {{ loading ? '登录中...' : '邮箱登录' }}
         </button>
       </template>
 
@@ -82,14 +104,23 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { routeByRole } from '@/utils/role-guard'
 
 const userStore = useUserStore()
 const loading = ref(false)
 const agreed = ref(false)
-const loginMode = ref<'wechat' | 'account'>('wechat')
+const loginMode = ref<'wechat' | 'account' | 'email'>('wechat')
+
+// 账号登录
 const account = ref('')
 const password = ref('')
 const showPassword = ref(false)
+
+// 邮箱验证码登录
+const email = ref('')
+const emailCode = ref('')
+const sendingCode = ref(false)
+const countdown = ref(0)
 
 function ensureAgreement() {
   if (!agreed.value) {
@@ -97,6 +128,10 @@ function ensureAgreement() {
     return false
   }
   return true
+}
+
+function validEmail(e: string) {
+  return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(e)
 }
 
 function getOrCreateDeviceId() {
@@ -109,56 +144,38 @@ function getOrCreateDeviceId() {
   return generated
 }
 
-function routeByRole(role?: string) {
-  if (role === 'student') {
-    uni.switchTab({ url: '/pages/schedule/index' })
-    return
-  }
+// ========== 微信登录 ==========
+async function wechatLogin() {
+  if (loading.value) return
+  if (!ensureAgreement()) return
 
-  if (role === 'coach') {
-    uni.navigateTo({ url: '/pages/coach/workbench/index' })
-    return
-  }
+  // #ifdef MP-WEIXIN
+  loading.value = true
+  try {
+    const loginRes: any = await new Promise((resolve, reject) => {
+      uni.login({ provider: 'weixin', success: resolve, fail: reject })
+    })
 
-  if (role === 'merchant') {
-    uni.navigateTo({ url: '/pages/merchant/index' })
-    return
-  }
-
-  uni.switchTab({ url: '/pages/index/index' })
-}
-
-async function doWechatOpenidLogin(withProfile = true) {
-  const loginRes: any = await new Promise((resolve, reject) => {
-    uni.login({ provider: 'weixin', success: resolve, fail: reject })
-  })
-
-  if (!loginRes?.code) {
-    throw new Error('未获取到微信登录凭证')
-  }
-
-  let userInfo: Record<string, any> | undefined
-  if (withProfile) {
-    try {
-      const profileRes: any = await new Promise((resolve, reject) => {
-        uni.getUserProfile({
-          desc: '用于完善用户资料',
-          success: resolve,
-          fail: reject
-        })
-      })
-      userInfo = profileRes?.userInfo
-    } catch (error: any) {
-      throw new Error(error?.errMsg?.includes('deny') ? '请允许获取微信信息后再登录' : '获取微信信息失败，请重试')
+    if (!loginRes?.code) {
+      throw new Error('未获取到微信登录凭证')
     }
-  }
 
-  const deviceId = getOrCreateDeviceId()
-  await userStore.wechatLogin(loginRes.code, userInfo, deviceId)
-  const user = await userStore.fetchUserInfo()
-  routeByRole(user?.role)
+    // getUserProfile 已被微信废弃，直接用 code 登录
+    // 用户信息通过 open-data 组件展示或后续补充
+    const deviceId = getOrCreateDeviceId()
+    await userStore.wechatLogin(loginRes.code, undefined, deviceId)
+    const user = await userStore.fetchUserInfo()
+    routeByRole(user?.role)
+  } catch (error: any) {
+    const msg = error?.errMsg || error?.message || '微信登录失败'
+    uni.showToast({ title: msg, icon: 'none' })
+  } finally {
+    loading.value = false
+  }
+  // #endif
 }
 
+// ========== 账号密码登录 ==========
 async function accountLogin() {
   if (loading.value) return
   if (!ensureAgreement()) return
@@ -184,32 +201,75 @@ async function accountLogin() {
   }
 }
 
+// ========== 邮箱验证码登录 ==========
+async function sendCode() {
+  if (!validEmail(email.value)) {
+    uni.showToast({ title: '请输入正确的邮箱地址', icon: 'none' })
+    return
+  }
+
+  sendingCode.value = true
+  try {
+    const res: any = await userStore.sendEmailCode(email.value)
+    const delivery = res?.delivery || 'smtp'
+    const devCode = res?.devCode
+
+    if ((delivery === 'fallback' || delivery === 'dev') && devCode) {
+      uni.showModal({
+        title: '开发环境验证码',
+        content: `当前邮件通道不可用，临时验证码：${devCode}`,
+        showCancel: false
+      })
+    } else {
+      uni.showToast({ title: '验证码已发送', icon: 'success' })
+    }
+    countdown.value = 60
+    const timer = setInterval(() => {
+      countdown.value--
+      if (countdown.value <= 0) clearInterval(timer)
+    }, 1000)
+  } catch (error: any) {
+    uni.showToast({ title: error?.message || '验证码发送失败', icon: 'none' })
+  } finally {
+    sendingCode.value = false
+  }
+}
+
+async function emailLogin() {
+  if (loading.value) return
+  if (!ensureAgreement()) return
+
+  if (!validEmail(email.value)) {
+    uni.showToast({ title: '请输入正确的邮箱地址', icon: 'none' })
+    return
+  }
+  if (!emailCode.value || emailCode.value.length < 4) {
+    uni.showToast({ title: '请输入验证码', icon: 'none' })
+    return
+  }
+
+  loading.value = true
+  try {
+    await userStore.loginWithEmail(email.value, emailCode.value)
+    const user = await userStore.fetchUserInfo()
+    uni.showToast({ title: '登录成功', icon: 'success' })
+    setTimeout(() => {
+      routeByRole(user?.role)
+    }, 400)
+  } catch (error: any) {
+    uni.showToast({ title: error?.message || '登录失败', icon: 'none' })
+  } finally {
+    loading.value = false
+  }
+}
+
+// ========== 导航 ==========
 function goRegister() {
   uni.navigateTo({ url: '/pages/user/register' })
 }
 
 function goIntro() {
   uni.navigateTo({ url: '/pages/brand/intro' })
-}
-
-async function wechatLogin() {
-  if (loading.value) return
-  if (!ensureAgreement()) return
-
-  // #ifndef MP-WEIXIN
-  uni.showToast({ title: '请在微信小程序中使用微信登录', icon: 'none' })
-  // #endif
-
-  // #ifdef MP-WEIXIN
-  loading.value = true
-  try {
-    await doWechatOpenidLogin(true)
-  } catch (error: any) {
-    uni.showToast({ title: error?.message || '微信登录失败', icon: 'none' })
-  } finally {
-    loading.value = false
-  }
-  // #endif
 }
 
 function viewAgreement(type: 'user' | 'privacy') {
@@ -350,7 +410,7 @@ function viewAgreement(type: 'user' | 'privacy') {
 
 .mode-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 10rpx;
   margin-bottom: 20rpx;
   background: #fff6e8;
@@ -504,5 +564,49 @@ function viewAgreement(type: 'user' | 'privacy') {
 .agreement-link {
   font-size: 22rpx;
   color: #ff8800;
+}
+
+.code-box-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.code-box-wrap .code-btn {
+  margin-left: 12rpx;
+  background: transparent;
+  color: #ff8800;
+  font-size: 24rpx;
+  white-space: nowrap;
+  padding: 0 16rpx;
+  line-height: 1;
+}
+
+.code-box-wrap .code-btn::after {
+  border: none;
+}
+
+.code-box-wrap .code-btn[disabled] {
+  color: #ccc;
+}
+
+.h5-wechat-tip {
+  margin-top: 28rpx;
+  padding: 32rpx 20rpx;
+  background: #f7f8fa;
+  border-radius: 16rpx;
+  text-align: center;
+}
+
+.h5-wechat-tip .tip-text {
+  display: block;
+  font-size: 26rpx;
+  color: #999;
+}
+
+.h5-wechat-tip .tip-sub {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #bbb;
 }
 </style>

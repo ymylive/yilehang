@@ -158,6 +158,24 @@ export function enforceRoleRoute(role?: string) {
 }
 
 /**
+ * 根据角色跳转到对应首页
+ */
+export function routeByRole(role?: string) {
+  if (!role) {
+    uni.switchTab({ url: '/pages/index/index' })
+    return
+  }
+  const home = getRoleHomePage(role as UserRole)
+  const tabBar = getRoleTabBar(role as UserRole)
+  const isTab = tabBar.some(item => `/${item.pagePath}` === home)
+  if (isTab) {
+    uni.switchTab({ url: home })
+  } else {
+    uni.navigateTo({ url: home })
+  }
+}
+
+/**
  * 带权限检查的导航
  */
 export function navigateWithPermission(url: string, role?: string) {

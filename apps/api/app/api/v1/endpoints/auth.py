@@ -279,12 +279,6 @@ async def login_with_email(login_data: EmailCodeLogin, db: AsyncSession = Depend
 @router.post("/login/wechat", response_model=Token, summary="WeChat login")
 async def wechat_login(wechat_data: WechatLogin, db: AsyncSession = Depends(get_db)):
     try:
-        if not wechat_data.user_info:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="需要微信授权用户信息后才能登录"
-            )
-
         session_info = await WechatService.code2session(wechat_data.code, wechat_data.device_id)
         openid = session_info.get("openid")
 
@@ -314,7 +308,7 @@ async def wechat_login(wechat_data: WechatLogin, db: AsyncSession = Depends(get_
             await db.flush()
             await db.refresh(user)
             await db.commit()
-        else:
+        elif wechat_data.user_info:
             profile_updated = False
             incoming_nickname = (wechat_data.user_info.get("nickName") or "").strip()[:50]
             if incoming_nickname and user.nickname != incoming_nickname:
