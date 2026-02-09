@@ -575,8 +575,9 @@ async def get_income_summary(
     total_count = total_lessons.scalar() or 0
 
     # 计算收入 (课时费 * 课程数 * 提成比例)
+    from app.core.config import settings
     hourly_rate = float(coach.hourly_rate) if coach.hourly_rate else 0
-    commission_rate = float(coach.commission_rate) if coach.commission_rate else 0.7  # 默认70%提成
+    commission_rate = float(coach.commission_rate) if coach.commission_rate else settings.COACH_DEFAULT_COMMISSION_RATE
 
     this_month_income = this_month_count * hourly_rate * commission_rate
     last_month_income = last_month_count * hourly_rate * commission_rate
@@ -652,8 +653,9 @@ async def get_income_details(
     bookings_result = await db.execute(query)
     bookings = bookings_result.scalars().all()
 
+    from app.core.config import settings
     hourly_rate = float(coach.hourly_rate) if coach.hourly_rate else 0
-    commission_rate = float(coach.commission_rate) if coach.commission_rate else 0.7
+    commission_rate = float(coach.commission_rate) if coach.commission_rate else settings.COACH_DEFAULT_COMMISSION_RATE
 
     details = []
     for booking in bookings:
@@ -1005,3 +1007,54 @@ async def mark_no_show(
     await db.commit()
 
     return {"message": "已标记为缺席"}
+
+
+@router.get("/me/bookings/{booking_id}", response_model=dict)
+async def get_booking_detail(
+    booking_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """获取教练的单个预约详情"""
+    if current_user["role"] != "coach":
+        raise HTTPException(status_code=403, detail="仅教练可访问")
+
+    result = await db.execute(
+        select(Coach).where(Coach.user_id == current_user["user_id"])
+    )
+    coach = result.scalar_one_or_none()
+    if not coach:
+        raise HTTPException(status_code=404, detail="未找到教练信息")
+
+    from app.models.user import Student
+    from sqlalchemy.orm import selectinload
+
+    query = select(Booking).where(Booking.id == booking_id).options(
+        selectinload(Booking.student)
+    )
+    booking_result = await db.execute(query)
+    booking = booking_result.scalar_one_or_none()
+
+    if not booking:
+        raise HTTPException(status_code=404, detail="预约不存在")
+
+    if booking.coach_id != coach.id:
+        raise HTTPException(status_code=403, detail="无权查看此预约")
+
+    return {
+        "id": booking.id,
+        "booking_date": booking.booking_date.isoformat(),
+        "start_time": booking.start_time.strftime("%H:%M"),
+        "end_time": booking.end_time.strftime("%H:%M"),
+        "status": booking.status,
+        "course_type": booking.course_type,
+        "student_id": booking.student_id,
+        "student_name": booking.student.name if booking.student else "未知学员",
+        "coach_id": booking.coach_id,
+        "coach_name": coach.name,
+        "notes": booking.notes,
+        "remark": booking.remark,
+        "cancel_reason": booking.cancel_reason,
+        "cancelled_at": booking.cancelled_at.isoformat() if booking.cancelled_at else None,
+        "created_at": booking.created_at.isoformat()
+    }

@@ -12,9 +12,17 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # Security
-    SECRET_KEY: str = "your-secret-key-change-in-production"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
+    SECRET_KEY: str  # Required: Must be set via environment variable
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 2  # 2 hours (reduced from 7 days)
     ALGORITHM: str = "HS256"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.SECRET_KEY == "your-secret-key-change-in-production" or not self.SECRET_KEY:
+            raise ValueError(
+                "SECRET_KEY must be set via environment variable. "
+                "Generate one with: openssl rand -hex 32"
+            )
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/yilehang"
@@ -43,6 +51,10 @@ class Settings(BaseSettings):
     DEV_PRINT_CODE: bool = False
     # If SMTP fails, still keep code available for dev/test flows
     DEV_PRINT_CODE_ON_SEND_FAIL: bool = True
+
+    # Business rules
+    COACH_DEFAULT_COMMISSION_RATE: float = 0.7  # 70%
+    BOOKING_CANCEL_HOURS_BEFORE: int = 2
 
     class Config:
         env_file = ".env"

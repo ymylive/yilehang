@@ -9,9 +9,13 @@ import sys
 from pathlib import Path
 
 # 服务器配置
-SERVER_HOST = "8.134.33.19"
-SERVER_USER = "root"
-SERVER_PASSWORD = "Qq159741"
+SERVER_HOST = os.getenv("SERVER_HOST", "8.134.33.19")
+SERVER_USER = os.getenv("SERVER_USER", "root")
+SERVER_PASSWORD = os.getenv("SERVER_PASSWORD")
+
+if not SERVER_PASSWORD:
+    print("错误: 必须设置 SERVER_PASSWORD 环境变量")
+    sys.exit(1)
 PROJECT_DIR = "/opt/yilehang-server"
 
 def create_ssh_client():

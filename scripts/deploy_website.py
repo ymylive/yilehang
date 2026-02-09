@@ -16,10 +16,15 @@ except ImportError:
     import paramiko
 
 # Server configuration
-SERVER_HOST = "8.134.33.19"
-SERVER_USER = "root"
-SERVER_PASSWORD = "Qq159741"
-REMOTE_BASE = "/opt/yilehang"
+SERVER_HOST = os.getenv("SERVER_HOST", "8.134.33.19")
+SERVER_USER = os.getenv("SERVER_USER", "root")
+SERVER_PASSWORD = os.getenv("SERVER_PASSWORD")
+REMOTE_BASE = os.getenv("REMOTE_BASE", "/opt/yilehang")
+
+if not SERVER_PASSWORD:
+    print("错误: 必须设置 SERVER_PASSWORD 环境变量")
+    print("使用方法: export SERVER_PASSWORD='your-password' && python deploy_website.py")
+    sys.exit(1)
 LOCAL_BASE = Path(__file__).parent.parent
 
 

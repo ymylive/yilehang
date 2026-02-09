@@ -1,8 +1,9 @@
 """
 评价管理API端点
 """
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -110,3 +111,103 @@ async def get_my_feedbacks(
         )
         for f in feedbacks
     ]
+
+
+@router.get("/coach/my", response_model=dict)
+async def get_my_coach_reviews(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """获取当前教练的所有评价"""
+    if current_user.role != "coach":
+        raise HTTPException(status_code=403, detail="仅教练可访问")
+
+    coach = current_user.coach
+    if not coach:
+        raise HTTPException(status_code=400, detail="未找到教练信息")
+
+    service = ReviewService(db)
+    reviews, total, avg_rating = await service.get_coach_reviews(coach.id, page, page_size)
+
+    import json
+    return {
+        "items": [
+            ReviewResponse(
+                id=r.id,
+                booking_id=r.booking_id,
+                student_id=r.student_id,
+                coach_id=r.coach_id,
+                rating=r.rating,
+                content=r.content,
+                tags=json.loads(r.tags) if r.tags else None,
+                is_anonymous=r.is_anonymous,
+                coach_reply=r.coach_reply,
+                coach_reply_at=r.coach_reply_at,
+                created_at=r.created_at,
+                student_name="匿名用户" if r.is_anonymous else None
+            )
+            for r in reviews
+        ],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "avg_rating": avg_rating
+    }
+
+
+@router.get("/feedbacks", response_model=dict)
+async def get_coach_feedbacks(
+    student_id: Optional[int] = Query(None, description="按学员ID过滤"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """获取教练反馈列表"""
+    if current_user.role != "coach":
+        raise HTTPException(status_code=403, detail="仅教练可访问")
+
+    coach = current_user.coach
+    if not coach:
+        raise HTTPException(status_code=400, detail="未找到教练信息")
+
+    from app.models.booking import CoachFeedback
+
+    query = select(CoachFeedback).where(CoachFeedback.coach_id == coach.id)
+
+    if student_id:
+        query = query.where(CoachFeedback.student_id == student_id)
+
+    query = query.order_by(CoachFeedback.created_at.desc())
+    query = query.offset((page - 1) * page_size).limit(page_size)
+
+    result = await db.execute(query)
+    feedbacks = result.scalars().all()
+
+    count_query = select(func.count()).select_from(CoachFeedback).where(CoachFeedback.coach_id == coach.id)
+    if student_id:
+        count_query = count_query.where(CoachFeedback.student_id == student_id)
+
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+
+    return {
+        "items": [
+            CoachFeedbackResponse(
+                id=f.id,
+                booking_id=f.booking_id,
+                coach_id=f.coach_id,
+                student_id=f.student_id,
+                performance_rating=f.performance_rating,
+                content=f.content,
+                suggestions=f.suggestions,
+                created_at=f.created_at
+            )
+            for f in feedbacks
+        ],
+        "total": total,
+        "page": page,
+        "page_size": page_size
+    }

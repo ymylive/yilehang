@@ -16,10 +16,15 @@ except ImportError:
 
 
 # 服务器配置
-SERVER_HOST = "82.158.88.34"
-SERVER_USER = "root"
-SERVER_PASSWORD = "Qq159741"
-SERVER_PORT = 22
+SERVER_HOST = os.getenv("SERVER_HOST", "82.158.88.34")
+SERVER_USER = os.getenv("SERVER_USER", "root")
+SERVER_PASSWORD = os.getenv("SERVER_PASSWORD")
+SERVER_PORT = int(os.getenv("SERVER_PORT", "22"))
+
+if not SERVER_PASSWORD:
+    print("错误: 必须设置 SERVER_PASSWORD 环境变量")
+    print("使用方法: export SERVER_PASSWORD='your-password' && python deploy_docker.py")
+    sys.exit(1)
 
 # 椤圭洰璺緞
 PROJECT_ROOT = Path(__file__).parent.parent

@@ -3,8 +3,9 @@
 """
 from datetime import date, timedelta
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -138,28 +139,22 @@ async def get_recent_bookings(
 
     result = await db.execute(
         select(Booking)
+        .options(selectinload(Booking.student), selectinload(Booking.coach))
         .order_by(Booking.created_at.desc())
         .limit(limit)
     )
     bookings = result.scalars().all()
 
-    items = []
-    for booking in bookings:
-        student = await db.get(Student, booking.student_id)
-        coach = await db.get(Coach, booking.coach_id)
-
-        items.append({
-            "id": booking.id,
-            "student_name": student.name if student else "未知",
-            "coach_name": coach.name if coach else "未知",
-            "booking_date": booking.booking_date.isoformat(),
-            "start_time": booking.start_time.strftime("%H:%M"),
-            "end_time": booking.end_time.strftime("%H:%M"),
-            "status": booking.status,
-            "created_at": booking.created_at.isoformat()
-        })
-
-    return items
+    return [{
+        "id": b.id,
+        "student_name": b.student.name if b.student else "未知",
+        "coach_name": b.coach.name if b.coach else "未知",
+        "booking_date": b.booking_date.isoformat(),
+        "start_time": b.start_time.strftime("%H:%M"),
+        "end_time": b.end_time.strftime("%H:%M"),
+        "status": b.status,
+        "created_at": b.created_at.isoformat()
+    } for b in bookings]
 
 
 @router.get("/booking-stats")
@@ -176,34 +171,23 @@ async def get_booking_stats(
     today = date.today()
     start_date = today - timedelta(days=days - 1)
 
-    stats = []
-    for i in range(days):
-        current_date = start_date + timedelta(days=i)
-
-        # 当天预约数
-        total = await db.execute(
-            select(func.count()).where(
-                Booking.booking_date == current_date
-            )
+    result = await db.execute(
+        select(
+            Booking.booking_date,
+            func.count().label('total'),
+            func.sum(case((Booking.status == BookingStatus.COMPLETED.value, 1), else_=0)).label('completed')
         )
-        total_count = total.scalar() or 0
+        .where(Booking.booking_date.between(start_date, today))
+        .group_by(Booking.booking_date)
+    )
 
-        # 当天完成数
-        completed = await db.execute(
-            select(func.count()).where(
-                Booking.booking_date == current_date,
-                Booking.status == BookingStatus.COMPLETED.value
-            )
-        )
-        completed_count = completed.scalar() or 0
+    stats_dict = {row.booking_date: {"total": row.total, "completed": row.completed or 0} for row in result}
 
-        stats.append({
-            "date": current_date.isoformat(),
-            "total": total_count,
-            "completed": completed_count
-        })
-
-    return stats
+    return [{
+        "date": (start_date + timedelta(days=i)).isoformat(),
+        "total": stats_dict.get(start_date + timedelta(days=i), {}).get("total", 0),
+        "completed": stats_dict.get(start_date + timedelta(days=i), {}).get("completed", 0)
+    } for i in range(days)]
 
 
 @router.get("/revenue-stats")

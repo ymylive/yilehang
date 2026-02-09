@@ -13,7 +13,11 @@ except ImportError:
 # 服务器配置
 SERVER = "82.158.88.34"
 USER = "root"
-PASSWORD = "Qq159741"
+PASSWORD = os.getenv("SERVER_PASSWORD")
+
+if not PASSWORD:
+    print("错误: 必须设置 SERVER_PASSWORD 环境变量")
+    sys.exit(1)
 
 def run(client, cmd):
     print(f">>> {cmd}")

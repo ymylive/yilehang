@@ -10,7 +10,11 @@ from pathlib import Path
 SERVER_HOST = '82.158.88.34'
 SERVER_PORT = 22
 SERVER_USER = 'root'
-SERVER_PASSWORD = 'Qq159741'
+SERVER_PASSWORD = os.getenv('SERVER_PASSWORD')
+
+if not SERVER_PASSWORD:
+    print("错误: 必须设置 SERVER_PASSWORD 环境变量")
+    sys.exit(1)
 
 # 杩滅▼璺緞
 REMOTE_BASE = '/opt/yilehang'

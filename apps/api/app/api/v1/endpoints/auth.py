@@ -1,4 +1,5 @@
 """Authentication API endpoints."""
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -20,6 +21,25 @@ from sqlalchemy.orm import selectinload
 router = APIRouter()
 
 
+def _validate_password_strength(password: str) -> None:
+    """Validate password meets security requirements."""
+    if len(password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 8 characters long"
+        )
+    if not any(c.isalpha() for c in password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least one letter"
+        )
+    if not any(c.isdigit() for c in password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least one number"
+        )
+
+
 def _ensure_active(user: User) -> None:
     if user.status != "active":
         raise HTTPException(
@@ -39,31 +59,65 @@ def _token_response(user: User) -> Token:
 
 # ============ Registration ============
 
-@router.post("/register", response_model=Token, summary="Email registration")
-async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
-    """Email + password registration (no email code verification)."""
-    existing_user = await AuthService.get_user_by_email(db, user_data.email)
+async def _validate_user_uniqueness(
+    db: AsyncSession,
+    email: str,
+    phone: Optional[str] = None,
+    nickname: Optional[str] = None
+) -> None:
+    """Validate user uniqueness constraints."""
+    existing_user = await AuthService.get_user_by_email(db, email)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
 
-    if user_data.phone:
-        existing_phone = await AuthService.get_user_by_phone(db, user_data.phone)
+    if phone:
+        existing_phone = await AuthService.get_user_by_phone(db, phone)
         if existing_phone:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Phone already in use"
             )
 
-    if user_data.nickname:
-        existing_nickname = await AuthService.get_user_by_nickname(db, user_data.nickname)
+    if nickname:
+        existing_nickname = await AuthService.get_user_by_nickname(db, nickname)
         if existing_nickname:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Username already in use"
             )
+
+
+async def _create_role_profile(
+    db: AsyncSession,
+    user_id: int,
+    role: str,
+    name: str,
+    specialty: Optional[str] = None,
+    introduction: Optional[str] = None
+) -> None:
+    """Create role-specific profile."""
+    if role == "student":
+        await AuthService.create_student_profile(db=db, user_id=user_id, name=name)
+    elif role == "coach":
+        await AuthService.create_coach_profile(
+            db=db,
+            user_id=user_id,
+            name=name,
+            specialty=specialty,
+            introduction=introduction
+        )
+    elif role == "merchant":
+        await AuthService.create_merchant_profile(db=db, user_id=user_id, name=name)
+
+
+@router.post("/register", response_model=Token, summary="Email registration")
+async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
+    """Email + password registration (no email code verification)."""
+    _validate_password_strength(user_data.password)
+    await _validate_user_uniqueness(db, user_data.email, user_data.phone, user_data.nickname)
 
     user = await AuthService.create_user(
         db=db,
@@ -74,18 +128,12 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
         nickname=user_data.nickname
     )
 
-    if user_data.role == "student":
-        await AuthService.create_student_profile(
-            db=db,
-            user_id=user.id,
-            name=user_data.nickname or user_data.email.split("@")[0]
-        )
-    elif user_data.role == "coach":
-        await AuthService.create_coach_profile(
-            db=db,
-            user_id=user.id,
-            name=user_data.nickname or user_data.email.split("@")[0]
-        )
+    await _create_role_profile(
+        db=db,
+        user_id=user.id,
+        role=user_data.role,
+        name=user_data.nickname or user_data.email.split("@")[0]
+    )
 
     await db.commit()
     return _token_response(user)
@@ -94,6 +142,7 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
 @router.post("/register/email", response_model=Token, summary="Email code registration")
 async def register_with_email(data: EmailRegister, db: AsyncSession = Depends(get_db)):
     """Email registration with verification code."""
+    _validate_password_strength(data.password)
     is_valid = await EmailService.verify_code(data.email, data.code)
     if not is_valid:
         raise HTTPException(
@@ -158,27 +207,8 @@ async def register_with_email(data: EmailRegister, db: AsyncSession = Depends(ge
 
 @router.post("/register/coach", response_model=Token, summary="Coach registration")
 async def register_coach(coach_data: CoachRegister, db: AsyncSession = Depends(get_db)):
-    existing_user = await AuthService.get_user_by_email(db, coach_data.email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-
-    if coach_data.phone:
-        existing_phone = await AuthService.get_user_by_phone(db, coach_data.phone)
-        if existing_phone:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Phone already in use"
-            )
-
-    existing_nickname = await AuthService.get_user_by_nickname(db, coach_data.name)
-    if existing_nickname:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already in use"
-        )
+    _validate_password_strength(coach_data.password)
+    await _validate_user_uniqueness(db, coach_data.email, coach_data.phone, coach_data.name)
 
     user = await AuthService.create_user(
         db=db,
@@ -190,9 +220,10 @@ async def register_coach(coach_data: CoachRegister, db: AsyncSession = Depends(g
     )
 
     specialty_str = ",".join(coach_data.specialty) if coach_data.specialty else None
-    await AuthService.create_coach_profile(
+    await _create_role_profile(
         db=db,
         user_id=user.id,
+        role="coach",
         name=coach_data.name,
         specialty=specialty_str,
         introduction=coach_data.introduction
@@ -384,6 +415,20 @@ async def wechat_phone_login(data: WechatPhoneLogin, db: AsyncSession = Depends(
 
 @router.post("/password/reset", summary="Reset password via email code")
 async def reset_password(data: PasswordReset, db: AsyncSession = Depends(get_db)):
+    from app.services.auth_service import EMAIL_CODE_STORE
+
+    # Rate limit: 5 attempts per hour per IP
+    is_allowed, seconds_until_reset = EMAIL_CODE_STORE.check_rate_limit(
+        f"password_reset:{data.email}", max_attempts=5, window_minutes=60
+    )
+
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many password reset attempts. Please try again in {seconds_until_reset} seconds."
+        )
+
+    _validate_password_strength(data.new_password)
     is_valid = await EmailService.verify_code(data.email, data.code)
     if not is_valid:
         raise HTTPException(
@@ -410,6 +455,7 @@ async def change_password(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    _validate_password_strength(data.new_password)
     user = await AuthService.get_user_by_id(db, current_user["user_id"])
     if not user:
         raise HTTPException(
@@ -599,6 +645,7 @@ async def create_student_account(
         )
 
     # Create user account for student
+    _validate_password_strength(data.password)
     user = await AuthService.create_user(
         db=db,
         email=data.email,

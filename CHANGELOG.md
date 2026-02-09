@@ -28,6 +28,20 @@ All notable changes to this project will be documented in this file.
 - Home strategy cards now use deterministic sequence numbers to avoid duplicate labels.
 
 ### Fixed
+- **[SECURITY]** Removed hardcoded server passwords from 14 deployment scripts (now use environment variables)
+- **[SECURITY]** Fixed weak JWT secret key (now requires environment variable with validation)
+- **[SECURITY]** Reduced JWT token expiration from 7 days to 2 hours
+- **[SECURITY]** Added password complexity validation (min 8 chars, letter + number required)
+- **[SECURITY]** Added rate limiting to password reset endpoint (5 attempts per hour)
+- **[SECURITY]** Removed plaintext verification codes from logs
+- **[PERFORMANCE]** Fixed leaderboard N+1 query (100+ queries → 3 queries, 97% improvement)
+- **[PERFORMANCE]** Fixed dashboard recent bookings N+1 query (21 queries → 3 queries, 85% improvement)
+- **[PERFORMANCE]** Fixed dashboard booking stats N+1 query (15 queries → 1 query, 93% improvement)
+- **[API]** Added missing coach endpoint: `GET /coaches/me/bookings/{booking_id}`
+- **[API]** Added missing coach endpoint: `GET /reviews/coach/my`
+- **[API]** Added missing coach endpoint: `GET /reviews/feedbacks`
+- **[CODE QUALITY]** Extracted magic numbers to config (commission rate, cancellation hours)
+- **[CODE QUALITY]** Refactored registration logic to eliminate 80 lines of duplicate code
 - Fixed garbled arrow text in user menu (`>` rendering issue in mini program view).
 - Fixed button text vertical alignment issue for user logout and login action buttons.
 - Fixed partial garbled comments/text fragments in homepage style section.

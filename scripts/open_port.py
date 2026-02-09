@@ -1,9 +1,19 @@
 ﻿"""寮€鏀鹃槻鐏绔彛"""
 import paramiko
+import os
+import sys
+
+SERVER_HOST = os.getenv("SERVER_HOST", "82.158.88.34")
+SERVER_USER = os.getenv("SERVER_USER", "root")
+SERVER_PASSWORD = os.getenv("SERVER_PASSWORD")
+
+if not SERVER_PASSWORD:
+    print("错误: 必须设置 SERVER_PASSWORD 环境变量")
+    sys.exit(1)
 
 client = paramiko.SSHClient()
 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-client.connect("82.158.88.34", username="root", password="Qq159741", timeout=30)
+client.connect(SERVER_HOST, username=SERVER_USER, password=SERVER_PASSWORD, timeout=30)
 
 def run(cmd):
     print(f">>> {cmd}")

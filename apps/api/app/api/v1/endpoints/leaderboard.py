@@ -64,19 +64,26 @@ async def get_energy_leaderboard(
     result = await db.execute(query)
     rows = result.all()
 
-    # 获取学员信息
+    # 批量获取学员信息和能量账户（避免 N+1 查询）
+    student_ids = [student_id for student_id, _ in rows]
+
+    # 一次性获取所有学员
+    students_result = await db.execute(
+        select(Student).where(Student.id.in_(student_ids))
+    )
+    students_map = {s.id: s for s in students_result.scalars().all()}
+
+    # 一次性获取所有能量账户
+    accounts_result = await db.execute(
+        select(EnergyAccount).where(EnergyAccount.student_id.in_(student_ids))
+    )
+    accounts_map = {a.student_id: a for a in accounts_result.scalars().all()}
+
+    # 构建排行榜条目
     entries = []
     for rank, (student_id, total) in enumerate(rows, 1):
-        student_result = await db.execute(
-            select(Student).where(Student.id == student_id)
-        )
-        student = student_result.scalar_one_or_none()
-
-        # 获取等级
-        account_result = await db.execute(
-            select(EnergyAccount).where(EnergyAccount.student_id == student_id)
-        )
-        account = account_result.scalar_one_or_none()
+        student = students_map.get(student_id)
+        account = accounts_map.get(student_id)
         level = account.level if account else 1
         level_info = ENERGY_LEVELS.get(level, ENERGY_LEVELS[1])
 

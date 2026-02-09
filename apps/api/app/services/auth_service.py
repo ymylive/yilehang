@@ -509,7 +509,7 @@ class EmailService:
         }
 
         if settings.DEV_PRINT_CODE:
-            logger.info("[EMAIL][DEV] Verification code for %s: %s", email, code)
+            logger.info("[EMAIL][DEV] Verification code sent to %s", email)
             result["delivery"] = "dev"
             result["dev_code"] = code
             result["message"] = "Verification code generated (dev mode)"
@@ -521,7 +521,7 @@ class EmailService:
         if not smtp_user or not smtp_password:
             logger.error("[EMAIL] SMTP credentials are missing")
             if settings.DEV_PRINT_CODE_ON_SEND_FAIL:
-                logger.warning("[EMAIL][FALLBACK] Verification code for %s: %s", email, code)
+                logger.warning("[EMAIL][FALLBACK] Verification code sent to %s", email)
                 result["delivery"] = "fallback"
                 result["dev_code"] = code
                 result["message"] = "SMTP unavailable, dev fallback code generated"
@@ -572,7 +572,7 @@ class EmailService:
         except Exception:
             logger.exception("[EMAIL] Send failed")
             if settings.DEV_PRINT_CODE_ON_SEND_FAIL:
-                logger.warning("[EMAIL][FALLBACK] Verification code for %s: %s", email, code)
+                logger.warning("[EMAIL][FALLBACK] Verification code sent to %s", email)
                 result["delivery"] = "fallback"
                 result["dev_code"] = code
                 result["message"] = "SMTP send failed, dev fallback code generated"

@@ -149,9 +149,10 @@ class BookingService:
             raise ValueError("该预约状态不可取消")
 
         # 检查取消时限
+        from app.core.config import settings
         booking_datetime = datetime.combine(booking.booking_date, booking.start_time)
-        if datetime.now() > booking_datetime - timedelta(hours=2):
-            raise ValueError("距离上课不足2小时，无法取消")
+        if datetime.now() > booking_datetime - timedelta(hours=settings.BOOKING_CANCEL_HOURS_BEFORE):
+            raise ValueError(f"距离上课不足{settings.BOOKING_CANCEL_HOURS_BEFORE}小时，无法取消")
 
         # 更新预约状态
         booking.status = BookingStatus.CANCELLED.value
