@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <view class="page">
-    <!-- 消息列表 -->
+    <!-- 娑堟伅鍒楄〃 -->
     <scroll-view
       class="message-list"
       scroll-y
@@ -9,7 +9,7 @@
       @scrolltoupper="loadMoreMessages"
     >
       <view v-if="hasMore" class="load-more" @click="loadMoreMessages">
-        <text>{{ loadingMore ? '加载中...' : '加载更多' }}</text>
+        <text>{{ loadingMore ? '鍔犺浇涓?..' : '鍔犺浇鏇村' }}</text>
       </view>
 
       <view
@@ -19,13 +19,13 @@
         class="message-item"
         :class="{ 'is-self': msg.sender_id === currentUserId }"
       >
-        <!-- 时间分隔 -->
+        <!-- 鏃堕棿鍒嗛殧 -->
         <view v-if="shouldShowTime(msg, index)" class="time-divider">
           <text>{{ formatMessageTime(msg.created_at) }}</text>
         </view>
 
         <view class="message-row">
-          <!-- 对方头像 -->
+          <!-- 瀵规柟澶村儚 -->
           <image
             v-if="msg.sender_id !== currentUserId"
             class="avatar"
@@ -33,7 +33,7 @@
             mode="aspectFill"
           />
 
-          <!-- 消息内容 -->
+          <!-- 娑堟伅鍐呭 -->
           <view class="message-content">
             <view class="bubble" :class="msg.type">
               <text v-if="msg.type === 'text'">{{ msg.content }}</text>
@@ -47,7 +47,7 @@
             </view>
           </view>
 
-          <!-- 自己头像 -->
+          <!-- 鑷繁澶村儚 -->
           <image
             v-if="msg.sender_id === currentUserId"
             class="avatar"
@@ -58,7 +58,7 @@
       </view>
     </scroll-view>
 
-    <!-- 输入区域 -->
+    <!-- 杈撳叆鍖哄煙 -->
     <view class="input-area">
       <view class="input-row">
         <view class="more-btn" @click="showMoreOptions = !showMoreOptions">
@@ -68,7 +68,7 @@
           class="input"
           type="text"
           v-model="inputText"
-          placeholder="输入消息..."
+          placeholder="杈撳叆娑堟伅..."
           confirm-type="send"
           @confirm="sendTextMessage"
         />
@@ -77,11 +77,13 @@
         </view>
       </view>
 
-      <!-- 更多选项 -->
+      <!-- 鏇村閫夐」 -->
       <view class="more-options" v-if="showMoreOptions">
         <view class="option-item" @click="chooseImage">
-          <view class="option-icon">📷</view>
-          <text class="option-text">图片</text>
+          <view class="option-icon">
+            <wd-icon name="camera" size="44rpx" color="#2563eb" />
+          </view>
+          <text class="option-text">鍥剧墖</text>
         </view>
       </view>
     </view>
@@ -91,7 +93,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useUserStore } from '@/stores/user'
-import { chatApi, uploadApi } from '@/api'
+import { CHAT_WS_URL, chatApi, uploadApi } from '@/api'
 
 interface UserBrief {
   id: number
@@ -127,8 +129,11 @@ const scrollIntoView = ref('')
 
 const currentUserId = computed(() => userStore.user?.id || 0)
 
-// WebSocket 连接
+// WebSocket 杩炴帴
 let ws: UniApp.SocketTask | null = null
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null
+let manualSocketClose = false
+let hasRetriedWithTicket = false
 
 onMounted(async () => {
   const pages = getCurrentPages()
@@ -136,9 +141,9 @@ onMounted(async () => {
   const options = (currentPage as any).options || {}
 
   conversationId.value = parseInt(options.id) || 0
-  conversationName.value = decodeURIComponent(options.name || '聊天')
+  conversationName.value = decodeURIComponent(options.name || '鑱婂ぉ')
 
-  // 设置导航栏标题
+  // Set page title for current conversation.
   uni.setNavigationBarTitle({ title: conversationName.value })
 
   if (conversationId.value) {
@@ -151,6 +156,24 @@ onUnmounted(() => {
   disconnectWebSocket()
 })
 
+function clearHeartbeat() {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer)
+    heartbeatTimer = null
+  }
+}
+
+function startHeartbeat(socketTask: UniApp.SocketTask) {
+  clearHeartbeat()
+  heartbeatTimer = setInterval(() => {
+    try {
+      socketTask.send({ data: 'ping' })
+    } catch (_) {
+      // ignore heartbeat errors from closed sockets
+    }
+  }, 30000)
+}
+
 async function loadMessages(loadMore = false) {
   if (loading.value || loadingMore.value) return
 
@@ -162,25 +185,25 @@ async function loadMessages(loadMore = false) {
 
   try {
     const skip = loadMore ? messages.value.length : 0
-    const res = await chatApi.getMessages(conversationId.value, { skip, limit: 50 })
+    const res: any = await chatApi.getMessages(conversationId.value, { skip, limit: 50 })
 
-    const items = res.items || []
-    // 消息按时间倒序返回，需要反转
+    const items = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : [])
+    // Backend may return newest-first; normalize to oldest-first for rendering.
     items.reverse()
 
     if (loadMore) {
       messages.value = [...items, ...messages.value]
     } else {
       messages.value = items
-      // 滚动到底部
+      // Wait for DOM update before moving scroll anchor.
       await nextTick()
       scrollToBottom()
     }
 
-    hasMore.value = res.has_more
+    hasMore.value = Boolean(res?.has_more)
   } catch (error) {
-    console.error('加载消息失败', error)
-    uni.showToast({ title: '加载失败', icon: 'none' })
+    console.error('鍔犺浇娑堟伅澶辫触', error)
+    uni.showToast({ title: '鍔犺浇澶辫触', icon: 'none' })
   } finally {
     loading.value = false
     loadingMore.value = false
@@ -221,12 +244,12 @@ function chooseImage() {
     sourceType: ['album', 'camera'],
     success: async (res) => {
       const tempFilePath = res.tempFilePaths[0]
-      uni.showLoading({ title: '发送中...' })
+      uni.showLoading({ title: '鍙戦€佷腑...' })
       try {
         const uploadRes = await uploadApi.image(tempFilePath) as any
         await sendMessage('image', uploadRes.url)
       } catch (error) {
-        console.error('上传图片失败', error)
+        console.error('涓婁紶鍥剧墖澶辫触', error)
         uni.showToast({ title: '发送失败', icon: 'none' })
       } finally {
         uni.hideLoading()
@@ -256,7 +279,7 @@ function shouldShowTime(msg: Message, index: number): boolean {
   const prevTime = new Date(prevMsg.created_at).getTime()
   const currTime = new Date(msg.created_at).getTime()
 
-  // 超过5分钟显示时间
+  // 瓒呰繃5鍒嗛挓鏄剧ず鏃堕棿
   return currTime - prevTime > 5 * 60 * 1000
 }
 
@@ -272,62 +295,99 @@ function formatMessageTime(dateStr: string): string {
     return timeStr
   }
   if (date >= yesterday) {
-    return `昨天 ${timeStr}`
+    return `鏄ㄥぉ ${timeStr}`
   }
 
   return `${date.getMonth() + 1}/${date.getDate()} ${timeStr}`
+}
+
+async function buildTicketWsUrl(): Promise<string | null> {
+  try {
+    const res: any = await chatApi.getWsTicket()
+    const ticket = res?.ticket
+    if (!ticket) return null
+    return `${CHAT_WS_URL}?ticket=${encodeURIComponent(ticket)}`
+  } catch (error) {
+    console.error('Get websocket ticket failed', error)
+    return null
+  }
 }
 
 function connectWebSocket() {
   const token = uni.getStorageSync('token')
   if (!token) return
 
-  const envBase = (import.meta.env.VITE_API_BASE_URL || '').trim()
-  const isMpWeixin = typeof wx !== 'undefined' && typeof (globalThis as any).__wxConfig !== 'undefined'
-  const wsBase = envBase
-    ? envBase.replace(/^http/, 'ws')
-    : (isMpWeixin ? 'wss://yilehang.cornna.xyz/api/v1' : 'ws://localhost:8000/api/v1')
+  disconnectWebSocket()
+  manualSocketClose = false
+  hasRetriedWithTicket = false
 
-  ws = uni.connectSocket({
-    url: `${wsBase}/chat/ws?token=${token}`,
-    success: () => {
-      console.log('WebSocket 连接成功')
-    }
-  })
-
-  ws.onMessage((res) => {
-    try {
-      const data = JSON.parse(res.data as string)
-      if (data.type === 'new_message' && data.data.conversation_id === conversationId.value) {
-        messages.value.push(data.data)
-        nextTick(() => scrollToBottom())
+  const createSocket = (url: string, header?: Record<string, string>, allowTicketFallback = false) => {
+    const socketTask = uni.connectSocket({
+      url,
+      ...(header ? { header } : {}),
+      success: () => {
+        console.log('WebSocket connection created')
       }
-    } catch (e) {
-      // 忽略非 JSON 消息（如 pong）
+    })
+    ws = socketTask
+
+    const tryTicketFallback = async () => {
+      if (!manualSocketClose && allowTicketFallback && !hasRetriedWithTicket) {
+        hasRetriedWithTicket = true
+        const ticketUrl = await buildTicketWsUrl()
+        if (ticketUrl) {
+          createSocket(ticketUrl)
+        }
+      }
     }
-  })
 
-  ws.onError((err) => {
-    console.error('WebSocket 错误', err)
-  })
+    socketTask.onOpen(() => {
+      startHeartbeat(socketTask)
+    })
 
-  ws.onClose(() => {
-    console.log('WebSocket 关闭')
-  })
+    socketTask.onMessage((res) => {
+      try {
+        const data = JSON.parse(res.data as string)
+        if (data.type === 'new_message' && data.data.conversation_id === conversationId.value) {
+          messages.value.push(data.data)
+          nextTick(() => scrollToBottom())
+        }
+      } catch (_) {
+        // ignore non-JSON ws payloads (e.g. pong)
+      }
+    })
 
-  // 心跳
-  const heartbeat = setInterval(() => {
-    if (ws) {
-      ws.send({ data: 'ping' })
-    }
-  }, 30000)
+    socketTask.onError((err) => {
+      console.error('WebSocket error', err)
+      void tryTicketFallback()
+    })
 
-  onUnmounted(() => {
-    clearInterval(heartbeat)
-  })
+    socketTask.onClose(() => {
+      if (ws === socketTask) {
+        ws = null
+        clearHeartbeat()
+      }
+      console.log('WebSocket closed')
+      void tryTicketFallback()
+    })
+  }
+
+  // #ifdef H5
+  void (async () => {
+    const ticketUrl = await buildTicketWsUrl()
+    if (!ticketUrl) return
+    createSocket(ticketUrl)
+  })()
+  // #endif
+
+  // #ifndef H5
+  createSocket(CHAT_WS_URL, { Authorization: `Bearer ${token}` }, true)
+  // #endif
 }
 
 function disconnectWebSocket() {
+  manualSocketClose = true
+  clearHeartbeat()
   if (ws) {
     ws.close({})
     ws = null
@@ -472,6 +532,7 @@ function disconnectWebSocket() {
   display: flex;
   padding: 30rpx 0;
   gap: 40rpx;
+  animation: fadeInUp 220ms ease-out;
 }
 
 .option-item {
@@ -479,21 +540,40 @@ function disconnectWebSocket() {
   flex-direction: column;
   align-items: center;
   gap: 8rpx;
+  min-width: 120rpx;
+  cursor: pointer;
+  transition: transform 200ms ease;
+}
+
+.option-item:active {
+  transform: translateY(2rpx);
 }
 
 .option-icon {
   width: 100rpx;
   height: 100rpx;
-  background: #f5f5f5;
+  background: linear-gradient(135deg, #eef4ff, #f5f8ff);
   border-radius: 20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 40rpx;
+  box-shadow: inset 0 0 0 1rpx rgba(189, 208, 244, 0.65);
 }
 
 .option-text {
   font-size: 24rpx;
-  color: #666;
+  color: #475569;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
+

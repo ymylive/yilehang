@@ -15,10 +15,12 @@
         <text class="arrow">›</text>
       </view>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref } from 'vue'
 
 const keyword = ref('')
@@ -37,6 +39,7 @@ function viewDetail(id: number) {
 .admin-users {
   min-height: 100vh;
   background: #f5f5f5;
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
 }
 
 .search-bar {

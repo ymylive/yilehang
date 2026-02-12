@@ -9,18 +9,18 @@ Test Coverage:
 - require_role decorator tests
 - require_permission decorator tests
 """
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.middleware.role_auth import (
     get_current_user_with_roles,
     get_user_permissions,
-    require_role,
     require_permission,
+    require_role,
 )
-from app.models.rbac import Role, Permission, RoleType
+from app.models.rbac import Permission, Role, RoleType
 
 
 class TestGetCurrentUserWithRoles:

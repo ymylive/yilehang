@@ -29,7 +29,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/yilehang
       DEBUG: "false"
-      SECRET_KEY: ${SECRET_KEY:-change-this-in-production}
+      SECRET_KEY: ${SECRET_KEY:?set-in-env}
       WECHAT_APPID: ${WECHAT_APPID:-wxdbd150a0458a3c7c}
       WECHAT_SECRET: ${WECHAT_SECRET}
       ALLOW_WECHAT_LOGIN_WITHOUT_SECRET: ${ALLOW_WECHAT_LOGIN_WITHOUT_SECRET:-false}
@@ -39,7 +39,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_USE_SSL: ${SMTP_USE_SSL:-false}
-      DEV_PRINT_CODE_ON_SEND_FAIL: ${DEV_PRINT_CODE_ON_SEND_FAIL:-true}
+      DEV_PRINT_CODE_ON_SEND_FAIL: ${DEV_PRINT_CODE_ON_SEND_FAIL:-false}
     depends_on:
       postgres:
         condition: service_healthy

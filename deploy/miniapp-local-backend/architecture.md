@@ -1,4 +1,4 @@
-# 小程序本地后端详细架构
+﻿# 小程序本地后端详细架构
 
 > 本文档提供 `apps/unified-miniapp` 本地后端层的详细架构图、数据流说明和技术细节。
 
@@ -52,7 +52,7 @@
                           ↕ HTTPS
 ┌─────────────────────────────────────────────────────────────────┐
 │                    远程后端 API (FastAPI)                        │
-│              https://yilehang.cornna.xyz/api/v1                 │
+│              https://rl.cornna.xyz/api/v1                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -111,7 +111,7 @@ api/index.ts request()
   ├─ 从 uni.getStorageSync('token') 读取 token
   ├─ 添加 Authorization: Bearer <token> 请求头
   ├─ 根据环境选择 BASE_URL
-  │   ├─ 微信小程序 → https://yilehang.cornna.xyz/api/v1
+  │   ├─ 微信小程序 → https://rl.cornna.xyz/api/v1
   │   └─ H5 开发 → /api/v1 (Vite proxy 转发到 localhost:8000)
   └─ uni.request() 发起请求
   ↓
@@ -218,7 +218,7 @@ switchTab(item, idx)
 **关键常量**：
 - `BASE_URL` — 根据环境自动选择：
   - `import.meta.env.VITE_API_BASE_URL` (优先)
-  - 微信小程序环境 → `https://yilehang.cornna.xyz/api/v1`
+  - 微信小程序环境 → `https://rl.cornna.xyz/api/v1`
   - H5 开发环境 → `/api/v1`
 
 **核心函数**：

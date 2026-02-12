@@ -1,4 +1,4 @@
-# 小程序本地后端架构说明
+﻿# 小程序本地后端架构说明
 
 > 本文档描述 `apps/unified-miniapp` 中运行在客户端（微信小程序 / H5）本地的"后端"逻辑层，包括 API 封装、状态管理、Token 管理、角色/权限守卫、本地缓存策略等。
 
@@ -25,7 +25,7 @@
 ### 2.1 请求基础设施
 
 - **基地址自动切换**：通过 `import.meta.env.VITE_API_BASE_URL` 或运行时检测 `wx` 全局对象，自动选择：
-  - 微信小程序环境 → `https://yilehang.cornna.xyz/api/v1`
+  - 微信小程序环境 → `https://rl.cornna.xyz/api/v1`
   - H5 开发环境 → `/api/v1`（由 Vite devServer proxy 转发到 `localhost:8000`）
 - **Token 自动注入**：每次请求从 `uni.getStorageSync('token')` 读取 JWT，自动添加 `Authorization: Bearer <token>` 请求头。
 - **401 自动处理**：收到 401 响应时，若当前持有 token 且不是公开认证接口，自动清除本地 token/user 缓存并跳转登录页。

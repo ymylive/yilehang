@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="booking-page">
     <view class="header-card">
       <wd-search v-model="searchKeyword" placeholder="搜索教练姓名" @search="handleSearch" />
@@ -56,10 +56,12 @@
     <view class="loading-state" v-else>
       <text>加载中...</text>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { computed, ref, onMounted } from 'vue'
 import { onReachBottom } from '@dcloudio/uni-app'
 import { coachApi } from '@/api'

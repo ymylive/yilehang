@@ -2,15 +2,59 @@
 训练相关API
 """
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
-from app.core import get_db, get_current_user
-from app.models import TrainingSession
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core import get_current_user, get_db
+from app.models import Coach, ParentStudentRelation, Student, TrainingSession
 from app.schemas import TrainingSessionCreate, TrainingSessionResponse
 
 router = APIRouter()
+
+
+async def _get_permitted_student_ids(
+    db: AsyncSession, current_user: dict[str, object]
+) -> set[int]:
+    role = current_user.get("role")
+    user_id = current_user.get("user_id")
+    if not user_id:
+        return set()
+
+    if role == "student":
+        result = await db.execute(select(Student.id).where(Student.user_id == user_id))
+        return set(result.scalars().all())
+
+    if role == "parent":
+        relation_result = await db.execute(
+            select(ParentStudentRelation.student_id).where(
+                ParentStudentRelation.parent_id == user_id
+            )
+        )
+        direct_result = await db.execute(select(Student.id).where(Student.parent_id == user_id))
+        return set(relation_result.scalars().all()) | set(direct_result.scalars().all())
+
+    if role == "coach":
+        coach_result = await db.execute(select(Coach.id).where(Coach.user_id == user_id).limit(1))
+        coach_id = coach_result.scalar_one_or_none()
+        if not coach_id:
+            return set()
+        result = await db.execute(select(Student.id).where(Student.coach_id == coach_id))
+        return set(result.scalars().all())
+
+    return set()
+
+
+async def _ensure_student_access(
+    student_id: int, db: AsyncSession, current_user: dict[str, object]
+) -> None:
+    if current_user.get("role") == "admin":
+        return
+
+    permitted_student_ids = await _get_permitted_student_ids(db, current_user)
+    if student_id not in permitted_student_ids:
+        raise HTTPException(status_code=403, detail="无权访问该学员数据")
 
 
 # 支持的运动类型
@@ -77,9 +121,12 @@ async def list_exercises():
 async def start_training(
     exercise_type: str,
     student_id: int,
-    current_user: dict = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_user)
 ):
     """开始训练会话"""
+    await _ensure_student_access(student_id, db, current_user)
+
     # 验证运动类型
     exercise = next((e for e in EXERCISE_TYPES if e["id"] == exercise_type), None)
     if not exercise:
@@ -101,9 +148,11 @@ async def start_training(
 async def complete_training(
     session_data: TrainingSessionCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user)
 ):
     """完成训练并保存记录"""
+    await _ensure_student_access(session_data.student_id, db, current_user)
+
     # 计算卡路里消耗
     exercise = next((e for e in EXERCISE_TYPES if e["id"] == session_data.exercise_type), None)
     calories = 0
@@ -132,9 +181,11 @@ async def get_training_history(
     skip: int = 0,
     limit: int = 20,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user)
 ):
     """获取训练历史"""
+    await _ensure_student_access(student_id, db, current_user)
+
     result = await db.execute(
         select(TrainingSession)
         .where(TrainingSession.student_id == student_id)

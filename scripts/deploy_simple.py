@@ -422,9 +422,9 @@ services:
       dockerfile: /opt/yilehang/docker/Dockerfile.api
     container_name: yilehang-api
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres123@postgres:5432/yilehang
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-change-me-in-production}@postgres:5432/yilehang
       DEBUG: "false"
-      SECRET_KEY: yilehang-secret-key-2024
+      SECRET_KEY: ${SECRET_KEY:?set-in-env}
     depends_on:
       postgres:
         condition: service_healthy

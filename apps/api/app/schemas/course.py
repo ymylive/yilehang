@@ -2,8 +2,9 @@
 课程相关Schema
 """
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict
 
 
 class CourseBase(BaseModel):
@@ -39,8 +40,7 @@ class CourseResponse(CourseBase):
     status: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class VenueBase(BaseModel):
@@ -61,8 +61,7 @@ class VenueResponse(VenueBase):
     status: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ScheduleBase(BaseModel):
@@ -97,8 +96,7 @@ class ScheduleResponse(ScheduleBase):
     course: Optional[CourseResponse] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AttendanceBase(BaseModel):
@@ -127,5 +125,4 @@ class AttendanceResponse(AttendanceBase):
     status: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

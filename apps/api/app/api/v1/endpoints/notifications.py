@@ -2,18 +2,18 @@
 通知 API
 """
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, update
 
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.models.user import User
+from app.core.security import fetch_user_from_token, get_current_user
 from app.models.notification import Notification
 from app.schemas.notification import (
-    NotificationResponse,
     NotificationListResponse,
     NotificationReadRequest,
+    NotificationResponse,
 )
 
 router = APIRouter()
@@ -26,8 +26,11 @@ async def get_notifications(
     type: Optional[str] = None,
     is_read: Optional[bool] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user_data: dict = Depends(get_current_user),
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """获取通知列表"""
     query = select(Notification).where(Notification.user_id == current_user.id)
 
@@ -43,7 +46,7 @@ async def get_notifications(
     # 获取未读数
     unread_query = select(func.count()).where(
         Notification.user_id == current_user.id,
-        Notification.is_read == False
+        Notification.is_read.is_(False),
     )
     unread_count = await db.scalar(unread_query) or 0
 
@@ -63,8 +66,11 @@ async def get_notifications(
 async def mark_notification_read(
     notification_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user_data: dict = Depends(get_current_user),
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """标记单条通知已读"""
     query = select(Notification).where(
         Notification.id == notification_id,
@@ -87,12 +93,15 @@ async def mark_notification_read(
 async def mark_all_read(
     request: Optional[NotificationReadRequest] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user_data: dict = Depends(get_current_user),
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """标记全部已读或批量标记已读"""
     query = update(Notification).where(
         Notification.user_id == current_user.id,
-        Notification.is_read == False,
+        Notification.is_read.is_(False),
     )
 
     if request and request.notification_ids:
@@ -109,8 +118,11 @@ async def mark_all_read(
 async def delete_notification(
     notification_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user_data: dict = Depends(get_current_user),
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """删除通知"""
     query = select(Notification).where(
         Notification.id == notification_id,

@@ -35,7 +35,9 @@
         <view class="order-body">
           <view class="order-image">
             <image v-if="order.item_image" :src="order.item_image" mode="aspectFill" />
-            <view v-else class="order-placeholder">🎁</view>
+            <view v-else class="order-placeholder">
+              <wd-icon name="gift" size="44rpx" color="#94a3b8" />
+            </view>
           </view>
           <view class="order-info">
             <text class="order-name">{{ order.item_name }}</text>
@@ -54,7 +56,9 @@
     </view>
 
     <view class="empty-state" v-else>
-      <text class="empty-icon">📋</text>
+      <view class="empty-icon">
+        <wd-icon name="view-list" size="62rpx" color="#94a3b8" />
+      </view>
       <text class="empty-text">暂无兑换记录</text>
       <button class="empty-btn" @click="goToRedeem">去兑换</button>
     </view>
@@ -121,6 +125,9 @@ const currentStatus = ref('')
 const selectedOrder = ref<any>(null)
 const page = ref(1)
 const hasMore = ref(true)
+const ordersLoading = ref(false)
+let ordersRequestId = 0
+let activeOrdersRequestKey = ''
 
 onMounted(() => {
   loadOrders()
@@ -129,16 +136,37 @@ onMounted(() => {
 watch(currentStatus, () => {
   page.value = 1
   orders.value = []
+  hasMore.value = true
   loadOrders()
 })
 
 async function loadOrders() {
+  const requestPage = page.value
+  const requestStatus = currentStatus.value
+  const requestKey = `${requestStatus}:${requestPage}`
+
+  if (ordersLoading.value && activeOrdersRequestKey === requestKey) {
+    return
+  }
+
+  activeOrdersRequestKey = requestKey
+  const requestId = ++ordersRequestId
+  ordersLoading.value = true
+
   try {
-    const params: any = { page: page.value, page_size: 20 }
-    if (currentStatus.value) params.status = currentStatus.value
+    const params: any = { page: requestPage, page_size: 20 }
+    if (requestStatus) params.status = requestStatus
 
     const res = await merchantApi.getMyOrders(params)
-    if (page.value === 1) {
+    if (
+      requestId !== ordersRequestId
+      || requestPage !== page.value
+      || requestStatus !== currentStatus.value
+    ) {
+      return
+    }
+
+    if (requestPage === 1) {
       orders.value = res.items
     } else {
       orders.value.push(...res.items)
@@ -146,6 +174,10 @@ async function loadOrders() {
     hasMore.value = orders.value.length < res.total
   } catch (error) {
     console.error('加载订单失败', error)
+  } finally {
+    if (requestId === ordersRequestId) {
+      ordersLoading.value = false
+    }
   }
 }
 
@@ -204,6 +236,13 @@ function goToRedeem() {
   font-size: 26rpx;
   color: #666;
   background: #F5F5F5;
+  transition: all 200ms ease;
+  cursor: pointer;
+}
+
+.tab:active {
+  transform: translateY(1rpx);
+  opacity: 0.88;
 }
 
 .tab.active {
@@ -221,6 +260,13 @@ function goToRedeem() {
   margin-bottom: 20rpx;
   overflow: hidden;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+  cursor: pointer;
+}
+
+.order-card:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 8rpx 20rpx rgba(37, 99, 235, 0.16);
 }
 
 .order-header {
@@ -283,7 +329,7 @@ function goToRedeem() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 48rpx;
+  background: linear-gradient(135deg, #eff6ff, #f7f9ff);
 }
 
 .order-info {
@@ -348,9 +394,14 @@ function goToRedeem() {
 }
 
 .empty-icon {
-  font-size: 80rpx;
-  display: block;
-  margin-bottom: 20rpx;
+  width: 110rpx;
+  height: 110rpx;
+  border-radius: 26rpx;
+  background: #f1f5f9;
+  margin: 0 auto 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .empty-text {

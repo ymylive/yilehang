@@ -16,7 +16,9 @@
         </view>
         <view class="level-section">
           <view class="level-badge">
-            <text class="level-icon">{{ account.level_icon }}</text>
+            <view class="level-icon">
+              <wd-icon :name="resolveLevelIcon(account.level_icon)" size="28rpx" color="#FFFFFF" />
+            </view>
             <text class="level-name">{{ account.level_name }}</text>
           </view>
           <view class="level-progress" v-if="account.next_level_points">
@@ -32,15 +34,21 @@
     <!-- 快捷入口 -->
     <view class="quick-actions">
       <view class="action-card" @click="goTo('/pages/energy/redeem')">
-        <view class="action-icon">🎁</view>
+        <view class="action-icon">
+          <wd-icon name="gift" size="44rpx" color="#2563eb" />
+        </view>
         <text class="action-name">兑换商城</text>
       </view>
       <view class="action-card" @click="goTo('/pages/leaderboard/index')">
-        <view class="action-icon">🏆</view>
+        <view class="action-icon">
+          <wd-icon name="chart-bar" size="44rpx" color="#2563eb" />
+        </view>
         <text class="action-name">排行榜</text>
       </view>
       <view class="action-card" @click="showRules = true">
-        <view class="action-icon">📋</view>
+        <view class="action-icon">
+          <wd-icon name="note" size="44rpx" color="#2563eb" />
+        </view>
         <text class="action-name">积分规则</text>
       </view>
     </view>
@@ -103,7 +111,9 @@
       </view>
 
       <view class="empty-state" v-else>
-        <text class="empty-icon">📝</text>
+        <view class="empty-icon">
+          <wd-icon name="note" size="64rpx" color="#94a3b8" />
+        </view>
         <text class="empty-text">暂无记录</text>
       </view>
 
@@ -130,10 +140,12 @@
         </scroll-view>
       </view>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { energyApi } from '@/api'
@@ -146,7 +158,7 @@ const account = ref({
   total_spent: 0,
   level: 1,
   level_name: '新手',
-  level_icon: '🌱',
+  level_icon: 'star',
   next_level_points: 100
 })
 
@@ -161,6 +173,9 @@ const filter = ref('')
 const page = ref(1)
 const hasMore = ref(true)
 const showRules = ref(false)
+const transactionsLoading = ref(false)
+let transactionsRequestId = 0
+let activeTransactionKey = ''
 
 const levelProgress = computed(() => {
   if (!account.value.next_level_points) return 100
@@ -183,6 +198,7 @@ onMounted(async () => {
 watch(filter, () => {
   page.value = 1
   transactions.value = []
+  hasMore.value = true
   loadTransactions()
 })
 
@@ -205,12 +221,32 @@ async function loadSummary() {
 }
 
 async function loadTransactions() {
+  const requestPage = page.value
+  const requestFilter = filter.value
+  const requestKey = `${requestFilter}:${requestPage}`
+
+  if (transactionsLoading.value && activeTransactionKey === requestKey) {
+    return
+  }
+
+  activeTransactionKey = requestKey
+  const requestId = ++transactionsRequestId
+  transactionsLoading.value = true
+
   try {
-    const params: any = { page: page.value, page_size: 20 }
-    if (filter.value) params.type = filter.value
+    const params: any = { page: requestPage, page_size: 20 }
+    if (requestFilter) params.type = requestFilter
 
     const res = await energyApi.getTransactions(params)
-    if (page.value === 1) {
+    if (
+      requestId !== transactionsRequestId
+      || requestPage !== page.value
+      || requestFilter !== filter.value
+    ) {
+      return
+    }
+
+    if (requestPage === 1) {
       transactions.value = res.items
     } else {
       transactions.value.push(...res.items)
@@ -218,6 +254,10 @@ async function loadTransactions() {
     hasMore.value = transactions.value.length < res.total
   } catch (error) {
     console.error('加载交易记录失败', error)
+  } finally {
+    if (requestId === transactionsRequestId) {
+      transactionsLoading.value = false
+    }
   }
 }
 
@@ -231,6 +271,9 @@ async function loadRules() {
 }
 
 function loadMore() {
+  if (!hasMore.value || transactionsLoading.value) {
+    return
+  }
   page.value++
   loadTransactions()
 }
@@ -247,6 +290,20 @@ function formatTime(dateStr: string) {
   return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`
 }
 
+function resolveLevelIcon(levelIcon?: string) {
+  const icon = String(levelIcon || '').trim()
+  const emojiMap: Record<string, string> = {
+    '\u{1F331}': 'star',
+    '\u2B50': 'star-filled',
+    '\u{1F3C6}': 'chart-bar',
+    '\u{1F451}': 'dashboard'
+  }
+  if (emojiMap[icon]) {
+    return emojiMap[icon]
+  }
+  return /^[a-z0-9-]+$/i.test(icon) ? icon : 'star'
+}
+
 function goTo(url: string) {
   uni.navigateTo({ url })
 }
@@ -256,6 +313,7 @@ function goTo(url: string) {
 .page {
   min-height: 100vh;
   background: #FFFBF5;
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
 }
 
 .energy-header {
@@ -341,7 +399,14 @@ function goTo(url: string) {
 }
 
 .level-icon {
-  font-size: 32rpx;
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.26);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1rpx rgba(255, 255, 255, 0.22);
 }
 
 .level-name {
@@ -396,17 +461,59 @@ function goTo(url: string) {
   flex-direction: column;
   align-items: center;
   box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+  cursor: pointer;
+}
+
+.action-card:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 6rpx 18rpx rgba(29, 78, 216, 0.18);
 }
 
 .action-icon {
-  font-size: 48rpx;
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(135deg, #e8f0ff, #eef5ff);
   margin-bottom: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1rpx rgba(191, 210, 247, 0.6);
 }
 
 .action-name {
   font-size: 26rpx;
-  color: #333;
+  color: #334155;
   font-weight: 500;
+}
+
+.tab,
+.load-more {
+  transition: all 200ms ease;
+}
+
+.tab:active,
+.load-more:active {
+  transform: translateY(1rpx);
+  opacity: 0.88;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60rpx 0;
+}
+
+.empty-icon {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 24rpx;
+  background: #f1f5f9;
+  margin: 0 auto 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12rpx;
 }
 
 .stats-section {
@@ -544,17 +651,6 @@ function goTo(url: string) {
 
 .trans-amount.spend {
   color: #FF8800;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 60rpx 0;
-}
-
-.empty-icon {
-  font-size: 60rpx;
-  display: block;
-  margin-bottom: 16rpx;
 }
 
 .empty-text {

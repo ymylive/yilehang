@@ -1,10 +1,10 @@
 """
 约课系统相关Schema
 """
-from datetime import datetime, date, time
-from typing import Optional, List
-from pydantic import BaseModel, Field
+from datetime import date, datetime, time
+from typing import List, Optional
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # ==================== 课时卡相关 ====================
 
@@ -42,8 +42,7 @@ class MembershipCardResponse(MembershipCardBase):
     sort_order: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== 学员课时账户相关 ====================
@@ -72,8 +71,7 @@ class StudentMembershipResponse(BaseModel):
     purchase_date: datetime
     card: Optional[MembershipCardResponse] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MembershipRechargeRequest(BaseModel):
@@ -116,8 +114,7 @@ class CoachSlotResponse(CoachSlotBase):
     is_active: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== 预约相关 ====================
@@ -176,8 +173,7 @@ class BookingResponse(BaseModel):
     coach_name: Optional[str] = None
     course_name: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BookingListResponse(BaseModel):
@@ -217,8 +213,7 @@ class TransactionResponse(BaseModel):
     description: Optional[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== 评价相关 ====================
@@ -253,8 +248,7 @@ class ReviewResponse(BaseModel):
     student_name: Optional[str] = None
     student_avatar: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CoachReplyRequest(BaseModel):
@@ -288,8 +282,7 @@ class CoachFeedbackResponse(BaseModel):
     suggestions: Optional[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== 教练相关扩展 ====================
@@ -311,8 +304,7 @@ class CoachDetailResponse(BaseModel):
     avg_rating: float = 0.0
     review_count: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CoachAvailableTimeSlot(BaseModel):

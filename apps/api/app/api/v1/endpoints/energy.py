@@ -2,17 +2,22 @@
 能量系统 API
 """
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
-from app.core import get_db, get_current_user
-from app.models import EnergyRule, EnergyAccount, Student
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core import get_current_user, get_db
+from app.models import EnergyRule, Student
 from app.models.energy import ENERGY_LEVELS
 from app.schemas.energy import (
-    EnergyRuleResponse, EnergyAccountResponse, EnergyAccountSummary,
-    EnergyTransactionResponse, EnergyTransactionList,
-    EnergyEarnRequest, EnergyEarnResponse
+    EnergyAccountResponse,
+    EnergyAccountSummary,
+    EnergyEarnRequest,
+    EnergyEarnResponse,
+    EnergyRuleResponse,
+    EnergyTransactionList,
+    EnergyTransactionResponse,
 )
 from app.services.energy_service import EnergyService
 
@@ -93,7 +98,7 @@ async def get_energy_rules(
     """获取积分规则列表"""
     result = await db.execute(
         select(EnergyRule)
-        .where(EnergyRule.is_active == True)
+        .where(EnergyRule.is_active.is_(True))
         .order_by(EnergyRule.sort_order)
     )
     rules = result.scalars().all()

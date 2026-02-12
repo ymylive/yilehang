@@ -123,8 +123,8 @@ async function loadData(reset = true) {
     )
 
     // API 返回数组或对象
-    const items = Array.isArray(res) ? res : (res.items || [])
-    total.value = Array.isArray(res) ? items.length : (res.total || items.length)
+    const items = Array.isArray(res) ? res : (Array.isArray((res as any)?.items) ? (res as any).items : [])
+    total.value = Array.isArray(res) ? items.length : Number((res as any)?.total || items.length)
 
     // 标记最新记录
     if (reset && items.length > 0) {

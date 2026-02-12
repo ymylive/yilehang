@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-易乐航 ITS 智慧体教云平台 - A youth sports training digital platform built around WeChat Mini Programs. The platform covers the "booking → class → lesson consumption → repurchase" workflow with role-based products:
+韧翎成长计划 - A youth sports training digital platform built around WeChat Mini Programs. The platform covers the "booking → class → lesson consumption → repurchase" workflow with role-based products:
 
 - **Unified Mini Program** (`apps/unified-miniapp`): 🆕 Single WeChat mini program with multi-role support (admin/coach/parent/student)
 - **Student App** (`apps/client`): Booking, schedule, membership cards, training records, messaging
@@ -130,6 +130,14 @@ Docker Compose production setup in `docker/`:
 - SSL via acme.sh with Cloudflare DNS
 
 Deploy script: `scripts/deploy_full.py`
+
+### Domain Standard (Required)
+
+- Primary domain: `https://rl.cornna.xyz`
+- API base URL: `https://rl.cornna.xyz/api/v1`
+- WebSocket URL: `wss://rl.cornna.xyz/api/v1/chat/ws`
+- Upload URL: `https://rl.cornna.xyz/api/v1/upload`
+- Do not use IPs or alternate domains for production request routing.
 
 ## Test Accounts (seed data)
 | Role | Phone/Email | Password |

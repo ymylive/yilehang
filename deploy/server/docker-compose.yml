@@ -1,10 +1,12 @@
-version: '3.8'
+﻿version: '3.8'
 
 services:
   # PostgreSQL database
   postgres:
     image: postgres:15-alpine
     container_name: yilehang-server-postgres
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -31,7 +33,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-yilehang}
       DEBUG: ${DEBUG:-false}
-      SECRET_KEY: ${SECRET_KEY:-change-this-in-production}
+      SECRET_KEY: ${SECRET_KEY:?set-in-env}
       WECHAT_APPID: ${WECHAT_APPID:-}
       WECHAT_SECRET: ${WECHAT_SECRET:-}
       ALLOW_WECHAT_LOGIN_WITHOUT_SECRET: ${ALLOW_WECHAT_LOGIN_WITHOUT_SECRET:-false}

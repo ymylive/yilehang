@@ -1,29 +1,62 @@
 """
 数据模型汇总
 """
-from app.models.rbac import (
-    Role, Permission, Menu,
-    RoleType, PermissionType, MenuType,
-    user_roles, role_permissions, role_menus,
-)
-from app.models.user import User, Student, Coach, ParentStudentRelation, UserRole, UserStatus
-from app.models.course import Course, Venue, Schedule, Attendance, CourseType, CourseCategory
-from app.models.growth import FitnessTest, FitnessMetric, TrainingSession, MetricType
+
 from app.models.booking import (
-    MembershipCard, StudentMembership, CoachAvailableSlot, Booking,
-    Transaction, Review, CoachFeedback,
-    CardType, MembershipStatus, BookingStatus, TransactionType
+    Booking,
+    BookingStatus,
+    CardType,
+    CoachAvailableSlot,
+    CoachFeedback,
+    MembershipCard,
+    MembershipStatus,
+    Review,
+    StudentMembership,
+    Transaction,
+    TransactionType,
+)
+from app.models.chat import (
+    Conversation,
+    ConversationType,
+    Message,
+    MessageReadStatus,
+    MessageStatus,
+    MessageType,
+)
+from app.models.course import Attendance, Course, CourseCategory, CourseType, Schedule, Venue
+from app.models.energy import (
+    ENERGY_LEVELS,
+    EnergyAccount,
+    EnergyRule,
+    EnergySourceType,
+    EnergyTransaction,
+    EnergyTransactionType,
+)
+from app.models.growth import FitnessMetric, FitnessTest, MetricType, TrainingSession
+from app.models.merchant import (
+    Merchant,
+    MerchantStatus,
+    MerchantUser,
+    RedeemItem,
+    RedeemOrder,
+    RedeemOrderStatus,
 )
 from app.models.notification import Notification, NotificationType
-from app.models.chat import Conversation, Message, MessageReadStatus, ConversationType, MessageType, MessageStatus
-from app.models.energy import (
-    EnergyRule, EnergyAccount, EnergyTransaction,
-    EnergyTransactionType, EnergySourceType, ENERGY_LEVELS
+from app.models.rbac import (
+    Menu,
+    MenuType,
+    Permission,
+    PermissionType,
+    Role,
+    RoleType,
+    role_menus,
+    role_permissions,
+    user_roles,
 )
-from app.models.merchant import (
-    Merchant, MerchantUser, RedeemItem, RedeemOrder,
-    MerchantStatus, RedeemOrderStatus
-)
+from app.models.user import Coach, ParentStudentRelation, Student, User, UserRole, UserStatus
+
+# Backward-compatible alias used by init/seed scripts.
+Enrollment = Attendance
 
 __all__ = [
     # RBAC 权限域
@@ -48,6 +81,7 @@ __all__ = [
     "Venue",
     "Schedule",
     "Attendance",
+    "Enrollment",
     "CourseType",
     "CourseCategory",
     # 成长档案域

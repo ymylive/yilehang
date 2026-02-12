@@ -233,12 +233,12 @@ services:
       - /opt/yilehang/apps/api:/app
       - /opt/yilehang/uploads:/app/app/uploads
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres123@postgres:5432/yilehang
-      SECRET_KEY: yilehang-secret-2024
-      WECHAT_APPID: wxdbd150a0458a3c7c
-      WECHAT_SECRET: 486f1516ef9f20ccc7e8bb5d5cfd1b25
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-change-me-in-production}@postgres:5432/yilehang
+      SECRET_KEY: ${SECRET_KEY:?set-in-env}
+      WECHAT_APPID: ${WECHAT_APPID:-}
+      WECHAT_SECRET: ${WECHAT_SECRET:-}
       ALLOW_WECHAT_LOGIN_WITHOUT_SECRET: "false"
-      DEV_PRINT_CODE_ON_SEND_FAIL: "true"
+      DEV_PRINT_CODE_ON_SEND_FAIL: "false"
     networks:
       - yilehang
     depends_on:
@@ -291,10 +291,10 @@ http {
 
     upstream api { server api:8000; }
 
-    # Official website - yilehang.cornna.xyz
+    # Official website - rl.cornna.xyz
     server {
         listen 80;
-        server_name yilehang.cornna.xyz;
+        server_name rl.cornna.xyz;
 
         root /usr/share/nginx/html/website;
         index index.html;
@@ -309,10 +309,10 @@ http {
         }
     }
 
-    # API server - api.yilehang.cornna.xyz or default
+    # API server - rl.cornna.xyz or default
     server {
         listen 80 default_server;
-        server_name api.yilehang.cornna.xyz _;
+        server_name rl.cornna.xyz _;
 
         location /api/v1/chat/ws {
             proxy_pass http://api/api/v1/chat/ws;
@@ -353,11 +353,11 @@ def create_placeholder_pages(client):
     print("\n=== Create placeholder pages ===")
     client_html = '''<!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Yilehang</title>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>闊х繋鎴愰暱璁″垝</title>
 <style>*{margin:0;padding:0}body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#FFB347,#FF8800);font-family:system-ui}
 .c{text-align:center;color:#fff;padding:40px}.logo{font-size:80px;margin-bottom:20px}h1{font-size:36px;margin-bottom:10px}.sub{opacity:.9;margin-bottom:30px}
 .status{background:rgba(255,255,255,.2);padding:15px 30px;border-radius:30px;display:inline-block}</style></head>
-<body><div class="c"><div class="logo">🏃</div><h1>Yilehang · Sports Growth</h1><p class="sub">ITS Intelligent Sports Platform</p><div class="status">✓ Service ready</div></div></body></html>'''
+<body><div class="c"><div class="logo">馃弮</div><h1>闊х繋鎴愰暱璁″垝 路 Sports Growth</h1><p class="sub">ITS Intelligent Sports Platform</p><div class="status">鉁?Service ready</div></div></body></html>'''
 
     admin_html = '''<!DOCTYPE html>
 <html lang="zh-CN">
@@ -365,7 +365,7 @@ def create_placeholder_pages(client):
 <style>*{margin:0;padding:0}body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#2a2a2a,#1a1a1a);font-family:system-ui}
 .c{text-align:center;color:#fff;padding:40px}.logo{font-size:80px;margin-bottom:20px}h1{font-size:36px;margin-bottom:10px}.sub{opacity:.9;margin-bottom:30px}
 .status{background:rgba(255,255,255,.2);padding:15px 30px;border-radius:30px;display:inline-block}</style></head>
-<body><div class="c"><div class="logo">📊</div><h1>Yilehang Admin</h1><p class="sub">Operations Console</p><div class="status">✓ Service ready</div></div></body></html>'''
+<body><div class="c"><div class="logo">馃搳</div><h1>闊х繋鎴愰暱璁″垝 Admin</h1><p class="sub">Operations Console</p><div class="status">鉁?Service ready</div></div></body></html>'''
 
     run(client, f"cat > /opt/yilehang/apps/client/dist/index.html << 'EOFHTML'\n{client_html}\nEOFHTML")
     run(client, f"cat > /opt/yilehang/apps/admin/dist/index.html << 'EOFHTML'\n{admin_html}\nEOFHTML")
@@ -402,7 +402,7 @@ def print_deployment_summary():
     print("Deployment done")
     print("=" * 50)
     print("Access:")
-    print(f"  - Website: http://yilehang.cornna.xyz")
+    print(f"  - Website: http://rl.cornna.xyz")
     print(f"  - API: http://{SERVER}/api")
     print(f"  - Client: http://{SERVER}/")
     print(f"  - Admin: http://{SERVER}/admin")

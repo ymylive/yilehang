@@ -1,4 +1,5 @@
 <template>
+  <PageErrorBoundary page="chat.index" @retry="retryLoad">
   <view class="page">
     <!-- 会话列表 -->
     <view class="conversation-list">
@@ -37,12 +38,18 @@
         <text>加载中...</text>
       </view>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
+  </PageErrorBoundary>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
+import PageErrorBoundary from '@/components/PageErrorBoundary.vue'
+import { ref } from 'vue'
+import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { chatApi } from '@/api'
+import { safeNavigate } from '@/utils/safe-nav'
 
 interface UserBrief {
   id: number
@@ -70,15 +77,11 @@ interface Conversation {
 const conversations = ref<Conversation[]>([])
 const loading = ref(false)
 
-onMounted(() => {
-  loadConversations()
-})
-
 async function loadConversations() {
   loading.value = true
   try {
-    const res = await chatApi.getConversations()
-    conversations.value = res.items || []
+    const res: any = await chatApi.getConversations()
+    conversations.value = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : [])
   } catch (error) {
     console.error('加载会话列表失败', error)
     uni.showToast({ title: '加载失败', icon: 'none' })
@@ -129,9 +132,11 @@ function getMessagePreview(message?: Message): string {
 }
 
 function openConversation(conv: Conversation) {
-  uni.navigateTo({
-    url: `/pages/chat/conversation?id=${conv.id}&name=${encodeURIComponent(conv.other_user?.nickname || '聊天')}`
-  })
+  safeNavigate(`/pages/chat/conversation?id=${conv.id}&name=${encodeURIComponent(conv.other_user?.nickname || '聊天')}`)
+}
+
+function retryLoad() {
+  loadConversations()
 }
 
 // 下拉刷新
@@ -142,7 +147,9 @@ onPullDownRefresh(async () => {
 
 // 页面显示时刷新
 onShow(() => {
-  loadConversations()
+  if (!loading.value) {
+    loadConversations()
+  }
 })
 </script>
 
@@ -150,6 +157,7 @@ onShow(() => {
 .page {
   min-height: 100vh;
   background: #f5f5f5;
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
 }
 
 .conversation-list {

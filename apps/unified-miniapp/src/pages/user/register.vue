@@ -13,7 +13,7 @@
 
     <view class="header-area">
       <text class="page-title">创建账号</text>
-      <text class="page-subtitle">加入易乐航，开启运动之旅</text>
+      <text class="page-subtitle">加入韧翎成长计划，开启运动之旅</text>
     </view>
 
     <view class="form-card">
@@ -98,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { routeByRole } from '@/utils/role-guard'
 
@@ -116,6 +116,7 @@ const sendingCode = ref(false)
 const countdown = ref(0)
 const loading = ref(false)
 const agreed = ref(false)
+let countdownTimer: ReturnType<typeof setInterval> | null = null
 const selectedRole = ref<'parent' | 'student' | 'coach' | 'merchant'>('parent')
 const roleOptions = [
   { label: '我是家长', value: 'parent' },
@@ -126,6 +127,13 @@ const roleOptions = [
 
 const canSubmit = computed(() => {
   return !!email.value && !!emailCode.value && !!password.value && !!confirmPassword.value
+})
+
+onUnmounted(() => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
 })
 
 function validEmail(e: string) {
@@ -158,9 +166,16 @@ async function sendCode() {
       uni.showToast({ title: '验证码已发送', icon: 'success' })
     }
     countdown.value = 60
-    const timer = setInterval(() => {
+    if (countdownTimer) {
+      clearInterval(countdownTimer)
+      countdownTimer = null
+    }
+    countdownTimer = setInterval(() => {
       countdown.value--
-      if (countdown.value <= 0) clearInterval(timer)
+      if (countdown.value <= 0 && countdownTimer) {
+        clearInterval(countdownTimer)
+        countdownTimer = null
+      }
     }, 1000)
   } catch (error: any) {
     uni.showToast({ title: error.message || '验证码发送失败', icon: 'none' })

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="schedule-page">
     <view class="calendar-card">
       <view class="calendar-head">
@@ -66,10 +66,12 @@
       <text class="empty-title">当天暂无课程安排</text>
       <text class="empty-sub">去预约一节新课程吧</text>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { scheduleApi } from '@/api'

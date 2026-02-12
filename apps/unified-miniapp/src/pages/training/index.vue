@@ -53,10 +53,12 @@
       <view class="tip-item">3. 训练后拉伸放松，促进恢复。</view>
       <view class="tip-item">4. 结合饮食与休息，效果更佳。</view>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { trainingApi } from '@/api'

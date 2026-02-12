@@ -1,4 +1,5 @@
-﻿<template>
+<template>
+  <PageErrorBoundary page="coach.workbench" @retry="retryLoad">
   <view class="workbench-page page-enter">
     <view class="hero anim-fade-up">
       <view class="hero-glow" aria-hidden="true"></view>
@@ -93,12 +94,17 @@
         <text class="empty-sub">{{ t.noScheduleSub }}</text>
       </view>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
+  </PageErrorBoundary>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
+import PageErrorBoundary from '@/components/PageErrorBoundary.vue'
 import { ref, onMounted } from 'vue'
 import { coachProfileApi, coachScheduleApi } from '@/api/index'
+import { safeNavigate } from '@/utils/safe-nav'
 
 interface CoachInfo {
   id: number
@@ -287,27 +293,31 @@ async function loadTodaySchedule() {
 }
 
 function goToSchedule() {
-  uni.switchTab({ url: '/pages/schedule/index' })
+  safeNavigate('/pages/coach/schedule/index', 'reLaunch')
 }
 
 function goToLessonDetail(id: number) {
-  uni.navigateTo({ url: `/pages/schedule/detail?id=${id}` })
+  safeNavigate(`/pages/coach/schedule/detail?id=${id}`)
 }
 
 function goToSlots() {
-  uni.navigateTo({ url: '/pages/slots/manage' })
+  safeNavigate('/pages/coach/slots/manage')
 }
 
 function goToStudents() {
-  uni.switchTab({ url: '/pages/students/index' })
+  safeNavigate('/pages/coach/students/index')
 }
 
 function goToIncome() {
-  uni.navigateTo({ url: '/pages/income/index' })
+  safeNavigate('/pages/coach/income/index')
 }
 
 function goToReviews() {
-  uni.navigateTo({ url: '/pages/reviews/index' })
+  safeNavigate('/pages/coach/reviews/index')
+}
+
+async function retryLoad() {
+  await Promise.all([loadCoachInfo(), loadTodaySchedule()])
 }
 
 onMounted(async () => {
@@ -661,4 +671,3 @@ onMounted(async () => {
   }
 }
 </style>
-

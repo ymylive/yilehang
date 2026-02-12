@@ -1,26 +1,32 @@
+﻿"""
+鑱婂ぉ API
 """
-聊天 API
-"""
-import json
-from typing import Optional, List, Dict
-from datetime import datetime
+import asyncio
+import secrets
+from time import monotonic
+from typing import Dict, List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_, and_, update
 
 from app.core.database import get_db
-from app.core.security import get_current_user, decode_access_token
+from app.core.security import decode_access_token, fetch_user_from_token, get_current_user
+from app.models.chat import Conversation, Message, MessageStatus
 from app.models.user import User
-from app.models.chat import Conversation, Message, MessageReadStatus, MessageStatus
 from app.schemas.chat import (
-    ConversationCreate, ConversationResponse, ConversationListResponse,
-    MessageCreate, MessageResponse, MessageListResponse,
+    ConversationCreate,
+    ConversationListResponse,
+    ConversationResponse,
+    MessageCreate,
+    MessageListResponse,
+    MessageResponse,
     UserBrief,
 )
 
 router = APIRouter()
 
-# WebSocket 连接管理
+# WebSocket 杩炴帴绠＄悊
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[int, WebSocket] = {}
@@ -38,15 +44,47 @@ class ConnectionManager:
             await self.active_connections[user_id].send_json(message)
 
     async def broadcast_to_conversation(self, message: dict, user_ids: List[int]):
-        for user_id in user_ids:
-            await self.send_personal_message(message, user_id)
+        sockets = [self.active_connections.get(user_id) for user_id in user_ids]
+        send_tasks = [socket.send_json(message) for socket in sockets if socket is not None]
+        if send_tasks:
+            await asyncio.gather(*send_tasks, return_exceptions=True)
 
 
 manager = ConnectionManager()
 
 
+class WsTicketStore:
+    """Short-lived one-time ticket storage for browser WebSocket auth."""
+
+    def __init__(self):
+        self._tickets: Dict[str, tuple[int, float]] = {}
+
+    def issue(self, user_id: int, ttl_seconds: int = 60) -> str:
+        ticket = secrets.token_urlsafe(32)
+        self._tickets[ticket] = (user_id, monotonic() + ttl_seconds)
+        return ticket
+
+    def consume(self, ticket: str) -> Optional[int]:
+        now = monotonic()
+        expired = [key for key, (_, expires_at) in self._tickets.items() if expires_at <= now]
+        for key in expired:
+            self._tickets.pop(key, None)
+
+        value = self._tickets.pop(ticket, None)
+        if value is None:
+            return None
+
+        user_id, expires_at = value
+        if expires_at <= now:
+            return None
+        return user_id
+
+
+ticket_store = WsTicketStore()
+
+
 def user_to_brief(user: User) -> UserBrief:
-    """转换用户为简要信息"""
+    """Convert user model to a lightweight response schema."""
     return UserBrief(
         id=user.id,
         nickname=user.nickname,
@@ -60,9 +98,12 @@ async def get_conversations(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user_data: dict = Depends(get_current_user),
 ):
-    """获取会话列表"""
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
+    """鑾峰彇浼氳瘽鍒楄〃"""
     query = select(Conversation).where(
         or_(
             Conversation.participant1_id == current_user.id,
@@ -70,37 +111,69 @@ async def get_conversations(
         )
     )
 
-    # 获取总数
+    # 鑾峰彇鎬绘暟
     count_query = select(func.count()).select_from(query.subquery())
     total = await db.scalar(count_query) or 0
 
-    # 获取列表
-    query = query.order_by(Conversation.last_message_at.desc().nullslast()).offset(skip).limit(limit)
+    # 鑾峰彇鍒楄〃
+    query = (
+        query.order_by(Conversation.last_message_at.desc().nullslast())
+        .offset(skip)
+        .limit(limit)
+    )
     result = await db.execute(query)
     conversations = result.scalars().all()
 
+    conversation_ids = [conv.id for conv in conversations]
+    other_user_ids = {
+        conv.participant2_id if conv.participant1_id == current_user.id else conv.participant1_id
+        for conv in conversations
+    }
+    last_message_ids = {conv.last_message_id for conv in conversations if conv.last_message_id}
+
+    users_map = {}
+    if other_user_ids:
+        users_result = await db.execute(select(User).where(User.id.in_(other_user_ids)))
+        users_map = {user.id: user for user in users_result.scalars().all()}
+
+    unread_counts = {}
+    if conversation_ids:
+        unread_result = await db.execute(
+            select(Message.conversation_id, func.count().label("count"))
+            .where(
+                Message.conversation_id.in_(conversation_ids),
+                Message.sender_id != current_user.id,
+                Message.status != MessageStatus.READ.value,
+            )
+            .group_by(Message.conversation_id)
+        )
+        unread_counts = {
+            conversation_id: unread_count
+            for conversation_id, unread_count in unread_result.all()
+        }
+
+    last_messages_map = {}
+    if last_message_ids:
+        last_messages_result = await db.execute(
+            select(Message).where(Message.id.in_(last_message_ids))
+        )
+        last_messages_map = {
+            message.id: message for message in last_messages_result.scalars().all()
+        }
+
     items = []
     for conv in conversations:
-        # 获取对方用户信息
-        other_user_id = conv.participant2_id if conv.participant1_id == current_user.id else conv.participant1_id
-        other_user_query = select(User).where(User.id == other_user_id)
-        other_user_result = await db.execute(other_user_query)
-        other_user = other_user_result.scalar_one_or_none()
-
-        # 获取未读消息数
-        unread_query = select(func.count()).where(
-            Message.conversation_id == conv.id,
-            Message.sender_id != current_user.id,
-            Message.status != MessageStatus.READ.value,
+        other_user_id = (
+            conv.participant2_id
+            if conv.participant1_id == current_user.id
+            else conv.participant1_id
         )
-        unread_count = await db.scalar(unread_query) or 0
+        other_user = users_map.get(other_user_id)
+        unread_count = unread_counts.get(conv.id, 0)
 
-        # 获取最后一条消息
-        last_message = None
+        # 鑾峰彇鏈€鍚庝竴鏉℃秷鎭?        last_message = None
         if conv.last_message_id:
-            msg_query = select(Message).where(Message.id == conv.last_message_id)
-            msg_result = await db.execute(msg_query)
-            last_msg = msg_result.scalar_one_or_none()
+            last_msg = last_messages_map.get(conv.last_message_id)
             if last_msg:
                 last_message = MessageResponse(
                     id=last_msg.id,
@@ -134,18 +207,21 @@ async def get_conversations(
 async def create_or_get_conversation(
     data: ConversationCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user_data: dict = Depends(get_current_user),
 ):
-    """创建或获取会话"""
-    # 检查对方用户是否存在
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
+    """Create a conversation or return the existing one."""
+    # 妫€鏌ュ鏂圭敤鎴锋槸鍚﹀瓨鍦?
     other_user_query = select(User).where(User.id == data.participant_id)
     other_user_result = await db.execute(other_user_query)
     other_user = other_user_result.scalar_one_or_none()
 
     if not other_user:
-        raise HTTPException(status_code=404, detail="用户不存在")
+        raise HTTPException(status_code=404, detail="Not found")
 
-    # 查找现有会话
+    # 鏌ユ壘鐜版湁浼氳瘽
     existing_query = select(Conversation).where(
         or_(
             and_(
@@ -165,7 +241,7 @@ async def create_or_get_conversation(
     conversation = result.scalar_one_or_none()
 
     if not conversation:
-        # 创建新会话
+        # 鍒涘缓鏂颁細璇?
         conversation = Conversation(
             type=data.type,
             participant1_id=current_user.id,
@@ -196,10 +272,13 @@ async def get_messages(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user_data: dict = Depends(get_current_user),
 ):
-    """获取消息列表"""
-    # 验证会话权限
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
+    """鑾峰彇娑堟伅鍒楄〃"""
+    # 楠岃瘉浼氳瘽鏉冮檺
     conv_query = select(Conversation).where(
         Conversation.id == conversation_id,
         or_(
@@ -211,25 +290,25 @@ async def get_messages(
     conversation = conv_result.scalar_one_or_none()
 
     if not conversation:
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=404, detail="Not found")
 
-    # 获取消息总数
+    # 鑾峰彇娑堟伅鎬绘暟
     count_query = select(func.count()).where(
         Message.conversation_id == conversation_id,
-        Message.is_deleted == False,
+        Message.is_deleted.is_(False),
     )
     total = await db.scalar(count_query) or 0
 
-    # 获取消息列表
+    # 鑾峰彇娑堟伅鍒楄〃
     query = select(Message).where(
         Message.conversation_id == conversation_id,
-        Message.is_deleted == False,
+        Message.is_deleted.is_(False),
     ).order_by(Message.created_at.desc()).offset(skip).limit(limit)
 
     result = await db.execute(query)
     messages = result.scalars().all()
 
-    # 标记消息为已读
+    # 鏍囪娑堟伅涓哄凡璇?
     await db.execute(
         update(Message).where(
             Message.conversation_id == conversation_id,
@@ -239,12 +318,15 @@ async def get_messages(
     )
     await db.commit()
 
+    sender_ids = {msg.sender_id for msg in messages}
+    senders_map = {}
+    if sender_ids:
+        senders_result = await db.execute(select(User).where(User.id.in_(sender_ids)))
+        senders_map = {sender.id: sender for sender in senders_result.scalars().all()}
+
     items = []
     for msg in messages:
-        # 获取发送者信息
-        sender_query = select(User).where(User.id == msg.sender_id)
-        sender_result = await db.execute(sender_query)
-        sender = sender_result.scalar_one_or_none()
+        sender = senders_map.get(msg.sender_id)
 
         items.append(MessageResponse(
             id=msg.id,
@@ -271,10 +353,13 @@ async def send_message(
     conversation_id: int,
     data: MessageCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user_data: dict = Depends(get_current_user),
 ):
-    """发送消息"""
-    # 验证会话权限
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
+    """Send a message to the target conversation."""
+    # 楠岃瘉浼氳瘽鏉冮檺
     conv_query = select(Conversation).where(
         Conversation.id == conversation_id,
         or_(
@@ -286,9 +371,9 @@ async def send_message(
     conversation = conv_result.scalar_one_or_none()
 
     if not conversation:
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=404, detail="Not found")
 
-    # 创建消息
+    # 鍒涘缓娑堟伅
     message = Message(
         conversation_id=conversation_id,
         sender_id=current_user.id,
@@ -299,7 +384,7 @@ async def send_message(
     db.add(message)
     await db.flush()
 
-    # 更新会话最后消息
+    # 鏇存柊浼氳瘽鏈€鍚庢秷鎭?
     conversation.last_message_id = message.id
     conversation.last_message_at = message.created_at
     await db.commit()
@@ -318,8 +403,12 @@ async def send_message(
         created_at=message.created_at,
     )
 
-    # 通过 WebSocket 推送消息给对方
-    other_user_id = conversation.participant2_id if conversation.participant1_id == current_user.id else conversation.participant1_id
+    # 閫氳繃 WebSocket 鎺ㄩ€佹秷鎭粰瀵规柟
+    other_user_id = (
+        conversation.participant2_id
+        if conversation.participant1_id == current_user.id
+        else conversation.participant1_id
+    )
     await manager.send_personal_message(
         {
             "type": "new_message",
@@ -335,17 +424,20 @@ async def send_message(
 async def mark_message_read(
     message_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user_data: dict = Depends(get_current_user),
 ):
-    """标记消息已读"""
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
+    """鏍囪娑堟伅宸茶"""
     query = select(Message).where(Message.id == message_id)
     result = await db.execute(query)
     message = result.scalar_one_or_none()
 
     if not message:
-        raise HTTPException(status_code=404, detail="消息不存在")
+        raise HTTPException(status_code=404, detail="Not found")
 
-    # 验证权限
+    # 楠岃瘉鏉冮檺
     conv_query = select(Conversation).where(
         Conversation.id == message.conversation_id,
         or_(
@@ -355,38 +447,60 @@ async def mark_message_read(
     )
     conv_result = await db.execute(conv_query)
     if not conv_result.scalar_one_or_none():
-        raise HTTPException(status_code=403, detail="无权限")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
     message.status = MessageStatus.READ.value
     await db.commit()
 
-    return {"message": "已标记为已读"}
+    return {"message": "宸叉爣璁颁负宸茶"}
+
+
+@router.post("/ws-ticket")
+async def create_websocket_ticket(
+    db: AsyncSession = Depends(get_db),
+    current_user_data: dict = Depends(get_current_user),
+):
+    """Create a short-lived one-time ticket for browser WebSocket auth."""
+    current_user = await fetch_user_from_token(db, current_user_data)
+    ticket = ticket_store.issue(current_user.id)
+    return {"ticket": ticket, "expires_in": 60}
 
 
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
-    token: str = Query(...),
+    ticket: Optional[str] = Query(default=None),
 ):
-    """WebSocket 连接"""
-    # 验证 token
-    try:
-        payload = decode_access_token(token)
-        user_id = payload.get("sub")
-        if not user_id:
-            await websocket.close(code=4001)
-            return
-    except Exception:
+    """WebSocket connection endpoint."""
+    user_id: Optional[int] = None
+    auth_header = websocket.headers.get("authorization")
+    if auth_header:
+        parts = auth_header.strip().split(" ", 1)
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            try:
+                payload = decode_access_token(parts[1].strip())
+                sub = payload.get("sub") if payload else None
+                if sub is not None:
+                    user_id = int(sub)
+            except Exception:
+                user_id = None
+
+    if user_id is None and ticket:
+        ticket_user_id = ticket_store.consume(ticket)
+        if ticket_user_id is not None:
+            user_id = int(ticket_user_id)
+
+    if user_id is None:
         await websocket.close(code=4001)
         return
 
-    await manager.connect(websocket, int(user_id))
+    await manager.connect(websocket, user_id)
 
     try:
         while True:
             data = await websocket.receive_text()
-            # 处理心跳
             if data == "ping":
                 await websocket.send_text("pong")
     except WebSocketDisconnect:
-        manager.disconnect(int(user_id))
+        manager.disconnect(user_id)
+

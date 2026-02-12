@@ -101,7 +101,7 @@ def upload_directory(sftp, local_path: Path, remote_path: str, exclude=None):
 
 def main():
     print("=" * 60)
-    print("易乐航全量部署脚本")
+    print("韧翎成长计划全量部署脚本")
     print("=" * 60)
 
     client = get_ssh_client()

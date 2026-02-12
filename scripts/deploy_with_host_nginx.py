@@ -62,7 +62,7 @@ def main():
         print("\n姝ラ2: 鍒涘缓nginx绔欑偣閰嶇疆")
         nginx_config = """server {
     listen 80;
-    server_name yilehang.cornna.xyz;
+    server_name rl.cornna.xyz;
 
     # API浠ｇ悊
     location /api/ {
@@ -129,9 +129,9 @@ def main():
         exec_command(client, "systemctl status nginx --no-pager -l", "鏌ョ湅nginx鐘舵€?)
 
         print("\n[OK] 閮ㄧ讲瀹屾垚!")
-        print(f"API鍦板潃: http://yilehang.cornna.xyz/api/")
-        print(f"瀹㈡埛绔? http://yilehang.cornna.xyz/client/")
-        print(f"绠＄悊鍚庡彴: http://yilehang.cornna.xyz/admin/")
+        print(f"API鍦板潃: http://rl.cornna.xyz/api/")
+        print(f"瀹㈡埛绔? http://rl.cornna.xyz/client/")
+        print(f"绠＄悊鍚庡彴: http://rl.cornna.xyz/admin/")
 
     except Exception as e:
         print(f"\n鉂?閮ㄧ讲澶辫触: {e}")

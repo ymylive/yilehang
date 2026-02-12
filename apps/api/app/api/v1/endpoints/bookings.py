@@ -3,35 +3,77 @@
 """
 from datetime import date
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.models.user import User, Student
+from app.core.security import fetch_user_from_token, get_current_user
+from app.models.user import Coach, ParentStudentRelation, Student, User
 from app.schemas.booking import (
-    BookingCreate, BookingResponse, BookingListResponse,
-    BookingCancelRequest, BookingRescheduleRequest
+    BookingCancelRequest,
+    BookingCreate,
+    BookingListResponse,
+    BookingRescheduleRequest,
+    BookingResponse,
 )
 from app.services.booking_service import BookingService
 
 router = APIRouter()
 
 
+async def get_permitted_student_ids_for_user(user: User, db: AsyncSession) -> set[int]:
+    """Get all student IDs the user is allowed to operate on."""
+    if user.role == "admin":
+        return set()
+
+    student_ids: set[int] = set()
+
+    if user.role == "student":
+        result = await db.execute(select(Student.id).where(Student.user_id == user.id).limit(1))
+        student_id = result.scalar_one_or_none()
+        if student_id:
+            student_ids.add(student_id)
+        return student_ids
+
+    if user.role == "parent":
+        relation_result = await db.execute(
+            select(ParentStudentRelation.student_id).where(
+                ParentStudentRelation.parent_id == user.id
+            )
+        )
+        student_ids.update(relation_result.scalars().all())
+
+        direct_result = await db.execute(select(Student.id).where(Student.parent_id == user.id))
+        student_ids.update(direct_result.scalars().all())
+        return student_ids
+
+    if user.role == "coach":
+        coach_result = await db.execute(select(Coach.id).where(Coach.user_id == user.id).limit(1))
+        coach_id = coach_result.scalar_one_or_none()
+        if coach_id:
+            result = await db.execute(select(Student.id).where(Student.coach_id == coach_id))
+            student_ids.update(result.scalars().all())
+        return student_ids
+
+    return student_ids
+
+
 async def get_student_id_for_user(user: User, db: AsyncSession) -> int:
     """获取用户关联的学员ID"""
-    from sqlalchemy import select
-    from app.models.user import ParentStudentRelation
-
-    if user.role == "student" and user.student:
-        return user.student.id
+    if user.role == "student":
+        result = await db.execute(select(Student.id).where(Student.user_id == user.id).limit(1))
+        student_id = result.scalar_one_or_none()
+        if student_id:
+            return student_id
 
     # 家长用户，获取主要关联的学员
     result = await db.execute(
         select(ParentStudentRelation)
         .where(
             ParentStudentRelation.parent_id == user.id,
-            ParentStudentRelation.is_primary == True
+            ParentStudentRelation.is_primary.is_(True),
         )
     )
     relation = result.scalar_one_or_none()
@@ -39,14 +81,31 @@ async def get_student_id_for_user(user: User, db: AsyncSession) -> int:
         return relation.student_id
 
     # 获取第一个关联的学员
-    result = await db.execute(
-        select(Student).where(Student.parent_id == user.id)
-    )
-    student = result.scalar_one_or_none()
-    if student:
-        return student.id
+    result = await db.execute(select(Student.id).where(Student.parent_id == user.id).limit(1))
+    student_id = result.scalar_one_or_none()
+    if student_id:
+        return student_id
 
     raise HTTPException(status_code=400, detail="未找到关联的学员")
+
+
+async def _ensure_booking_access(current_user: User, booking, db: AsyncSession) -> None:
+    """Ensure current user can access the target booking."""
+    if current_user.role == "admin":
+        return
+
+    if current_user.role == "coach":
+        coach_result = await db.execute(
+            select(Coach.id).where(Coach.user_id == current_user.id).limit(1)
+        )
+        coach_id = coach_result.scalar_one_or_none()
+        if coach_id and booking.coach_id == coach_id:
+            return
+        raise HTTPException(status_code=403, detail="无权访问该预约")
+
+    permitted_student_ids = await get_permitted_student_ids_for_user(current_user, db)
+    if booking.student_id not in permitted_student_ids:
+        raise HTTPException(status_code=403, detail="无权访问该预约")
 
 
 @router.get("", response_model=BookingListResponse)
@@ -57,8 +116,11 @@ async def get_my_bookings(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict[str, object] = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """获取我的预约列表"""
     student_id = await get_student_id_for_user(current_user, db)
     service = BookingService(db)
@@ -91,7 +153,11 @@ async def get_my_bookings(
             created_at=booking.created_at,
             student_name=booking.student.name if booking.student else None,
             coach_name=booking.coach.name if booking.coach else None,
-            course_name=booking.schedule.course.name if booking.schedule and booking.schedule.course else None
+            course_name=(
+                booking.schedule.course.name
+                if booking.schedule and booking.schedule.course
+                else None
+            ),
         )
         items.append(item)
 
@@ -107,12 +173,20 @@ async def get_my_bookings(
 async def create_booking(
     data: BookingCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict[str, object] = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """创建预约"""
     student_id = data.student_id
     if not student_id:
         student_id = await get_student_id_for_user(current_user, db)
+
+    if current_user.role != "admin":
+        permitted_student_ids = await get_permitted_student_ids_for_user(current_user, db)
+        if student_id not in permitted_student_ids:
+            raise HTTPException(status_code=403, detail="无权为该学员创建预约")
 
     service = BookingService(db)
 
@@ -141,14 +215,19 @@ async def create_booking(
 async def get_booking(
     booking_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict[str, object] = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """获取预约详情"""
     service = BookingService(db)
     booking = await service.get_booking(booking_id)
 
     if not booking:
         raise HTTPException(status_code=404, detail="预约不存在")
+
+    await _ensure_booking_access(current_user, booking, db)
 
     return BookingResponse(
         id=booking.id,
@@ -166,7 +245,11 @@ async def get_booking(
         created_at=booking.created_at,
         student_name=booking.student.name if booking.student else None,
         coach_name=booking.coach.name if booking.coach else None,
-        course_name=booking.schedule.course.name if booking.schedule and booking.schedule.course else None
+        course_name=(
+            booking.schedule.course.name
+            if booking.schedule and booking.schedule.course
+            else None
+        ),
     )
 
 
@@ -175,10 +258,18 @@ async def cancel_booking(
     booking_id: int,
     data: BookingCancelRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict[str, object] = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """取消预约"""
     service = BookingService(db)
+    booking = await service.get_booking(booking_id)
+    if not booking:
+        raise HTTPException(status_code=404, detail="预约不存在")
+
+    await _ensure_booking_access(current_user, booking, db)
 
     try:
         booking = await service.cancel_booking(booking_id, current_user.id, data)
@@ -206,10 +297,18 @@ async def reschedule_booking(
     booking_id: int,
     data: BookingRescheduleRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict[str, object] = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """改期预约"""
     service = BookingService(db)
+    booking = await service.get_booking(booking_id)
+    if not booking:
+        raise HTTPException(status_code=404, detail="预约不存在")
+
+    await _ensure_booking_access(current_user, booking, db)
 
     try:
         booking = await service.reschedule_booking(booking_id, data)

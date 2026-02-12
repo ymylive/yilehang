@@ -295,7 +295,7 @@ async function submitBooking() {
     uni.showToast({ title: isReschedule.value ? t.rescheduleSuccess : t.bookingSuccess, icon: 'success' })
 
     setTimeout(() => {
-      uni.switchTab({ url: '/pages/schedule/index' })
+      uni.reLaunch({ url: '/pages/schedule/index' })
     }, 1200)
   } catch (error: any) {
     uni.showToast({ title: error.message || (isReschedule.value ? t.rescheduleFail : t.bookingFail), icon: 'none' })

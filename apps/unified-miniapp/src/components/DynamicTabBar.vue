@@ -5,16 +5,14 @@
       :key="item.pagePath"
       class="tabbar-item"
       :class="{ active: currentIndex === idx }"
-      @click="switchTab(item, idx)"
+      @tap="switchTab(item, idx)"
     >
-      <view class="tabbar-icon">
-        <image
-          v-if="item.iconPath"
-          class="icon-image"
-          :src="currentIndex === idx ? item.selectedIconPath : item.iconPath"
-          mode="aspectFit"
+      <view class="tabbar-icon-wrap">
+        <wd-icon
+          class="tabbar-icon"
+          :name="currentIndex === idx ? (item.activeIcon || item.icon) : item.icon"
+          size="40rpx"
         />
-        <text v-else class="icon-text">{{ item.icon }}</text>
         <view v-if="item.badge && item.badge > 0" class="badge">
           {{ item.badge > 99 ? '99+' : item.badge }}
         </view>
@@ -34,9 +32,8 @@ import { ROLE_PAGE_MAP, type UserRole } from '@/utils/role-guard'
 interface TabItem {
   pagePath: string
   text: string
-  icon?: string
-  iconPath?: string
-  selectedIconPath?: string
+  icon: string
+  activeIcon?: string
   badge?: number
   dot?: boolean
 }
@@ -45,22 +42,25 @@ const userStore = useUserStore()
 const permissionStore = usePermissionStore()
 const currentIndex = ref(0)
 
-// 角色对应的 tabBar 图标配置
-const TAB_ICONS: Record<string, { icon: string; iconPath?: string; selectedIconPath?: string }> = {
-  'pages/index/index': { icon: '🏠' },
-  'pages/booking/index': { icon: '📅' },
-  'pages/growth/index': { icon: '📈' },
-  'pages/schedule/index': { icon: '📋' },
-  'pages/training/index': { icon: '🏋️' },
-  'pages/user/index': { icon: '👤' },
-  'pages/coach/workbench/index': { icon: '🔧' },
-  'pages/coach/schedule/index': { icon: '📋' },
-  'pages/coach/students/index': { icon: '👥' },
-  'pages/admin/dashboard/index': { icon: '📊' },
-  'pages/admin/users/index': { icon: '👥' },
-  'pages/admin/analytics/index': { icon: '📉' },
-  'pages/chat/index': { icon: '💬' },
-  'pages/energy/index': { icon: '⚡' },
+const TAB_ICONS: Record<string, { icon: string; activeIcon?: string }> = {
+  'pages/index/index': { icon: 'home', activeIcon: 'home1' },
+  'pages/booking/index': { icon: 'calendar' },
+  'pages/growth/index': { icon: 'chart-bar' },
+  'pages/schedule/index': { icon: 'view-list' },
+  'pages/training/index': { icon: 'app' },
+  'pages/user/index': { icon: 'user', activeIcon: 'user-circle' },
+  'pages/coach/workbench/index': { icon: 'dashboard' },
+  'pages/coach/schedule/index': { icon: 'calendar' },
+  'pages/coach/students/index': { icon: 'usergroup' },
+  'pages/admin/dashboard/index': { icon: 'dashboard' },
+  'pages/admin/users/index': { icon: 'usergroup' },
+  'pages/admin/analytics/index': { icon: 'chart' },
+  'pages/chat/index': { icon: 'chat', activeIcon: 'chat1' },
+  'pages/energy/index': { icon: 'star' },
+}
+
+function normalizePath(path: string) {
+  return path.startsWith('/') ? path.slice(1) : path
 }
 
 // 从后端菜单或本地配置获取 tabBar
@@ -72,15 +72,18 @@ const tabItems = computed<TabItem[]>(() => {
   const tabBarMenus = backendMenus.filter(m => m.type === 'tabbar')
 
   if (tabBarMenus.length > 0) {
-    return tabBarMenus.map(menu => ({
-      pagePath: menu.path.startsWith('/') ? menu.path.slice(1) : menu.path,
-      text: menu.name,
-      icon: menu.icon || TAB_ICONS[menu.path]?.icon || '📄',
-      iconPath: undefined,
-      selectedIconPath: undefined,
-      badge: 0,
-      dot: false,
-    }))
+    return tabBarMenus.map(menu => {
+      const pagePath = normalizePath(menu.path)
+      const iconConfig = TAB_ICONS[pagePath] || { icon: 'app' }
+      return {
+        pagePath,
+        text: menu.name,
+        icon: menu.icon || iconConfig.icon,
+        activeIcon: iconConfig.activeIcon || menu.icon || iconConfig.icon,
+        badge: 0,
+        dot: false,
+      }
+    })
   }
 
   // 回退到本地配置
@@ -88,10 +91,11 @@ const tabItems = computed<TabItem[]>(() => {
   if (!config) return []
 
   return config.tabBar.map(item => {
-    const iconConfig = TAB_ICONS[item.pagePath] || { icon: '📄' }
+    const iconConfig = TAB_ICONS[item.pagePath] || { icon: 'app' }
     return {
       ...item,
-      ...iconConfig,
+      icon: iconConfig.icon,
+      activeIcon: iconConfig.activeIcon || iconConfig.icon,
       badge: 0,
       dot: false,
     }
@@ -99,7 +103,18 @@ const tabItems = computed<TabItem[]>(() => {
 })
 
 const visible = computed(() => {
-  return userStore.isLoggedIn && tabItems.value.length > 0
+  if (!userStore.isLoggedIn || tabItems.value.length === 0) return false
+
+  // Always show TabBar for allowed pages within the role's scope
+  const pages = getCurrentPages()
+  const current = pages[pages.length - 1] as any
+  const route = current?.route || ''
+
+  const role = (userStore.user?.role || 'parent') as UserRole
+  const config = ROLE_PAGE_MAP[role]
+
+  // Show TabBar if current page is within allowed prefixes
+  return config?.allowedPrefixes.some(prefix => route.startsWith(prefix)) || false
 })
 
 // 监听页面变化，更新当前选中的 tab
@@ -173,44 +188,50 @@ defineExpose({ updateCurrentIndex, setBadge, setDot })
 <style lang="scss" scoped>
 .custom-tabbar {
   display: flex;
-  align-items: center;
   justify-content: space-around;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 100rpx;
-  background: #fff;
-  border-top: 1rpx solid #eee;
-  padding-bottom: env(safe-area-inset-bottom);
-  z-index: 999;
+  height: var(--tabbar-safe-height, calc(112rpx + env(safe-area-inset-bottom)));
+  padding: 12rpx 16rpx calc(12rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.92);
+  border-top: 1rpx solid rgba(208, 217, 233, 0.7);
+  backdrop-filter: blur(14rpx);
+  box-shadow: 0 -8rpx 24rpx rgba(33, 56, 92, 0.08);
+  z-index: 1200;
 }
 
 .tabbar-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   flex: 1;
   height: 100%;
-  transition: color 0.2s;
+  padding-top: 6rpx;
+  transition: transform 0.2s ease;
 
-  .tabbar-icon {
+  .tabbar-icon-wrap {
     position: relative;
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: 20rpx;
+    background: rgba(243, 246, 252, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
 
-    .icon-text {
-      font-size: 40rpx;
+    .tabbar-icon {
+      color: #6b768a;
+      transition: color 0.2s ease;
     }
-
-    .icon-image {
-      width: 44rpx;
-      height: 44rpx;
-    }
-
+ 
     .badge {
       position: absolute;
-      top: -8rpx;
-      right: -16rpx;
+      top: -10rpx;
+      right: -10rpx;
       min-width: 32rpx;
       height: 32rpx;
       padding: 0 8rpx;
@@ -225,8 +246,8 @@ defineExpose({ updateCurrentIndex, setBadge, setDot })
 
     .dot {
       position: absolute;
-      top: -4rpx;
-      right: -4rpx;
+      top: -6rpx;
+      right: -6rpx;
       width: 16rpx;
       height: 16rpx;
       background: #ff4d4f;
@@ -235,15 +256,27 @@ defineExpose({ updateCurrentIndex, setBadge, setDot })
   }
 
   .tabbar-label {
-    font-size: 22rpx;
-    color: #999;
-    margin-top: 4rpx;
+    font-size: 21rpx;
+    color: #6b768a;
+    margin-top: 6rpx;
+    transition: color 0.2s ease;
   }
 
   &.active {
+    transform: translateY(-2rpx);
+
+    .tabbar-icon-wrap {
+      background: linear-gradient(135deg, #ffb347, #ff8800);
+      box-shadow: 0 8rpx 16rpx rgba(255, 136, 0, 0.26);
+    }
+
+    .tabbar-icon {
+      color: #fff;
+    }
+
     .tabbar-label {
       color: #ff8800;
-      font-weight: 500;
+      font-weight: 600;
     }
   }
 }

@@ -2,18 +2,20 @@
 评价管理API端点
 """
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.models.user import User
+from app.core.security import fetch_user_from_token, get_current_user
 from app.schemas.booking import (
-    ReviewCreate, ReviewResponse,
-    CoachFeedbackCreate, CoachFeedbackResponse
+    CoachFeedbackCreate,
+    CoachFeedbackResponse,
+    ReviewCreate,
+    ReviewResponse,
 )
-from app.services.booking_service import ReviewService, CoachFeedbackService
+from app.services.booking_service import CoachFeedbackService, ReviewService
 
 router = APIRouter()
 
@@ -22,8 +24,11 @@ router = APIRouter()
 async def create_review(
     data: ReviewCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """提交评价"""
     from app.api.v1.endpoints.bookings import get_student_id_for_user
 
@@ -56,8 +61,11 @@ async def create_review(
 async def create_coach_feedback(
     data: CoachFeedbackCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """教练提交学习反馈"""
     if current_user.role != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
@@ -88,8 +96,11 @@ async def get_my_feedbacks(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """获取我收到的教练反馈"""
     from app.api.v1.endpoints.bookings import get_student_id_for_user
 
@@ -118,8 +129,11 @@ async def get_my_coach_reviews(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """获取当前教练的所有评价"""
     if current_user.role != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
@@ -163,8 +177,11 @@ async def get_coach_feedbacks(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """获取教练反馈列表"""
     if current_user.role != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
@@ -186,7 +203,11 @@ async def get_coach_feedbacks(
     result = await db.execute(query)
     feedbacks = result.scalars().all()
 
-    count_query = select(func.count()).select_from(CoachFeedback).where(CoachFeedback.coach_id == coach.id)
+    count_query = (
+        select(func.count())
+        .select_from(CoachFeedback)
+        .where(CoachFeedback.coach_id == coach.id)
+    )
     if student_id:
         count_query = count_query.where(CoachFeedback.student_id == student_id)
 

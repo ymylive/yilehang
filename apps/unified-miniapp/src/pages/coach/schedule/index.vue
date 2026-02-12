@@ -68,12 +68,15 @@
       <text class="empty-sub">{{ t.emptySub }}</text>
       <button class="action-btn ghost" @click="goToSlots">{{ t.goSchedule }}</button>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, computed, onMounted } from 'vue'
 import { coachScheduleApi } from '@/api/index'
+import { safeNavigate } from '@/utils/safe-nav'
 
 interface Lesson {
   id: number
@@ -290,11 +293,11 @@ function goToDetail(lesson: Lesson) {
     `courseType=${lesson.course_type}`,
     `status=${lesson.status}`
   ]
-  uni.navigateTo({ url: `/pages/schedule/detail?${query.join('&')}` })
+  safeNavigate(`/pages/coach/schedule/detail?${query.join('&')}`)
 }
 
 function goToSlots() {
-  uni.navigateTo({ url: '/pages/slots/manage' })
+  safeNavigate('/pages/coach/slots/manage')
 }
 
 function completeLesson(lesson: Lesson) {
@@ -315,9 +318,7 @@ function completeLesson(lesson: Lesson) {
 }
 
 function goToFeedback(lesson: Lesson) {
-  uni.navigateTo({
-    url: `/pages/students/feedback?studentId=${lesson.student_id}&bookingId=${lesson.id}&studentName=${encodeURIComponent(lesson.student_name)}`
-  })
+  safeNavigate(`/pages/coach/students/feedback?studentId=${lesson.student_id}&bookingId=${lesson.id}&studentName=${encodeURIComponent(lesson.student_name)}`)
 }
 
 onMounted(async () => {

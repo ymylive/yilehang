@@ -4,7 +4,7 @@ Date: 2026-02-05
 
 ## Server
 - IP: 82.158.88.34
-- Domain: yilehang.cornna.xyz
+- Domain: rl.cornna.xyz
 
 ## Status
 - Docker services are running (postgres + api + nginx)
@@ -17,9 +17,9 @@ Date: 2026-02-05
 - yilehang-postgres
 
 ## Access
-- Client: https://yilehang.cornna.xyz/
-- Admin: https://yilehang.cornna.xyz/admin
-- API docs: https://yilehang.cornna.xyz/docs
+- Client: https://rl.cornna.xyz/
+- Admin: https://rl.cornna.xyz/admin
+- API docs: https://rl.cornna.xyz/docs
 
 ## Notes
 - Cloudflare DNS-01 used, no need to expose port 80 during issuance

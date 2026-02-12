@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-易乐航远程部署脚本 - 使用 paramiko SSH 连接
+韧翎成长计划远程部署脚本 - 使用 paramiko SSH 连接
 运行前安装: pip install paramiko
 """
 import paramiko
@@ -12,7 +12,7 @@ from pathlib import Path
 SERVER_HOST = os.getenv("SERVER_HOST", "8.134.33.19")
 SERVER_USER = os.getenv("SERVER_USER", "root")
 SERVER_PASSWORD = os.getenv("SERVER_PASSWORD")
-DOMAIN = os.getenv("DOMAIN", "yilehang.cornna.xyz")
+DOMAIN = os.getenv("DOMAIN", "rl.cornna.xyz")
 PROJECT_DIR = os.getenv("PROJECT_DIR", "/opt/yilehang")
 
 if not SERVER_PASSWORD:
@@ -103,7 +103,7 @@ def upload_directory(client, local_path, remote_path, exclude_patterns=None):
 
 def main():
     print("=" * 60)
-    print("易乐航远程部署脚本")
+    print("韧翎成长计划远程部署脚本")
     print("=" * 60)
     print(f"目标服务器: {SERVER_HOST}")
     print(f"域名: {DOMAIN}")

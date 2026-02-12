@@ -1,26 +1,39 @@
 """
 约课系统服务层
 """
-from datetime import datetime, date, time, timedelta
-from typing import Optional, List, Tuple
-from sqlalchemy import select, and_, or_, func
+from datetime import date, datetime, time, timedelta, timezone
+from typing import List, Optional, Tuple
+
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.booking import (
-    MembershipCard, StudentMembership, CoachAvailableSlot, Booking,
-    Transaction, Review, CoachFeedback,
-    BookingStatus, MembershipStatus, TransactionType
+    Booking,
+    BookingStatus,
+    CoachAvailableSlot,
+    CoachFeedback,
+    MembershipCard,
+    MembershipStatus,
+    Review,
+    StudentMembership,
+    Transaction,
+    TransactionType,
 )
-from app.models.user import Student, Coach
 from app.models.course import Schedule
+from app.models.user import Student
 from app.schemas.booking import (
-    MembershipCardCreate, MembershipCardUpdate,
-    StudentMembershipCreate, MembershipRechargeRequest,
-    CoachSlotCreate, CoachSlotUpdate,
-    BookingCreate, BookingCancelRequest, BookingRescheduleRequest,
-    ReviewCreate, CoachFeedbackCreate,
-    CoachAvailableTimeSlot
+    BookingCancelRequest,
+    BookingCreate,
+    BookingRescheduleRequest,
+    CoachAvailableTimeSlot,
+    CoachFeedbackCreate,
+    CoachSlotCreate,
+    CoachSlotUpdate,
+    MembershipCardCreate,
+    MembershipCardUpdate,
+    MembershipRechargeRequest,
+    ReviewCreate,
 )
 
 
@@ -151,13 +164,16 @@ class BookingService:
         # 检查取消时限
         from app.core.config import settings
         booking_datetime = datetime.combine(booking.booking_date, booking.start_time)
-        if datetime.now() > booking_datetime - timedelta(hours=settings.BOOKING_CANCEL_HOURS_BEFORE):
+        cancel_deadline = booking_datetime - timedelta(
+            hours=settings.BOOKING_CANCEL_HOURS_BEFORE
+        )
+        if datetime.now() > cancel_deadline:
             raise ValueError(f"距离上课不足{settings.BOOKING_CANCEL_HOURS_BEFORE}小时，无法取消")
 
         # 更新预约状态
         booking.status = BookingStatus.CANCELLED.value
         booking.cancel_reason = data.cancel_reason
-        booking.cancelled_at = datetime.utcnow()
+        booking.cancelled_at = datetime.now(timezone.utc)
         booking.cancelled_by = user_id
 
         # 退还课时
@@ -198,7 +214,7 @@ class BookingService:
         booking.booking_date = data.new_date
         booking.start_time = data.new_start_time
         booking.end_time = data.new_end_time
-        booking.updated_at = datetime.utcnow()
+        booking.updated_at = datetime.now(timezone.utc)
 
         await self.db.commit()
         await self.db.refresh(booking)
@@ -211,7 +227,7 @@ class BookingService:
             raise ValueError("预约不存在")
 
         booking.status = BookingStatus.COMPLETED.value
-        booking.updated_at = datetime.utcnow()
+        booking.updated_at = datetime.now(timezone.utc)
 
         await self.db.commit()
         await self.db.refresh(booking)
@@ -224,7 +240,7 @@ class BookingService:
             raise ValueError("预约不存在")
 
         booking.status = BookingStatus.NO_SHOW.value
-        booking.updated_at = datetime.utcnow()
+        booking.updated_at = datetime.now(timezone.utc)
 
         await self.db.commit()
         await self.db.refresh(booking)
@@ -237,7 +253,7 @@ class BookingService:
             .options(
                 selectinload(Booking.student),
                 selectinload(Booking.coach),
-                selectinload(Booking.schedule)
+                selectinload(Booking.schedule).selectinload(Schedule.course)
             )
             .where(Booking.id == booking_id)
         )
@@ -253,7 +269,15 @@ class BookingService:
         page_size: int = 20
     ) -> Tuple[List[Booking], int]:
         """获取学员预约列表"""
-        query = select(Booking).where(Booking.student_id == student_id)
+        query = (
+            select(Booking)
+            .options(
+                selectinload(Booking.student),
+                selectinload(Booking.coach),
+                selectinload(Booking.schedule).selectinload(Schedule.course),
+            )
+            .where(Booking.student_id == student_id)
+        )
 
         if status:
             query = query.where(Booking.status == status)
@@ -283,7 +307,15 @@ class BookingService:
         page_size: int = 20
     ) -> Tuple[List[Booking], int]:
         """获取教练预约列表"""
-        query = select(Booking).where(Booking.coach_id == coach_id)
+        query = (
+            select(Booking)
+            .options(
+                selectinload(Booking.student),
+                selectinload(Booking.coach),
+                selectinload(Booking.schedule).selectinload(Schedule.course),
+            )
+            .where(Booking.coach_id == coach_id)
+        )
 
         if status:
             query = query.where(Booking.status == status)
@@ -510,7 +542,7 @@ class BookingService:
             select(CoachAvailableSlot)
             .where(
                 CoachAvailableSlot.coach_id == coach_id,
-                CoachAvailableSlot.is_active == True
+                CoachAvailableSlot.is_active.is_(True)
             )
             .order_by(CoachAvailableSlot.day_of_week, CoachAvailableSlot.start_time)
         )
@@ -593,7 +625,7 @@ class MembershipCardService:
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(card, field, value)
 
-        card.updated_at = datetime.utcnow()
+        card.updated_at = datetime.now(timezone.utc)
         await self.db.commit()
         await self.db.refresh(card)
         return card
@@ -606,7 +638,7 @@ class MembershipCardService:
         """获取所有可用课时卡"""
         result = await self.db.execute(
             select(MembershipCard)
-            .where(MembershipCard.is_active == True)
+            .where(MembershipCard.is_active.is_(True))
             .order_by(MembershipCard.sort_order, MembershipCard.price)
         )
         return result.scalars().all()
@@ -661,7 +693,7 @@ class ReviewService:
             raise ValueError("只能回复自己的评价")
 
         review.coach_reply = reply
-        review.coach_reply_at = datetime.utcnow()
+        review.coach_reply_at = datetime.now(timezone.utc)
 
         await self.db.commit()
         await self.db.refresh(review)

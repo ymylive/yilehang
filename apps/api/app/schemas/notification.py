@@ -2,8 +2,9 @@
 通知相关 Schema
 """
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict
 
 
 class NotificationBase(BaseModel):
@@ -27,8 +28,7 @@ class NotificationResponse(NotificationBase):
     is_read: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NotificationListResponse(BaseModel):

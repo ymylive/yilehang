@@ -73,10 +73,12 @@
         提交评价
       </wd-button>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, onMounted } from 'vue'
 import { reviewApi, bookingApi } from '@/api'
 
@@ -172,7 +174,7 @@ onMounted(() => {
 .review-page {
   min-height: 100vh;
   background-color: #f5f5f5;
-  padding-bottom: 140rpx;
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
 }
 
 .course-info {

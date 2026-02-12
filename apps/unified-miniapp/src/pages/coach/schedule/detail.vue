@@ -51,6 +51,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { coachScheduleApi } from '@/api/index'
+import { safeNavigate } from '@/utils/safe-nav'
 
 interface Booking {
   id: number
@@ -187,9 +188,7 @@ function completeBooking() {
 
 function goToFeedback() {
   if (!booking.value) return
-  uni.navigateTo({
-    url: `/pages/students/feedback?studentId=${booking.value.student_id}&bookingId=${booking.value.id}&studentName=${encodeURIComponent(booking.value.student_name)}`
-  })
+  safeNavigate(`/pages/coach/students/feedback?studentId=${booking.value.student_id}&bookingId=${booking.value.id}&studentName=${encodeURIComponent(booking.value.student_name)}`)
 }
 
 onMounted(async () => {

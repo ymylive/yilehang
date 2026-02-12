@@ -97,6 +97,17 @@ export const useUserStore = defineStore('user', () => {
     return res
   }
 
+  async function registerWithRole(email: string, wechatOpenid: string, role: string, nickname?: string) {
+    const res = await authApi.registerWithRole({
+      email: email || undefined,
+      wechat_openid: wechatOpenid || undefined,
+      role,
+      nickname
+    })
+    saveLoginState(res.access_token, res.user)
+    return res
+  }
+
   async function sendEmailCode(email: string) {
     const res: any = await authApi.sendEmailCode(email)
     return { success: true, delivery: res?.delivery || 'smtp', devCode: res?.dev_code || '' }
@@ -161,7 +172,7 @@ export const useUserStore = defineStore('user', () => {
     isLoggedIn, isParent, isStudent, isCoach, isAdmin, userRole,
     hasPhone, hasEmail, hasWechat,
     initFromStorage, login, loginWithEmail, wechatLogin, wechatPhoneLogin,
-    register, registerWithEmail, sendEmailCode, resetPassword,
+    register, registerWithEmail, registerWithRole, sendEmailCode, resetPassword,
     fetchUserInfo, updateUserInfo, logout,
     setCurrentStudent, setUser, checkLogin
   }

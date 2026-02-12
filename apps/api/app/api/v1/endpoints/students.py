@@ -2,18 +2,65 @@
 学员相关API
 """
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
-from app.core import get_db, get_current_user
-from app.models import Student, FitnessTest, TrainingSession
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core import get_current_user, get_db
+from app.models import Coach, FitnessTest, ParentStudentRelation, Student, TrainingSession
 from app.schemas import (
-    StudentCreate, StudentUpdate, StudentResponse,
-    GrowthProfile, RadarChartData
+    GrowthProfile,
+    RadarChartData,
+    StudentCreate,
+    StudentResponse,
+    StudentUpdate,
 )
 
 router = APIRouter()
+
+
+async def _get_permitted_student_ids(
+    db: AsyncSession, current_user: dict[str, object]
+) -> set[int]:
+    role = current_user.get("role")
+    user_id = current_user.get("user_id")
+    if not user_id:
+        return set()
+
+    if role == "student":
+        result = await db.execute(select(Student.id).where(Student.user_id == user_id))
+        return set(result.scalars().all())
+
+    if role == "parent":
+        relation_result = await db.execute(
+            select(ParentStudentRelation.student_id).where(
+                ParentStudentRelation.parent_id == user_id
+            )
+        )
+        direct_result = await db.execute(select(Student.id).where(Student.parent_id == user_id))
+        return set(relation_result.scalars().all()) | set(direct_result.scalars().all())
+
+    if role == "coach":
+        coach_result = await db.execute(select(Coach.id).where(Coach.user_id == user_id).limit(1))
+        coach_id = coach_result.scalar_one_or_none()
+        if not coach_id:
+            return set()
+        result = await db.execute(select(Student.id).where(Student.coach_id == coach_id))
+        return set(result.scalars().all())
+
+    return set()
+
+
+async def _ensure_student_access(
+    student_id: int, db: AsyncSession, current_user: dict[str, object]
+) -> None:
+    if current_user.get("role") == "admin":
+        return
+
+    permitted_student_ids = await _get_permitted_student_ids(db, current_user)
+    if student_id not in permitted_student_ids:
+        raise HTTPException(status_code=403, detail="无权访问该学员")
 
 
 def generate_student_no() -> str:
@@ -28,15 +75,18 @@ async def list_students(
     skip: int = 0,
     limit: int = 20,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user)
 ):
     """获取学员列表"""
-    result = await db.execute(
-        select(Student)
-        .where(Student.status == "active")
-        .offset(skip)
-        .limit(limit)
-    )
+    query = select(Student).where(Student.status == "active")
+
+    if current_user.get("role") != "admin":
+        permitted_student_ids = await _get_permitted_student_ids(db, current_user)
+        if not permitted_student_ids:
+            return []
+        query = query.where(Student.id.in_(permitted_student_ids))
+
+    result = await db.execute(query.offset(skip).limit(limit))
     students = result.scalars().all()
     return [StudentResponse.model_validate(s) for s in students]
 
@@ -45,7 +95,7 @@ async def list_students(
 async def create_student(
     student_data: StudentCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user)
 ):
     """创建学员"""
     student = Student(
@@ -62,9 +112,11 @@ async def create_student(
 async def get_student(
     student_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user)
 ):
     """获取学员详情"""
+    await _ensure_student_access(student_id, db, current_user)
+
     result = await db.execute(select(Student).where(Student.id == student_id))
     student = result.scalar_one_or_none()
     if not student:
@@ -77,9 +129,11 @@ async def update_student(
     student_id: int,
     student_data: StudentUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user)
 ):
     """更新学员信息"""
+    await _ensure_student_access(student_id, db, current_user)
+
     result = await db.execute(select(Student).where(Student.id == student_id))
     student = result.scalar_one_or_none()
     if not student:
@@ -97,9 +151,11 @@ async def update_student(
 async def get_student_growth(
     student_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user)
 ):
     """获取学员成长档案(雷达图数据)"""
+    await _ensure_student_access(student_id, db, current_user)
+
     # 获取学员信息
     result = await db.execute(select(Student).where(Student.id == student_id))
     student = result.scalar_one_or_none()

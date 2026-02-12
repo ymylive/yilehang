@@ -1,19 +1,20 @@
 """
 能量系统服务层
 """
-from datetime import datetime, timedelta
-from typing import Optional, Tuple
 import logging
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Tuple
 
-from sqlalchemy import select, func, and_
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.models.energy import (
-    EnergyRule, EnergyAccount, EnergyTransaction,
-    EnergyTransactionType, EnergySourceType, ENERGY_LEVELS
+    ENERGY_LEVELS,
+    EnergyAccount,
+    EnergyRule,
+    EnergyTransaction,
+    EnergyTransactionType,
 )
-from app.models.user import Student
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ class EnergyService:
         """根据代码获取积分规则"""
         result = await db.execute(
             select(EnergyRule).where(
-                and_(EnergyRule.code == code, EnergyRule.is_active == True)
+                and_(EnergyRule.code == code, EnergyRule.is_active.is_(True))
             )
         )
         return result.scalar_one_or_none()
@@ -76,7 +77,7 @@ class EnergyService:
         rule: EnergyRule
     ) -> Tuple[bool, str]:
         """检查积分获取限制"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # 检查每日限制
         if rule.daily_limit:
@@ -164,7 +165,6 @@ class EnergyService:
         amount = int(rule.points * float(rule.multiplier))
 
         # 乐观锁更新
-        old_version = account.version
         account.balance += amount
         account.total_earned += amount
         account.version += 1
@@ -234,7 +234,10 @@ class EnergyService:
 
         await db.flush()
 
-        logger.info(f"Student {student_id} spent {amount} energy for {reference_type}:{reference_id}")
+        logger.info(
+            f"Student {student_id} spent {amount} energy "
+            f"for {reference_type}:{reference_id}"
+        )
         return True, amount, account.balance, f"消费 {amount} 能量"
 
     @staticmethod
@@ -311,7 +314,7 @@ class EnergyService:
     @staticmethod
     async def get_today_earned(db: AsyncSession, student_id: int) -> int:
         """获取今日获取的能量"""
-        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         result = await db.execute(
             select(func.sum(EnergyTransaction.amount)).where(
                 and_(
@@ -326,7 +329,7 @@ class EnergyService:
     @staticmethod
     async def get_week_earned(db: AsyncSession, student_id: int) -> int:
         """获取本周获取的能量"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         week_start = now - timedelta(days=now.weekday())
         week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
         result = await db.execute(

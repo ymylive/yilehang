@@ -48,11 +48,14 @@
         没有更多记录了
       </view>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, computed, onMounted, watch } from 'vue'
+import { onReachBottom } from '@dcloudio/uni-app'
 import { membershipApi } from '@/api'
 
 interface Transaction {
@@ -170,6 +173,7 @@ onReachBottom(() => {
 .transactions-page {
   min-height: 100vh;
   background-color: #f5f5f5;
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
 }
 
 .filter-tabs {

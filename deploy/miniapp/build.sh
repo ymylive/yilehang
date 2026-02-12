@@ -1,5 +1,5 @@
 #!/bin/bash
-# 易乐航统一小程序 - 一键构建脚本
+# 韧翎成长计划统一小程序 - 一键构建脚本
 
 set -e
 
@@ -8,7 +8,7 @@ MINIAPP_DIR="$PROJECT_ROOT/apps/unified-miniapp"
 BUILD_OUTPUT="$MINIAPP_DIR/dist/build/mp-weixin"
 
 echo "=========================================="
-echo "易乐航统一小程序 - 构建脚本"
+echo "韧翎成长计划统一小程序 - 构建脚本"
 echo "=========================================="
 
 # 检查 pnpm

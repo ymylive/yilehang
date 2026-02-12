@@ -16,6 +16,10 @@ All notable changes to this project will be documented in this file.
 - Backend supports nickname (username) as account credential during password login.
 - Added username uniqueness checks in register and profile update flows.
 - `.env.example` adds WeChat and SMTP related config examples.
+- Added object-level authorization integration tests for students/bookings/growth/training/schedule enrollment flows.
+- Added chat websocket security tests for one-time ticket auth and query-token rejection.
+- Added unified miniapp runtime safety modules: `PageErrorBoundary`, `safeNavigate`, and telemetry event storage.
+- Added fallback static assets (`default-avatar`, `empty`) and pre-build static asset reference checker.
 
 ### Changed
 - Expanded API router registration to include role, notification, upload, chat, energy, merchant, and leaderboard routes.
@@ -26,6 +30,7 @@ All notable changes to this project will be documented in this file.
 - Disabled WeChat dev fallback by default (`ALLOW_WECHAT_LOGIN_WITHOUT_SECRET=false`).
 - Improved email-code send error response to expose concrete backend failure message.
 - Home strategy cards now use deterministic sequence numbers to avoid duplicate labels.
+- Standardized project/app naming and production domain references to `rl.cornna.xyz` across docs and deployment templates.
 
 ### Fixed
 - **[SECURITY]** Removed hardcoded server passwords from 14 deployment scripts (now use environment variables)
@@ -42,11 +47,13 @@ All notable changes to this project will be documented in this file.
 - **[API]** Added missing coach endpoint: `GET /reviews/feedbacks`
 - **[CODE QUALITY]** Extracted magic numbers to config (commission rate, cancellation hours)
 - **[CODE QUALITY]** Refactored registration logic to eliminate 80 lines of duplicate code
+- **[SECURITY]** Hardened object-level authorization checks to block cross-account data access.
+- **[SECURITY]** Hardened chat websocket auth by enforcing short-lived, one-time connection tickets.
 - Fixed garbled arrow text in user menu (`>` rendering issue in mini program view).
 - Fixed button text vertical alignment issue for user logout and login action buttons.
 - Fixed partial garbled comments/text fragments in homepage style section.
 
 ### Operations
 - Re-deployed production services after server reboot on `82.158.88.34`.
-- Renewed and installed SSL for `yilehang.cornna.xyz` via `acme.sh` (Cloudflare DNS).
-- Updated miniapp production API/WebSocket/upload endpoints in `deploy/miniapp/env.example` to `yilehang.cornna.xyz`.
+- Renewed and installed SSL for `rl.cornna.xyz` via `acme.sh` (Cloudflare DNS).
+- Updated miniapp production API/WebSocket/upload endpoints in `deploy/miniapp/env.example` to `rl.cornna.xyz`.

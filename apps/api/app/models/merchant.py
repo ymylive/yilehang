@@ -1,18 +1,28 @@
 """
 商家系统数据模型
 """
-from datetime import datetime
-from typing import Optional, List
-from enum import Enum
 
-from sqlalchemy import String, Integer, Boolean, DateTime, Text, ForeignKey, Numeric, Index
+from datetime import datetime, timezone
+from enum import Enum
+from typing import TYPE_CHECKING, List, Optional
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
+if TYPE_CHECKING:
+    from app.models.user import Student, User
+
+
+def utc_now_naive() -> datetime:
+    """UTC now as naive datetime, matching TIMESTAMP WITHOUT TIME ZONE columns."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 
 class MerchantStatus(str, Enum):
     """商家状态"""
+
     PENDING = "pending"  # 待审核
     ACTIVE = "active"  # 正常
     SUSPENDED = "suspended"  # 暂停
@@ -21,6 +31,7 @@ class MerchantStatus(str, Enum):
 
 class RedeemOrderStatus(str, Enum):
     """兑换订单状态"""
+
     PENDING = "pending"  # 待核销
     VERIFIED = "verified"  # 已核销
     CANCELLED = "cancelled"  # 已取消
@@ -29,6 +40,7 @@ class RedeemOrderStatus(str, Enum):
 
 class Merchant(Base):
     """合作商家表"""
+
     __tablename__ = "merchants"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -44,8 +56,12 @@ class Merchant(Base):
     status: Mapped[str] = mapped_column(String(20), default=MerchantStatus.ACTIVE.value)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False)  # 是否推荐
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now_naive,
+        onupdate=utc_now_naive,
+    )
 
     # 关系
     users: Mapped[List["MerchantUser"]] = relationship("MerchantUser", back_populates="merchant")
@@ -55,14 +71,17 @@ class Merchant(Base):
 
 class MerchantUser(Base):
     """商家用户表（商家登录账号）"""
+
     __tablename__ = "merchant_users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     merchant_id: Mapped[int] = mapped_column(Integer, ForeignKey("merchants.id"), index=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), unique=True)  # 关联系统用户
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), unique=True
+    )  # 关联系统用户
     role: Mapped[str] = mapped_column(String(20), default="staff")  # owner/manager/staff
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
 
     # 关系
     merchant: Mapped["Merchant"] = relationship("Merchant", back_populates="users")
@@ -71,6 +90,7 @@ class MerchantUser(Base):
 
 class RedeemItem(Base):
     """兑换商品表"""
+
     __tablename__ = "redeem_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -87,8 +107,12 @@ class RedeemItem(Base):
     usage_rules: Mapped[Optional[str]] = mapped_column(Text)  # 使用规则
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now_naive,
+        onupdate=utc_now_naive,
+    )
 
     # 关系
     merchant: Mapped["Merchant"] = relationship("Merchant", back_populates="items")
@@ -97,6 +121,7 @@ class RedeemItem(Base):
 
 class RedeemOrder(Base):
     """兑换订单表"""
+
     __tablename__ = "redeem_orders"
     __table_args__ = (
         Index("ix_redeem_orders_student_created", "student_id", "created_at"),
@@ -116,15 +141,9 @@ class RedeemOrder(Base):
     verified_by: Mapped[Optional[int]] = mapped_column(Integer)  # 核销人ID
     cancelled_at: Mapped[Optional[datetime]] = mapped_column(DateTime)  # 取消时间
     cancel_reason: Mapped[Optional[str]] = mapped_column(String(200))  # 取消原因
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
 
     # 关系
     student: Mapped["Student"] = relationship("Student")
     merchant: Mapped["Merchant"] = relationship("Merchant", back_populates="orders")
     item: Mapped["RedeemItem"] = relationship("RedeemItem", back_populates="orders")
-
-
-# 类型检查导入
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from app.models.user import User, Student

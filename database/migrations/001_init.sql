@@ -1,4 +1,4 @@
--- 易乐航数据库初始化脚本
+-- 韧翎成长计划数据库初始化脚本
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS yilehang;
 

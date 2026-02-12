@@ -1,9 +1,56 @@
 /**
  * API request wrapper
  */
-const envBase = (import.meta.env.VITE_API_BASE_URL || '').trim()
-const isMpWeixin = typeof wx !== 'undefined' && typeof (globalThis as any).__wxConfig !== 'undefined'
-const BASE_URL = envBase || (isMpWeixin ? 'https://yilehang.cornna.xyz/api/v1' : '/api/v1')
+import { trackError, trackEvent } from '@/utils/telemetry'
+
+const DEFAULT_REMOTE_API_BASE_URL = 'https://rl.cornna.xyz/api/v1'
+const DEFAULT_H5_API_BASE_PATH = '/api/v1'
+
+interface RuntimeEnv {
+  VITE_API_BASE_URL?: string
+  VITE_WS_URL?: string
+}
+
+function normalizeBaseUrl(url: string): string {
+  return url.replace(/\/+$/, '')
+}
+
+function resolveApiBaseUrl(): string {
+  const env = import.meta.env as RuntimeEnv
+  const configuredBaseUrl = env.VITE_API_BASE_URL?.trim()
+  if (configuredBaseUrl) {
+    return normalizeBaseUrl(configuredBaseUrl)
+  }
+
+  // H5 默认走同源代理，其他端保留远程兜底，避免出现空地址请求。
+  if (typeof window !== 'undefined') {
+    return DEFAULT_H5_API_BASE_PATH
+  }
+
+  return DEFAULT_REMOTE_API_BASE_URL
+}
+
+function resolveWsUrl(apiBaseUrl: string): string {
+  const env = import.meta.env as RuntimeEnv
+  const configuredWsUrl = env.VITE_WS_URL?.trim()
+  if (configuredWsUrl) {
+    return normalizeBaseUrl(configuredWsUrl)
+  }
+
+  if (/^https?:\/\//i.test(apiBaseUrl)) {
+    return `${apiBaseUrl.replace(/^http/i, 'ws')}/chat/ws`
+  }
+
+  if (typeof window !== 'undefined') {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${wsProtocol}//${window.location.host}${apiBaseUrl}/chat/ws`
+  }
+
+  return `${DEFAULT_REMOTE_API_BASE_URL.replace(/^http/i, 'ws')}/chat/ws`
+}
+
+const BASE_URL = resolveApiBaseUrl()
+export const CHAT_WS_URL = resolveWsUrl(BASE_URL)
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
@@ -37,12 +84,14 @@ export async function request<T = any>(
   url: string,
   options: RequestOptions = {}
 ): Promise<T> {
+  const startedAt = Date.now()
   const { method = 'GET', data, params, header = {} } = options
   const payload = method === 'GET' ? (params ?? data) : data
+  const requestHeaders: Record<string, string> = { ...header }
 
   const token = getToken()
   if (token) {
-    header['Authorization'] = `Bearer ${token}`
+    requestHeaders.Authorization = `Bearer ${token}`
   }
 
   return new Promise((resolve, reject) => {
@@ -52,27 +101,82 @@ export async function request<T = any>(
       data: payload,
       header: {
         'Content-Type': 'application/json',
-        ...header
+        ...requestHeaders
       },
       success: (res: any) => {
+        const latencyMs = Date.now() - startedAt
+
         if (res.statusCode >= 200 && res.statusCode < 300) {
+          if (url.startsWith('/auth/login')) {
+            trackEvent('auth.login.success', {
+              url,
+              method,
+              statusCode: res.statusCode,
+              latencyMs
+            })
+          } else if (latencyMs >= 1500) {
+            trackEvent('api.slow', {
+              url,
+              method,
+              statusCode: res.statusCode,
+              latencyMs
+            }, 'warn')
+          }
           resolve(res.data as T)
-        } else if (res.statusCode === 401) {
+          return
+        }
+
+        if (res.statusCode === 401) {
           const detail = res.data?.detail || 'Unauthorized'
           if (token && shouldHandleUnauthorized(url)) {
             uni.removeStorageSync('token')
             uni.removeStorageSync('user')
             uni.reLaunch({ url: '/pages/user/login' })
+            trackEvent('auth.session.expired', {
+              url,
+              method,
+              statusCode: 401,
+              latencyMs
+            }, 'warn')
             reject(new Error('Session expired'))
             return
           }
-          reject(new Error(detail))
-        } else {
-          reject(new Error(res.data?.detail || 'Request failed'))
+
+          const message = typeof detail === 'string' ? detail : (detail?.message || 'Unauthorized')
+          const err: any = new Error(message)
+          err.statusCode = res.statusCode
+          err.detail = detail
+          trackError('api.request.fail', err, {
+            url,
+            method,
+            statusCode: res.statusCode,
+            latencyMs
+          })
+          reject(err)
+          return
         }
+
+        const detail = res.data?.detail || 'Request failed'
+        const message = typeof detail === 'string' ? detail : (detail?.message || 'Request failed')
+        const err: any = new Error(message)
+        err.statusCode = res.statusCode
+        err.detail = detail
+        trackError('api.request.fail', err, {
+          url,
+          method,
+          statusCode: res.statusCode,
+          latencyMs
+        })
+        reject(err)
       },
-      fail: (err) => {
-        reject(new Error(err.errMsg || 'Network error'))
+      fail: (err: any) => {
+        const wrapped = new Error(err?.errMsg || 'Network error')
+        trackError('api.network.fail', wrapped, {
+          url,
+          method,
+          latencyMs: Date.now() - startedAt
+        })
+        reject(wrapped)
       }
     })
   })
@@ -121,6 +225,10 @@ export const authApi = {
   // email code registration
   registerWithEmail: (email: string, code: string, password: string, role: string = 'parent', nickname?: string, phone?: string) =>
     api.post('/auth/register/email', { email, code, password, role, nickname, phone }),
+
+  // register with selected role (supports WeChat openid)
+  registerWithRole: (payload: { email?: string; wechat_openid?: string; role: string; nickname?: string }) =>
+    api.post('/auth/register/with-role', payload),
 
   // coach registration
   registerCoach: (data: { email: string; password: string; name: string; phone?: string; specialty?: string[]; introduction?: string }) =>
@@ -341,8 +449,8 @@ export const uploadApi = {
             reject(new Error('上传失败'))
           }
         },
-        fail: (err) => {
-          reject(new Error(err.errMsg || '上传失败'))
+        fail: (err: any) => {
+          reject(new Error(err?.errMsg || '上传失败'))
         }
       })
     })
@@ -368,8 +476,8 @@ export const uploadApi = {
             reject(new Error('上传失败'))
           }
         },
-        fail: (err) => {
-          reject(new Error(err.errMsg || '上传失败'))
+        fail: (err: any) => {
+          reject(new Error(err?.errMsg || '上传失败'))
         }
       })
     })
@@ -378,6 +486,9 @@ export const uploadApi = {
 
 // Chat API
 export const chatApi = {
+  getWsTicket: () =>
+    api.post<{ ticket: string; expires_in: number }>('/chat/ws-ticket'),
+
   getConversations: (params?: { skip?: number; limit?: number }) =>
     api.get('/chat/conversations', params),
 
@@ -597,15 +708,15 @@ export const leaderboardApi = {
 
 export const roleApi = {
   // 获取当前用户所有角色
-  getRoles: () => api.get('/roles'),
+  getRoles: () => api.get('/user/roles'),
 
   // 获取当前用户权限列表
-  getPermissions: () => api.get('/permissions'),
+  getPermissions: () => api.get('/user/permissions'),
 
   // 获取当前用户可见菜单
-  getMenus: () => api.get('/menus'),
+  getMenus: () => api.get('/user/menus'),
 
   // 切换当前激活角色
   switchRole: (roleCode: string) =>
-    api.post('/switch-role', { role_code: roleCode })
+    api.post('/user/switch-role', { role_code: roleCode })
 }

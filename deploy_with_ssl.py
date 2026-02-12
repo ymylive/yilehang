@@ -28,7 +28,7 @@ def get_server_info():
 def install_acme_sh(server_ip, server_user, server_port):
     """安装acme.sh"""
     print("\n=== 安装acme.sh ===")
-    cmd = f'ssh -p {server_port} {server_user}@{server_ip} "curl https://get.acme.sh | sh -s email=admin@yilehang.com"'
+    cmd = f'ssh -p {server_port} {server_user}@{server_ip} "curl https://get.acme.sh | sh -s email=admin@rl.cornna.xyz"'
     run_cmd(cmd, check=False)
 
 def apply_ssl_cert(server_ip, server_user, server_port, domain):
@@ -77,11 +77,11 @@ def deploy_services(server_ip, server_user, server_port):
     run_cmd(cmd)
 
 def main():
-    print("=== 易乐航服务器部署脚本 (含SSL) ===\n")
+    print("=== 韧翎成长计划服务器部署脚本 (含SSL) ===\n")
 
     # 获取服务器信息
     server_ip, server_user, server_port = get_server_info()
-    domain = "yilehang.cornna.xyz"
+    domain = "rl.cornna.xyz"
 
     # 询问是否需要申请SSL证书
     need_ssl = input("\n是否需要申请SSL证书? (y/n) [y]: ").strip().lower() or "y"

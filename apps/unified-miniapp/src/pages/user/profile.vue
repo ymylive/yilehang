@@ -10,7 +10,9 @@
 
     <!-- 微信头像同步 -->
     <view class="sync-wechat" v-if="isWechat" @click="syncWechatAvatar">
-      <text class="sync-icon">📱</text>
+      <view class="sync-icon">
+        <wd-icon name="camera" size="30rpx" color="#07C160" />
+      </view>
       <text class="sync-text">同步微信头像</text>
     </view>
 
@@ -48,10 +50,11 @@
 
     <!-- 保存按钮 -->
     <view class="save-section">
-      <button class="save-btn" :loading="saving" @click="saveProfile">
+      <button class="save-btn" :loading="saving" @tap="saveProfile">
         保存修改
       </button>
     </view>
+    <DynamicTabBar />
   </view>
 </template>
 
@@ -59,6 +62,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { authApi, uploadApi } from '@/api'
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 
 const userStore = useUserStore()
 
@@ -185,7 +189,7 @@ async function saveProfile() {
 .page {
   min-height: 100vh;
   background: #f5f5f5;
-  padding-bottom: 120rpx;
+  padding-bottom: calc(300rpx + env(safe-area-inset-bottom));
 }
 
 .avatar-section {
@@ -221,10 +225,23 @@ async function saveProfile() {
   margin: 20rpx;
   border-radius: 12rpx;
   gap: 12rpx;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  cursor: pointer;
+}
+
+.sync-wechat:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 8rpx 16rpx rgba(7, 193, 96, 0.16);
 }
 
 .sync-icon {
-  font-size: 32rpx;
+  width: 58rpx;
+  height: 58rpx;
+  border-radius: 16rpx;
+  background: #ecfdf3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sync-text {
@@ -277,12 +294,14 @@ async function saveProfile() {
 
 .save-section {
   position: fixed;
-  bottom: 0;
+  bottom: calc(120rpx + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
   padding: 20rpx 30rpx;
-  background: #fff;
-  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.95);
+  border-top: 1rpx solid rgba(235, 235, 235, 0.9);
+  box-shadow: 0 -6rpx 20rpx rgba(0, 0, 0, 0.06);
+  z-index: 1100;
 }
 
 .save-btn {

@@ -68,10 +68,12 @@
       <text class="empty-title">{{ t.emptyTitle }}</text>
       <text class="empty-sub">{{ t.emptySub }}</text>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, computed, onMounted } from 'vue'
 import { coachStudentsApi } from '@/api/index'
 

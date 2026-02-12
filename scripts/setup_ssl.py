@@ -11,7 +11,7 @@ PASSWORD = os.getenv("SERVER_PASSWORD")
 if not PASSWORD:
     print("错误: 必须设置 SERVER_PASSWORD 环境变量")
     sys.exit(1)
-DOMAIN = "yilehang.cornna.xyz"
+DOMAIN = "rl.cornna.xyz"
 
 CF_TOKEN = os.environ.get("CF_Token") or os.environ.get("CF_TOKEN")
 CF_ACCOUNT_ID = os.environ.get("CF_Account_ID") or os.environ.get("CF_ACCOUNT_ID")
@@ -144,6 +144,27 @@ http {{
         ssl_protocols TLSv1.2 TLSv1.3;
         ssl_ciphers HIGH:!aNULL:!MD5;
 
+        location = /api/v1/health {{
+            proxy_pass http://api/health;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }}
+
+        location /api/v1/chat/ws {{
+            proxy_pass http://api/api/v1/chat/ws;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+        }}
+
         location /api {{
             proxy_pass http://api;
             proxy_set_header Host $host;
@@ -190,8 +211,8 @@ services:
     volumes:
       - /opt/yilehang/apps/api:/app
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres123@postgres:5432/yilehang
-      SECRET_KEY: yilehang-secret-2024
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-change-me-in-production}@postgres:5432/yilehang
+      SECRET_KEY: ${SECRET_KEY:?set-in-env}
     networks:
       - yilehang
     depends_on:

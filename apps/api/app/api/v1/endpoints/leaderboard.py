@@ -1,17 +1,22 @@
 """
 排行榜 API
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
+
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, desc
 
-from app.core import get_db, get_current_user
+from app.core import get_current_user, get_db
 from app.models import Student
-from app.models.energy import EnergyAccount, EnergyTransaction, EnergyTransactionType, ENERGY_LEVELS
-from app.models.growth import TrainingSession, FitnessTest
-
+from app.models.energy import (
+    ENERGY_LEVELS,
+    EnergyAccount,
+    EnergyTransaction,
+    EnergyTransactionType,
+)
+from app.models.growth import FitnessTest, TrainingSession
 from app.schemas.energy import LeaderboardEntry, LeaderboardResponse
 
 router = APIRouter()
@@ -25,7 +30,7 @@ async def get_energy_leaderboard(
     current_user: dict = Depends(get_current_user)
 ):
     """获取能量排行榜"""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     if period == "week":
         start_time = now - timedelta(days=now.weekday())
@@ -126,7 +131,7 @@ async def get_training_leaderboard(
     current_user: dict = Depends(get_current_user)
 ):
     """获取训练排行榜（按训练次数）"""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     if period == "week":
         start_time = now - timedelta(days=now.weekday())
@@ -151,12 +156,17 @@ async def get_training_leaderboard(
     result = await db.execute(query)
     rows = result.all()
 
+    student_ids = [student_id for student_id, _ in rows]
+    students_map = {}
+    if student_ids:
+        students_result = await db.execute(
+            select(Student).where(Student.id.in_(student_ids))
+        )
+        students_map = {student.id: student for student in students_result.scalars().all()}
+
     entries = []
     for rank, (student_id, total) in enumerate(rows, 1):
-        student_result = await db.execute(
-            select(Student).where(Student.id == student_id)
-        )
-        student = student_result.scalar_one_or_none()
+        student = students_map.get(student_id)
 
         entries.append(LeaderboardEntry(
             rank=rank,
@@ -195,7 +205,7 @@ async def get_fitness_leaderboard(
     current_user: dict = Depends(get_current_user)
 ):
     """获取体测进步榜"""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # 这里简化处理，实际应该计算进步幅度
     # 暂时按最新体测成绩排序
@@ -208,12 +218,17 @@ async def get_fitness_leaderboard(
     result = await db.execute(query)
     rows = result.all()
 
+    student_ids = [student_id for student_id, _ in rows]
+    students_map = {}
+    if student_ids:
+        students_result = await db.execute(
+            select(Student).where(Student.id.in_(student_ids))
+        )
+        students_map = {student.id: student for student in students_result.scalars().all()}
+
     entries = []
     for rank, (student_id, _) in enumerate(rows, 1):
-        student_result = await db.execute(
-            select(Student).where(Student.id == student_id)
-        )
-        student = student_result.scalar_one_or_none()
+        student = students_map.get(student_id)
 
         entries.append(LeaderboardEntry(
             rank=rank,

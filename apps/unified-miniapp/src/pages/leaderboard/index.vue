@@ -6,14 +6,18 @@
         :class="['tab', { active: currentTab === 'energy' }]"
         @click="currentTab = 'energy'"
       >
-        <text class="tab-icon">⚡</text>
+        <view class="tab-icon">
+          <wd-icon name="star-filled" size="30rpx" :color="currentTab === 'energy' ? '#ffffff' : '#2563eb'" />
+        </view>
         <text class="tab-text">能量榜</text>
       </view>
       <view
         :class="['tab', { active: currentTab === 'training' }]"
         @click="currentTab = 'training'"
       >
-        <text class="tab-icon">🏃</text>
+        <view class="tab-icon">
+          <wd-icon name="app" size="30rpx" :color="currentTab === 'training' ? '#ffffff' : '#2563eb'" />
+        </view>
         <text class="tab-text">训练榜</text>
       </view>
     </view>
@@ -60,7 +64,9 @@
           <view class="top-avatar">
             <text class="avatar-text">{{ leaderboard[1].student_name.charAt(0) }}</text>
           </view>
-          <view class="top-medal">🥈</view>
+          <view class="top-medal">
+            <wd-icon name="star-filled" size="36rpx" color="#94a3b8" />
+          </view>
           <text class="top-name">{{ leaderboard[1].student_name }}</text>
           <text class="top-value">{{ leaderboard[1].value }}</text>
         </view>
@@ -68,7 +74,9 @@
           <view class="top-avatar crown">
             <text class="avatar-text">{{ leaderboard[0].student_name.charAt(0) }}</text>
           </view>
-          <view class="top-medal">🥇</view>
+          <view class="top-medal">
+            <wd-icon name="star-filled" size="42rpx" color="#f59e0b" />
+          </view>
           <text class="top-name">{{ leaderboard[0].student_name }}</text>
           <text class="top-value">{{ leaderboard[0].value }}</text>
         </view>
@@ -76,7 +84,9 @@
           <view class="top-avatar">
             <text class="avatar-text">{{ leaderboard[2].student_name.charAt(0) }}</text>
           </view>
-          <view class="top-medal">🥉</view>
+          <view class="top-medal">
+            <wd-icon name="star-filled" size="34rpx" color="#c08457" />
+          </view>
           <text class="top-name">{{ leaderboard[2].student_name }}</text>
           <text class="top-value">{{ leaderboard[2].value }}</text>
         </view>
@@ -95,21 +105,27 @@
           </view>
           <view class="rank-info">
             <text class="rank-name">{{ item.student_name }}</text>
-            <text class="rank-level" v-if="item.level_icon">{{ item.level_icon }}</text>
+            <view class="rank-level" v-if="item.level_icon">
+              <wd-icon :name="resolveLevelIcon(item.level_icon)" size="24rpx" color="#f59e0b" />
+            </view>
           </view>
           <text class="rank-value">{{ item.value }}</text>
         </view>
       </view>
 
       <view class="empty-state" v-if="!leaderboard.length">
-        <text class="empty-icon">🏆</text>
+        <view class="empty-icon">
+          <wd-icon name="chart-bar" size="62rpx" color="#94a3b8" />
+        </view>
         <text class="empty-text">暂无排行数据</text>
       </view>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { leaderboardApi } from '@/api'
 
@@ -118,6 +134,9 @@ const period = ref('week')
 const leaderboard = ref<any[]>([])
 const myRank = ref<number | null>(null)
 const myValue = ref<number | null>(null)
+const leaderboardLoading = ref(false)
+let leaderboardRequestId = 0
+let activeLeaderboardKey = ''
 
 const restLeaderboard = computed(() => {
   return leaderboard.value.slice(3)
@@ -132,11 +151,31 @@ watch([currentTab, period], () => {
 })
 
 async function loadLeaderboard() {
+  const requestTab = currentTab.value
+  const requestPeriod = period.value
+  const requestKey = `${requestTab}:${requestPeriod}`
+
+  if (leaderboardLoading.value && activeLeaderboardKey === requestKey) {
+    return
+  }
+
+  activeLeaderboardKey = requestKey
+  const requestId = ++leaderboardRequestId
+  leaderboardLoading.value = true
+
   try {
-    const params = { period: period.value, limit: 50 }
-    const res = currentTab.value === 'energy'
+    const params = { period: requestPeriod, limit: 50 }
+    const res = requestTab === 'energy'
       ? await leaderboardApi.getEnergyLeaderboard(params)
       : await leaderboardApi.getTrainingLeaderboard(params)
+
+    if (
+      requestId !== leaderboardRequestId
+      || requestTab !== currentTab.value
+      || requestPeriod !== period.value
+    ) {
+      return
+    }
 
     leaderboard.value = res.items
     myRank.value = res.my_rank
@@ -145,6 +184,10 @@ async function loadLeaderboard() {
     // #ifdef DEV
     console.error('加载排行榜失败', error)
     // #endif
+  } finally {
+    if (requestId === leaderboardRequestId) {
+      leaderboardLoading.value = false
+    }
   }
 }
 
@@ -154,12 +197,27 @@ function showDetail(item: any) {
   console.log('查看详情', item)
   // #endif
 }
+
+function resolveLevelIcon(levelIcon?: string) {
+  const icon = String(levelIcon || '').trim()
+  const emojiMap: Record<string, string> = {
+    '\u{1F331}': 'star',
+    '\u2B50': 'star-filled',
+    '\u{1F3C6}': 'chart-bar',
+    '\u{1F451}': 'dashboard'
+  }
+  if (emojiMap[icon]) {
+    return emojiMap[icon]
+  }
+  return /^[a-z0-9-]+$/i.test(icon) ? icon : 'star'
+}
 </script>
 
 <style scoped>
 .page {
   min-height: 100vh;
   background: #FFFBF5;
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
 }
 
 .tabs {
@@ -179,6 +237,11 @@ function showDetail(item: any) {
   border-radius: 20rpx;
   background: #F5F5F5;
   transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.tab:active {
+  transform: translateY(2rpx);
 }
 
 .tab.active {
@@ -186,7 +249,17 @@ function showDetail(item: any) {
 }
 
 .tab-icon {
-  font-size: 32rpx;
+  width: 54rpx;
+  height: 54rpx;
+  border-radius: 14rpx;
+  background: rgba(255, 255, 255, 0.86);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab.active .tab-icon {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .tab-text {
@@ -301,6 +374,12 @@ function showDetail(item: any) {
   flex-direction: column;
   align-items: center;
   width: 200rpx;
+  cursor: pointer;
+  transition: transform 220ms ease;
+}
+
+.top-item:active {
+  transform: translateY(2rpx);
 }
 
 .top-item.first {
@@ -344,12 +423,20 @@ function showDetail(item: any) {
 }
 
 .top-medal {
-  font-size: 40rpx;
+  width: 60rpx;
+  height: 60rpx;
   margin-top: -20rpx;
+  border-radius: 18rpx;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1rpx rgba(226, 232, 240, 0.9);
 }
 
 .top-item.first .top-medal {
-  font-size: 48rpx;
+  width: 68rpx;
+  height: 68rpx;
 }
 
 .top-name {
@@ -422,7 +509,13 @@ function showDetail(item: any) {
 }
 
 .rank-level {
-  font-size: 24rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 12rpx;
+  background: #fff7ed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .rank-value {
@@ -439,9 +532,14 @@ function showDetail(item: any) {
 }
 
 .empty-icon {
-  font-size: 80rpx;
-  display: block;
-  margin-bottom: 20rpx;
+  width: 108rpx;
+  height: 108rpx;
+  border-radius: 26rpx;
+  background: #f1f5f9;
+  margin: 0 auto 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .empty-text {

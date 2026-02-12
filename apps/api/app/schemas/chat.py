@@ -2,8 +2,9 @@
 聊天相关 Schema
 """
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict
 
 
 class UserBrief(BaseModel):
@@ -13,8 +14,7 @@ class UserBrief(BaseModel):
     avatar: Optional[str] = None
     role: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MessageBase(BaseModel):
@@ -39,8 +39,7 @@ class MessageResponse(MessageBase):
     is_deleted: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MessageListResponse(BaseModel):
@@ -73,8 +72,7 @@ class ConversationResponse(ConversationBase):
     other_user: Optional[UserBrief] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ConversationListResponse(BaseModel):

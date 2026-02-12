@@ -1,4 +1,4 @@
-"""
+﻿"""
 种子数据脚本 - 初始化测试数据
 运行方式: python -m scripts.seed_data
 """
@@ -64,7 +64,7 @@ async def seed_data():
         # 1. 创建管理员用户
         admin_user = User(
             phone="13800000000",
-            email="admin@yilehang.com",
+            email="admin@rl.cornna.xyz",
             password_hash=get_password_hash("admin123"),
             role="admin",
             nickname="管理员",
@@ -101,14 +101,14 @@ async def seed_data():
 
         # 3. 创建教练 (8个)
         coaches_data = [
-            {"name": "张教练", "phone": "13800000001", "email": "coach1@yilehang.com", "specialties": ["篮球", "体能训练"], "hourly_rate": 200, "intro": "专业篮球教练，从业5年以上"},
-            {"name": "李教练", "phone": "13800000002", "email": "coach2@yilehang.com", "specialties": ["足球", "敏捷训练"], "hourly_rate": 180, "intro": "前职业足球运动员，专注青少年足球培训"},
-            {"name": "王教练", "phone": "13800000003", "email": "coach3@yilehang.com", "specialties": ["游泳", "体能训练"], "hourly_rate": 220, "intro": "国家一级游泳运动员，10年教学经验"},
-            {"name": "赵教练", "phone": "13800000004", "email": "coach4@yilehang.com", "specialties": ["羽毛球", "体能"], "hourly_rate": 190, "intro": "国家二级运动员，羽毛球专项教练"},
-            {"name": "孙教练", "phone": "13800000005", "email": "coach5@yilehang.com", "specialties": ["乒乓球", "协调训练"], "hourly_rate": 170, "intro": "省队退役选手，擅长青少年乒乓球启蒙"},
-            {"name": "周教练", "phone": "13800000006", "email": "coach6@yilehang.com", "specialties": ["跳绳", "体适能"], "hourly_rate": 160, "intro": "专注儿童体适能训练，让运动更有趣"},
-            {"name": "吴教练", "phone": "13800000007", "email": "coach7@yilehang.com", "specialties": ["网球", "力量训练"], "hourly_rate": 250, "intro": "持有ITF教练证书，网球专业教练"},
-            {"name": "郑教练", "phone": "13800000008", "email": "coach8@yilehang.com", "specialties": ["田径", "爆发力"], "hourly_rate": 200, "intro": "田径专项教练，专注短跑和跳跃训练"},
+            {"name": "张教练", "phone": "13800000001", "email": "coach1@rl.cornna.xyz", "specialties": ["篮球", "体能训练"], "hourly_rate": 200, "intro": "专业篮球教练，从业5年以上"},
+            {"name": "李教练", "phone": "13800000002", "email": "coach2@rl.cornna.xyz", "specialties": ["足球", "敏捷训练"], "hourly_rate": 180, "intro": "前职业足球运动员，专注青少年足球培训"},
+            {"name": "王教练", "phone": "13800000003", "email": "coach3@rl.cornna.xyz", "specialties": ["游泳", "体能训练"], "hourly_rate": 220, "intro": "国家一级游泳运动员，10年教学经验"},
+            {"name": "赵教练", "phone": "13800000004", "email": "coach4@rl.cornna.xyz", "specialties": ["羽毛球", "体能"], "hourly_rate": 190, "intro": "国家二级运动员，羽毛球专项教练"},
+            {"name": "孙教练", "phone": "13800000005", "email": "coach5@rl.cornna.xyz", "specialties": ["乒乓球", "协调训练"], "hourly_rate": 170, "intro": "省队退役选手，擅长青少年乒乓球启蒙"},
+            {"name": "周教练", "phone": "13800000006", "email": "coach6@rl.cornna.xyz", "specialties": ["跳绳", "体适能"], "hourly_rate": 160, "intro": "专注儿童体适能训练，让运动更有趣"},
+            {"name": "吴教练", "phone": "13800000007", "email": "coach7@rl.cornna.xyz", "specialties": ["网球", "力量训练"], "hourly_rate": 250, "intro": "持有ITF教练证书，网球专业教练"},
+            {"name": "郑教练", "phone": "13800000008", "email": "coach8@rl.cornna.xyz", "specialties": ["田径", "爆发力"], "hourly_rate": 200, "intro": "田径专项教练，专注短跑和跳跃训练"},
         ]
 
         coaches = []
@@ -503,7 +503,7 @@ async def seed_data():
             # 创建商家用户
             merchant_user = User(
                 phone=data["phone"],
-                email=f"merchant{len(merchants)}@yilehang.com",
+                email=f"merchant{len(merchants)}@rl.cornna.xyz",
                 password_hash=get_password_hash("merchant123"),
                 role="merchant",
                 nickname=data["name"],
@@ -569,7 +569,7 @@ async def seed_data():
         print("=" * 60)
         print("\n  管理员 (1个):")
         print("    手机号: 13800000000  密码: admin123")
-        print("    邮箱: admin@yilehang.com")
+        print("    邮箱: admin@rl.cornna.xyz")
         print("\n  家长 (6个):")
         for p in parents_data:
             print(f"    手机号: {p['phone']}  密码: parent123  ({p['nickname']})")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-易乐航部署脚本 - 部署到远程服务器
+韧翎成长计划部署脚本 - 部署到远程服务器
 """
 import subprocess
 import sys
@@ -10,7 +10,7 @@ import os
 SERVER_HOST = os.getenv("SERVER_HOST", "8.134.33.19")
 SERVER_USER = os.getenv("SERVER_USER", "root")
 SERVER_PASSWORD = os.getenv("SERVER_PASSWORD")
-DOMAIN = os.getenv("DOMAIN", "yilehang.cornna.xyz")
+DOMAIN = os.getenv("DOMAIN", "rl.cornna.xyz")
 PROJECT_DIR = os.getenv("PROJECT_DIR", "/opt/yilehang")
 
 if not SERVER_PASSWORD:
@@ -37,7 +37,7 @@ def upload_files():
     return result.returncode == 0
 
 def main():
-    print("=== 易乐航部署脚本 ===")
+    print("=== 韧翎成长计划部署脚本 ===")
     print(f"目标服务器: {SERVER_HOST}")
     print(f"域名: {DOMAIN}")
 

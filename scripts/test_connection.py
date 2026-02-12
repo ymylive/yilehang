@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 # 閰嶇疆
-API_BASE_URL = "https://yilehang.cornna.xyz/api/v1"
+API_BASE_URL = "https://rl.cornna.xyz/api/v1"
 TEST_ENDPOINTS = {
     "health": "/health",
     "docs": "/docs",

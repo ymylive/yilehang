@@ -2,24 +2,24 @@
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
-    auth,
-    students,
-    schedules,
-    training,
-    growth,
-    bookings,
-    memberships,
-    coaches,
-    reviews,
-    dashboard,
     ai,
-    notifications,
-    upload,
+    auth,
+    bookings,
     chat,
+    coaches,
+    dashboard,
     energy,
-    merchants,
+    growth,
     leaderboard,
+    memberships,
+    merchants,
+    notifications,
+    reviews,
     roles,
+    schedules,
+    students,
+    training,
+    upload,
 )
 
 api_router = APIRouter()

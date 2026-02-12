@@ -8,7 +8,7 @@
         @click="viewMessage(msg)"
       >
         <view :class="['message-icon', msg.type]">
-          <text>{{ getTypeIcon(msg.type) }}</text>
+          <wd-icon :name="getTypeIcon(msg.type)" size="34rpx" :color="getTypeIconColor(msg.type)" />
         </view>
         <view class="message-content">
           <view class="message-header">
@@ -29,12 +29,16 @@
         <text>加载中...</text>
       </view>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, onMounted } from 'vue'
+import { onPullDownRefresh } from '@dcloudio/uni-app'
 import { notificationApi } from '@/api'
+import { safeNavigate } from '@/utils/safe-nav'
 
 interface Message {
   id: number
@@ -54,13 +58,24 @@ const unreadCount = ref(0)
 
 function getTypeIcon(type: string): string {
   const map: Record<string, string> = {
-    booking: '📅',
-    reminder: '⏰',
-    feedback: '📝',
-    system: '⚙',
-    chat: '💬'
+    booking: 'calendar',
+    reminder: 'notification',
+    feedback: 'note',
+    system: 'setting',
+    chat: 'chat'
   }
-  return map[type] || '•'
+  return map[type] || 'tips'
+}
+
+function getTypeIconColor(type: string): string {
+  const map: Record<string, string> = {
+    booking: '#2e7d32',
+    reminder: '#ff8f00',
+    feedback: '#1d4ed8',
+    system: '#7e57c2',
+    chat: '#0d9488'
+  }
+  return map[type] || '#64748b'
 }
 
 function formatTime(dateStr: string): string {
@@ -79,10 +94,10 @@ function formatTime(dateStr: string): string {
 async function loadMessages() {
   loading.value = true
   try {
-    const res = await notificationApi.list()
-    messages.value = res.items || []
-    total.value = res.total || 0
-    unreadCount.value = res.unread_count || 0
+    const res: any = await notificationApi.list()
+    messages.value = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : [])
+    total.value = Number(res?.total || messages.value.length || 0)
+    unreadCount.value = Number(res?.unread_count || 0)
   } catch (error) {
     console.error('加载消息失败', error)
     uni.showToast({ title: '加载失败', icon: 'none' })
@@ -105,15 +120,15 @@ async function viewMessage(msg: Message) {
 
   // 根据类型跳转
   const routes: Record<string, string> = {
-    booking: `/pages/booking/detail?id=${msg.related_id || msg.id}`,
+    booking: `/pages/schedule/detail?id=${msg.related_id || msg.id}`,
     reminder: `/pages/schedule/detail?id=${msg.related_id || msg.id}`,
-    feedback: `/pages/review/detail?id=${msg.related_id || msg.id}`,
+    feedback: `/pages/review/create?bookingId=${msg.related_id || msg.id}`,
     chat: `/pages/chat/conversation?id=${msg.related_id || msg.id}`,
     system: ''
   }
   const url = routes[msg.type]
   if (url) {
-    uni.navigateTo({ url })
+    safeNavigate(url)
   }
 }
 
@@ -131,7 +146,8 @@ onPullDownRefresh(async () => {
 <style lang="scss" scoped>
 .messages-page {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background: #f7f9fc;
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
 }
 
 .message-list {
@@ -141,41 +157,50 @@ onPullDownRefresh(async () => {
 .message-item {
   display: flex;
   align-items: flex-start;
-  background-color: #fff;
+  background: #fff;
   padding: 24rpx;
-  border-radius: 12rpx;
+  border-radius: 16rpx;
   margin-bottom: 16rpx;
   position: relative;
+  box-shadow: 0 8rpx 18rpx rgba(30, 41, 59, 0.06);
+  border: 1rpx solid rgba(226, 232, 240, 0.9);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  cursor: pointer;
+
+  &:active {
+    transform: translateY(2rpx);
+    box-shadow: 0 6rpx 16rpx rgba(37, 99, 235, 0.16);
+  }
 
   .message-icon {
     width: 72rpx;
     height: 72rpx;
-    border-radius: 50%;
+    border-radius: 20rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32rpx;
     margin-right: 20rpx;
     flex-shrink: 0;
+    border: 1rpx solid rgba(204, 215, 231, 0.8);
 
     &.booking {
-      background-color: #e8f5e9;
+      background: linear-gradient(135deg, #e8f5e9, #f3fbf4);
     }
 
     &.reminder {
-      background-color: #fff3e0;
+      background: linear-gradient(135deg, #fff3e0, #fff8ed);
     }
 
     &.feedback {
-      background-color: #e3f2fd;
+      background: linear-gradient(135deg, #e3f2fd, #eff7ff);
     }
 
     &.system {
-      background-color: #f3e5f5;
+      background: linear-gradient(135deg, #f3e5f5, #f8eef9);
     }
 
     &.chat {
-      background-color: #e0f7fa;
+      background: linear-gradient(135deg, #e0f7fa, #ebfbfc);
     }
   }
 }

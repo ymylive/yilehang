@@ -1,12 +1,11 @@
-<template>
+﻿<template>
   <view class="page">
     <view class="header">
       <text class="title">精彩瞬间</text>
-      <text class="desc">记录孩子成长的每一刻</text>
+      <text class="desc">记录每一次成长高光时刻</text>
     </view>
 
-    <!-- 相册列表 -->
-    <view class="album-grid">
+    <view class="album-grid" v-if="moments.length">
       <view class="album-item" v-for="item in moments" :key="item.id" @click="viewMoment(item)">
         <image class="thumbnail" :src="item.thumbnail" mode="aspectFill" />
         <view class="overlay" v-if="item.type === 'video'">
@@ -18,26 +17,37 @@
       </view>
     </view>
 
-    <!-- 空状态 -->
-    <view class="empty" v-if="!moments.length">
-      <text class="icon">📷</text>
+    <view class="empty" v-else>
+      <view class="icon">
+        <wd-icon name="camera" size="66rpx" color="#94a3b8" />
+      </view>
       <text class="text">暂无精彩瞬间</text>
-      <text class="hint">完成训练后会自动记录</text>
+      <text class="hint">完成训练后会自动生成内容</text>
     </view>
+
+    <DynamicTabBar />
   </view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, onMounted } from 'vue'
+import { safeNavigate } from '@/utils/safe-nav'
 
-const moments = ref<any[]>([])
+interface MomentItem {
+  id: number
+  type: 'image' | 'video'
+  thumbnail: string
+  created_at: string
+}
+
+const moments = ref<MomentItem[]>([])
 
 onMounted(() => {
   loadMoments()
 })
 
 function loadMoments() {
-  // 示例数据
   moments.value = [
     { id: 1, type: 'image', thumbnail: '/static/demo/moment1.jpg', created_at: '2024-02-01' },
     { id: 2, type: 'video', thumbnail: '/static/demo/moment2.jpg', created_at: '2024-01-28' },
@@ -47,67 +57,73 @@ function loadMoments() {
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr)
-  return `${date.getMonth() + 1}月${date.getDate()}日`
+  return `${date.getMonth() + 1}-${date.getDate()}`
 }
 
-function viewMoment(item: any) {
+function viewMoment(item: MomentItem) {
   if (item.type === 'video') {
-    uni.navigateTo({ url: `/pages/moments/video?id=${item.id}` })
-  } else {
-    uni.previewImage({
-      urls: [item.thumbnail],
-      current: item.thumbnail
-    })
+    const opened = safeNavigate(`/pages/moments/video?id=${item.id}`, 'navigateTo', '视频页暂未开放')
+    if (!opened) {
+      uni.previewImage({
+        urls: [item.thumbnail],
+        current: item.thumbnail
+      })
+    }
+    return
   }
+
+  uni.previewImage({
+    urls: [item.thumbnail],
+    current: item.thumbnail
+  })
 }
 </script>
 
 <style scoped>
 .page {
   min-height: 100vh;
-  background: #FFFBF5;
-  padding-bottom: 120rpx;
+  background: linear-gradient(180deg, #f8fbff 0%, #f3f7ff 35%, #eef4ff 100%);
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
 }
 
 .header {
-  padding: 60rpx 30rpx 40rpx;
-  background: linear-gradient(135deg, #FFB347, #FF8800);
+  padding: 60rpx 30rpx 36rpx;
+  background: linear-gradient(135deg, #ffb347, #ff8800);
   color: #fff;
-  animation: fadeUp 0.3s ease-out;
+  border-radius: 0 0 34rpx 34rpx;
 }
 
 .header .title {
   font-size: 44rpx;
-  font-weight: bold;
+  font-weight: 700;
   display: block;
 }
 
 .header .desc {
-  font-size: 28rpx;
+  font-size: 26rpx;
   opacity: 0.9;
-  margin-top: 12rpx;
+  margin-top: 10rpx;
 }
 
 .album-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4rpx;
-  padding: 4rpx;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10rpx;
+  padding: 20rpx;
 }
 
 .album-item {
   position: relative;
   aspect-ratio: 1;
-  animation: scaleIn 0.3s ease-out;
-  animation-fill-mode: both;
+  border-radius: 14rpx;
+  overflow: hidden;
+  box-shadow: 0 8rpx 18rpx rgba(25, 52, 92, 0.12);
+  transition: transform 180ms ease;
 }
 
-.album-item:nth-child(1) { animation-delay: 0.05s; }
-.album-item:nth-child(2) { animation-delay: 0.1s; }
-.album-item:nth-child(3) { animation-delay: 0.15s; }
-.album-item:nth-child(4) { animation-delay: 0.2s; }
-.album-item:nth-child(5) { animation-delay: 0.25s; }
-.album-item:nth-child(6) { animation-delay: 0.3s; }
+.album-item:active {
+  transform: scale(0.98);
+}
 
 .thumbnail {
   width: 100%;
@@ -117,28 +133,25 @@ function viewMoment(item: any) {
 
 .overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .play-icon {
-  font-size: 60rpx;
+  font-size: 54rpx;
   color: #fff;
 }
 
 .info {
   position: absolute;
-  bottom: 0;
   left: 0;
   right: 0;
+  bottom: 0;
   padding: 10rpx;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.5));
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.48));
 }
 
 .date {
@@ -155,28 +168,24 @@ function viewMoment(item: any) {
 }
 
 .empty .icon {
-  font-size: 100rpx;
+  width: 118rpx;
+  height: 118rpx;
+  border-radius: 28rpx;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .empty .text {
   font-size: 32rpx;
-  color: #333;
+  color: #1e293b;
   margin-top: 20rpx;
 }
 
 .empty .hint {
   font-size: 26rpx;
-  color: #999;
+  color: #64748b;
   margin-top: 10rpx;
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20rpx); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
 }
 </style>

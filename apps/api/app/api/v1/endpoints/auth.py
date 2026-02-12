@@ -1,22 +1,34 @@
 """Authentication API endpoints."""
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.core.security import verify_password, get_current_user
+from app.core.security import get_current_user, verify_password
 from app.models import User
 from app.schemas import (
-    UserCreate, UserLogin, WechatLogin, WechatPhoneLogin,
-    EmailCodeRequest, EmailCodeLogin, EmailRegister,
-    PasswordReset, PasswordChange,
-    UserUpdate, UserResponse, UserDetailResponse, Token,
-    StudentRegister, StudentResponse,
-    CoachRegister, CoachResponse
+    CoachRegister,
+    CoachResponse,
+    EmailCodeLogin,
+    EmailCodeRequest,
+    EmailRegister,
+    PasswordChange,
+    PasswordReset,
+    StudentRegister,
+    StudentResponse,
+    Token,
+    UserCreate,
+    UserDetailResponse,
+    UserLogin,
+    UserResponse,
+    UserUpdate,
+    WechatLogin,
+    WechatPhoneLogin,
 )
-from app.services.auth_service import AuthService, WechatService, EmailService
-from sqlalchemy.orm import selectinload
+from app.services.auth_service import AuthService, EmailService, WechatService
 
 router = APIRouter()
 
@@ -55,6 +67,63 @@ def _token_response(user: User) -> Token:
         expires_in=expires_in,
         user=UserResponse.model_validate(user)
     )
+
+
+def _wechat_error_http_status(message: str) -> int:
+    msg = (message or "").lower()
+    login_credential_cn = "\u767b\u5f55\u51ed\u8bc1"
+    if "not configured" in msg:
+        return status.HTTP_503_SERVICE_UNAVAILABLE
+    if (
+        "40029" in msg
+        or "invalid code" in msg
+        or login_credential_cn in message
+        or "鐧诲綍鍑瘉" in message
+        or "code is empty" in msg
+    ):
+        return status.HTTP_400_BAD_REQUEST
+    if "timeout" in msg or "瓒呮椂" in message:
+        return status.HTTP_502_BAD_GATEWAY
+    return status.HTTP_500_INTERNAL_SERVER_ERROR
+
+
+def _is_placeholder_wechat_nickname(nickname: Optional[str]) -> bool:
+    raw = (nickname or "").strip()
+    if not raw:
+        return True
+
+    lowered = raw.lower()
+    wechat_placeholder = "\u5fae\u4fe1\u7528\u6237"
+    wechat_placeholder_garbled = "寰俊鐢ㄦ埛"
+    if raw.startswith(wechat_placeholder) or raw.startswith(wechat_placeholder_garbled):
+        return True
+    if lowered in {"newuser", "wechat user", "wechat_user"}:
+        return True
+    if lowered.startswith("newuser") or lowered.startswith("user_"):
+        return True
+    return False
+
+
+def _normalize_wechat_nickname(nickname: Optional[str], wechat_openid: str) -> str:
+    raw = (nickname or "").strip()[:50]
+    if raw and not _is_placeholder_wechat_nickname(raw):
+        return raw
+    suffix = (wechat_openid or "").strip()[-6:] or "wechat"
+    return f"\u7528\u6237{suffix}"[:50]
+
+
+def _requires_wechat_role_selection(user: User) -> bool:
+    """
+    Detect legacy/incomplete WeChat accounts that were auto-created before
+    explicit role selection became mandatory.
+    """
+    if not user.wechat_openid:
+        return False
+    if user.email or user.phone:
+        return False
+    if user.role != "parent":
+        return False
+    return _is_placeholder_wechat_nickname(user.nickname)
 
 
 # ============ Registration ============
@@ -182,24 +251,12 @@ async def register_with_email(data: EmailRegister, db: AsyncSession = Depends(ge
         nickname=data.nickname
     )
 
-    if data.role == "student":
-        await AuthService.create_student_profile(
-            db=db,
-            user_id=user.id,
-            name=data.nickname or data.email.split("@")[0]
-        )
-    elif data.role == "coach":
-        await AuthService.create_coach_profile(
-            db=db,
-            user_id=user.id,
-            name=data.nickname or data.email.split("@")[0]
-        )
-    elif data.role == "merchant":
-        await AuthService.create_merchant_profile(
-            db=db,
-            user_id=user.id,
-            name=data.nickname or data.email.split("@")[0]
-        )
+    await _create_role_profile(
+        db=db,
+        user_id=user.id,
+        role=data.role,
+        name=data.nickname or data.email.split("@")[0]
+    )
 
     await db.commit()
     return _token_response(user)
@@ -227,6 +284,109 @@ async def register_coach(coach_data: CoachRegister, db: AsyncSession = Depends(g
         name=coach_data.name,
         specialty=specialty_str,
         introduction=coach_data.introduction
+    )
+
+    await db.commit()
+    return _token_response(user)
+
+
+@router.post("/register/with-role", response_model=Token, summary="Register with role selection")
+async def register_with_role(
+    payload: Optional[dict[str, object]] = Body(None),
+    email: Optional[str] = None,
+    wechat_openid: Optional[str] = None,
+    role: Optional[str] = None,
+    nickname: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Register user with explicit role selection (for email or WeChat login)."""
+    payload = payload or {}
+    if email is None:
+        email = payload.get("email")
+    if wechat_openid is None:
+        wechat_openid = payload.get("wechat_openid")
+    if role is None:
+        role = payload.get("role")
+    if nickname is None:
+        nickname = payload.get("nickname")
+
+    email = str(email).strip() if email is not None else None
+    wechat_openid = str(wechat_openid).strip() if wechat_openid is not None else None
+    role = str(role).strip() if role is not None else None
+    nickname = str(nickname).strip() if nickname is not None else None
+
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Role is required"
+        )
+
+    if role not in ["parent", "student", "coach", "merchant"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid role"
+        )
+
+    if not email and not wechat_openid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either email or wechat_openid is required"
+        )
+
+    if email:
+        existing_user = await AuthService.get_user_by_email(db, email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+
+    if wechat_openid:
+        existing_user = await AuthService.get_user_by_openid(db, wechat_openid)
+        if existing_user:
+            # Backward compatibility: allow legacy auto-created WeChat accounts
+            # (without email/phone) to complete explicit role selection.
+            if not existing_user.email and not existing_user.phone:
+                existing_user.role = role
+                existing_user.nickname = _normalize_wechat_nickname(
+                    nickname or existing_user.nickname,
+                    wechat_openid,
+                )
+
+                await _create_role_profile(
+                    db=db,
+                    user_id=existing_user.id,
+                    role=role,
+                    name=existing_user.nickname or f"user_{existing_user.id}"
+                )
+
+                await db.commit()
+                await db.refresh(existing_user)
+                return _token_response(existing_user)
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="WeChat account already registered"
+            )
+
+    normalized_nickname = nickname
+    if wechat_openid:
+        normalized_nickname = _normalize_wechat_nickname(nickname, wechat_openid)
+
+    user = await AuthService.create_user(
+        db=db,
+        email=email,
+        password="",
+        role=role,
+        nickname=normalized_nickname,
+        openid=wechat_openid
+    )
+
+    await _create_role_profile(
+        db=db,
+        user_id=user.id,
+        role=role,
+        name=normalized_nickname or (email.split("@")[0] if email else f"user_{user.id}")
     )
 
     await db.commit()
@@ -277,9 +437,6 @@ async def send_email_code(data: EmailCodeRequest):
         "delivery": result.get("delivery") or "smtp"
     }
 
-    if result.get("dev_code"):
-        response["dev_code"] = result.get("dev_code")
-
     return response
 
 
@@ -294,14 +451,10 @@ async def login_with_email(login_data: EmailCodeLogin, db: AsyncSession = Depend
 
     user = await AuthService.get_user_by_email(db, login_data.email)
     if not user:
-        # Auto-register on first email code login
-        user = await AuthService.create_user(
-            db=db,
-            email=login_data.email,
-            password="",
-            role="parent"
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="USER_NOT_REGISTERED"
         )
-        await db.commit()
 
     _ensure_active(user)
     return _token_response(user)
@@ -311,42 +464,47 @@ async def login_with_email(login_data: EmailCodeLogin, db: AsyncSession = Depend
 async def wechat_login(wechat_data: WechatLogin, db: AsyncSession = Depends(get_db)):
     try:
         session_info = await WechatService.code2session(wechat_data.code, wechat_data.device_id)
-        openid = session_info.get("openid")
+        openid = (session_info.get("openid") or "").strip()
 
         if not openid:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to get WeChat info"
+                detail="Failed to get WeChat openid from session"
             )
+
+        incoming_nickname = ((wechat_data.user_info or {}).get("nickName") or "").strip()[:50]
+        incoming_avatar = ((wechat_data.user_info or {}).get("avatarUrl") or "").strip()
 
         user = await AuthService.get_user_by_openid(db, openid)
-
         if not user:
-            nickname = None
-            avatar = None
-            if wechat_data.user_info:
-                nickname = (wechat_data.user_info.get("nickName") or "").strip()[:50]
-                avatar = wechat_data.user_info.get("avatarUrl")
-
-            user = User(
-                wechat_openid=openid,
-                nickname=nickname or "微信用户",
-                avatar=avatar,
-                role="parent",
-                status="active"
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "WECHAT_ROLE_REQUIRED",
+                    "message": "First WeChat login requires role selection",
+                    "wechat_openid": openid,
+                    "nickname": incoming_nickname or ""
+                }
             )
-            db.add(user)
-            await db.flush()
-            await db.refresh(user)
-            await db.commit()
-        elif wechat_data.user_info:
+
+        if _requires_wechat_role_selection(user):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "WECHAT_ROLE_REQUIRED",
+                    "message": "First WeChat login requires role selection",
+                    "wechat_openid": openid,
+                    "nickname": incoming_nickname or user.nickname or ""
+                }
+            )
+
+        if wechat_data.user_info:
             profile_updated = False
-            incoming_nickname = (wechat_data.user_info.get("nickName") or "").strip()[:50]
             if incoming_nickname and user.nickname != incoming_nickname:
                 user.nickname = incoming_nickname
                 profile_updated = True
-            if wechat_data.user_info.get("avatarUrl") and user.avatar != wechat_data.user_info.get("avatarUrl"):
-                user.avatar = wechat_data.user_info.get("avatarUrl")
+            if incoming_avatar and user.avatar != incoming_avatar:
+                user.avatar = incoming_avatar
                 profile_updated = True
             if profile_updated:
                 await db.commit()
@@ -358,11 +516,19 @@ async def wechat_login(wechat_data: WechatLogin, db: AsyncSession = Depends(get_
     except HTTPException:
         raise
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        message = str(e)
+        logger.error(f"WeChat login error: {message}", exc_info=True)
+        http_status = _wechat_error_http_status(message)
+        if http_status != status.HTTP_500_INTERNAL_SERVER_ERROR:
+            detail = message
+        else:
+            detail = f"WeChat login failed: {message}"
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"WeChat login failed: {str(e)}"
+            status_code=http_status,
+            detail=detail
         )
-
 
 @router.post("/login/wechat-phone", response_model=Token, summary="WeChat phone login")
 async def wechat_phone_login(data: WechatPhoneLogin, db: AsyncSession = Depends(get_db)):
@@ -405,9 +571,15 @@ async def wechat_phone_login(data: WechatPhoneLogin, db: AsyncSession = Depends(
     except HTTPException:
         raise
     except Exception as e:
+        message = str(e)
+        http_status = _wechat_error_http_status(message)
+        if http_status != status.HTTP_500_INTERNAL_SERVER_ERROR:
+            detail = message
+        else:
+            detail = f"Login failed: {message}"
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Login failed: {str(e)}"
+            status_code=http_status,
+            detail=detail
         )
 
 
@@ -425,7 +597,10 @@ async def reset_password(data: PasswordReset, db: AsyncSession = Depends(get_db)
     if not is_allowed:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Too many password reset attempts. Please try again in {seconds_until_reset} seconds."
+            detail=(
+                "Too many password reset attempts. "
+                f"Please try again in {seconds_until_reset} seconds."
+            ),
         )
 
     _validate_password_strength(data.new_password)
@@ -452,7 +627,7 @@ async def reset_password(data: PasswordReset, db: AsyncSession = Depends(get_db)
 @router.post("/password/change", summary="Change password")
 async def change_password(
     data: PasswordChange,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict[str, object] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     _validate_password_strength(data.new_password)
@@ -479,7 +654,7 @@ async def change_password(
 
 @router.get("/me", response_model=UserDetailResponse, summary="Get current user")
 async def get_current_user_info(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict[str, object] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     # Preload relations to avoid async lazy-load errors (MissingGreenlet).
@@ -518,7 +693,7 @@ async def get_current_user_info(
 @router.put("/me", response_model=UserResponse, summary="Update current user")
 async def update_user_info(
     data: UserUpdate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict[str, object] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     user = await AuthService.get_user_by_id(db, current_user["user_id"])
@@ -557,7 +732,7 @@ async def update_user_info(
 
 
 @router.post("/logout", summary="Logout")
-async def logout(current_user: dict = Depends(get_current_user)):
+async def logout(current_user: dict[str, object] = Depends(get_current_user)):
     return {"message": "Logout success"}
 
 
@@ -566,7 +741,7 @@ async def logout(current_user: dict = Depends(get_current_user)):
 @router.post("/students", response_model=StudentResponse, summary="Add student")
 async def add_student(
     data: StudentRegister,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict[str, object] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     if current_user["role"] not in ["parent", "admin"]:
@@ -575,9 +750,18 @@ async def add_student(
             detail="Permission denied"
         )
 
+    student_user = await AuthService.create_user(
+        db=db,
+        email=None,
+        phone=None,
+        password="",
+        role="student",
+        nickname=data.name
+    )
+
     student = await AuthService.create_student_profile(
         db=db,
-        user_id=None,
+        user_id=student_user.id,
         name=data.name,
         gender=data.gender,
         birth_date=data.birth_date,
@@ -588,15 +772,19 @@ async def add_student(
     return StudentResponse.model_validate(student)
 
 
-@router.post("/students/{student_id}/create-account", response_model=Token, summary="Create student account")
+@router.post(
+    "/students/{student_id}/create-account",
+    response_model=Token,
+    summary="Create student account",
+)
 async def create_student_account(
     student_id: int,
     data: UserCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict[str, object] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Parent creates an independent account for their student."""
-    from app.models import Student, ParentStudentRelation
+    from app.models import ParentStudentRelation, Student
 
     if current_user["role"] not in ["parent", "admin"]:
         raise HTTPException(
@@ -668,7 +856,7 @@ async def dev_get_email_code(email: str):
     """Dev-only endpoint to retrieve the current verification code for testing.
     Should be disabled in production."""
     from app.core.config import settings
-    if not settings.DEBUG:
+    if not (settings.DEBUG and settings.DEV_PRINT_CODE):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Endpoint not available"
@@ -681,3 +869,4 @@ async def dev_get_email_code(email: str):
             detail="No active code for this email"
         )
     return {"email": email, "code": code}
+

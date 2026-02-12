@@ -1,17 +1,19 @@
 [project]
 name = "yilehang-api"
 version = "1.0.0"
-description = "易乐航·ITS智慧体教云平台 - 后端API"
+description = "韧翎成长计划 - 后端API"
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.109.0",
     "uvicorn[standard]>=0.27.0",
     "sqlalchemy>=2.0.25",
     "asyncpg>=0.29.0",
+    "psycopg2-binary>=2.9.9",
     "alembic>=1.13.1",
     "pydantic>=2.5.3",
     "pydantic-settings>=2.1.0",
     "python-jose[cryptography]>=3.3.0",
+    "python-multipart>=0.0.9",
     "passlib[bcrypt]>=1.7.4",
     "httpx>=0.26.0",
 ]
@@ -20,6 +22,7 @@ dependencies = [
 dev = [
     "pytest>=7.4.4",
     "pytest-asyncio>=0.23.3",
+    "aiosqlite>=0.20.0",
     "black>=24.1.0",
     "ruff>=0.1.13",
 ]
@@ -30,4 +33,6 @@ target-version = ['py310']
 
 [tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
 select = ["E", "F", "W", "I"]

@@ -1,10 +1,9 @@
 """
 RBAC 角色权限相关 schemas
 """
-from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, Field
+from typing import List, Optional
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # ============ Role ============
 
@@ -22,8 +21,7 @@ class RoleResponse(RoleBase):
     is_active: bool = True
     sort_order: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserRolesResponse(BaseModel):
@@ -50,8 +48,7 @@ class PermissionResponse(PermissionBase):
     description: Optional[str] = None
     is_active: bool = True
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserPermissionsResponse(BaseModel):
@@ -83,8 +80,7 @@ class MenuResponse(MenuBase):
     permission_code: Optional[str] = None
     children: List["MenuResponse"] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserMenusResponse(BaseModel):

@@ -1,4 +1,4 @@
-# 易乐航官网独立部署
+# 韧翎成长计划官网独立部署
 
 基于 nginx:alpine 的静态官网独立部署模块。
 
@@ -30,7 +30,7 @@ docker compose -f deploy/website/docker-compose.yml down
 
 ## 域名与 SSL
 
-nginx 配置中 `server_name` 为 `www.yilehang.com yilehang.com`。
+nginx 配置中 `server_name` 为 `rl.cornna.xyz`。
 
 ### Let's Encrypt SSL 配置
 
@@ -39,7 +39,7 @@ nginx 配置中 `server_name` 为 `www.yilehang.com yilehang.com`。
 2. 使用 acme.sh 签发证书（在宿主机执行）：
 
 ```bash
-acme.sh --issue -d yilehang.com -d www.yilehang.com --webroot /var/lib/docker/volumes/deploy_website_acme-data/_data
+acme.sh --issue -d rl.cornna.xyz --webroot /var/lib/docker/volumes/deploy_website_acme-data/_data
 ```
 
 3. 签发成功后，在 nginx.conf 中添加 443 server block 并挂载证书文件，或在宿主机使用反向代理终结 SSL。

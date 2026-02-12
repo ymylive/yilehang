@@ -77,7 +77,9 @@
     <!-- 结果弹窗 -->
     <view class="result-modal" v-if="showResult">
       <view class="result-content">
-        <view class="result-icon">🎉</view>
+        <view class="result-icon">
+          <wd-icon name="star-filled" size="46rpx" color="#f59e0b" />
+        </view>
         <text class="result-title">训练完成</text>
         <view class="result-stats">
           <view class="result-item">
@@ -470,7 +472,14 @@ function onCameraError(e: any) {
 }
 
 .result-icon {
-  font-size: 60rpx;
+  width: 96rpx;
+  height: 96rpx;
+  margin: 0 auto;
+  border-radius: 24rpx;
+  background: #fff7ed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 16rpx;
 }
 

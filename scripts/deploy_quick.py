@@ -75,8 +75,8 @@ services:
     volumes:
       - /opt/yilehang/apps/api:/app
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres123@postgres:5432/yilehang
-      SECRET_KEY: yilehang-secret-2024
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-change-me-in-production}@postgres:5432/yilehang
+      SECRET_KEY: ${SECRET_KEY:?set-in-env}
     networks:
       - yilehang
     depends_on:

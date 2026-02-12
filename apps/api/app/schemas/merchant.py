@@ -2,9 +2,9 @@
 商家系统 Schemas
 """
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, Field
+from typing import List, Optional
 
+from pydantic import BaseModel, ConfigDict
 
 # ============ 商家 ============
 
@@ -49,8 +49,7 @@ class MerchantResponse(MerchantBase):
     longitude: Optional[float] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MerchantListResponse(BaseModel):
@@ -112,8 +111,7 @@ class RedeemItemResponse(RedeemItemBase):
     merchant_name: Optional[str] = None
     merchant_logo: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RedeemItemListResponse(BaseModel):
@@ -149,8 +147,7 @@ class RedeemOrderResponse(BaseModel):
     merchant_name: Optional[str] = None
     merchant_address: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RedeemOrderListResponse(BaseModel):
@@ -197,5 +194,4 @@ class MerchantUserResponse(BaseModel):
     is_active: bool
     merchant_name: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

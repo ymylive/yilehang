@@ -1,23 +1,66 @@
 """
 排课相关API
 """
+from datetime import datetime, timezone
 from typing import List
-from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
 
-from app.core import get_db, get_current_user
-from app.models import Schedule, Attendance, Course
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_db
+from app.core.security import fetch_user_from_token, get_current_user
+from app.models import Attendance, Coach, Course, ParentStudentRelation, Schedule, Student
 from app.schemas import (
-    ScheduleCreate, ScheduleUpdate, ScheduleResponse,
-    AttendanceCreate, CheckInRequest, AttendanceResponse
+    AttendanceCreate,
+    AttendanceResponse,
+    CheckInRequest,
+    ScheduleCreate,
+    ScheduleResponse,
+    ScheduleUpdate,
 )
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[ScheduleResponse])
+async def _get_permitted_student_ids(db: AsyncSession, user) -> set[int]:
+    if user.role == "admin":
+        return set()
+
+    if user.role == "student":
+        result = await db.execute(select(Student.id).where(Student.user_id == user.id))
+        return set(result.scalars().all())
+
+    if user.role == "parent":
+        relation_result = await db.execute(
+            select(ParentStudentRelation.student_id).where(
+                ParentStudentRelation.parent_id == user.id
+            )
+        )
+        direct_result = await db.execute(select(Student.id).where(Student.parent_id == user.id))
+        return set(relation_result.scalars().all()) | set(direct_result.scalars().all())
+
+    if user.role == "coach":
+        coach_result = await db.execute(select(Coach.id).where(Coach.user_id == user.id).limit(1))
+        coach_id = coach_result.scalar_one_or_none()
+        if not coach_id:
+            return set()
+        result = await db.execute(select(Student.id).where(Student.coach_id == coach_id))
+        return set(result.scalars().all())
+
+    return set()
+
+
+async def _ensure_student_access(student_id: int, db: AsyncSession, user) -> None:
+    if user.role == "admin":
+        return
+
+    permitted_student_ids = await _get_permitted_student_ids(db, user)
+    if student_id not in permitted_student_ids:
+        raise HTTPException(status_code=403, detail="无权操作该学员")
+
+
+@router.get("", response_model=List[ScheduleResponse])
 async def list_schedules(
     start_date: datetime = None,
     end_date: datetime = None,
@@ -25,9 +68,10 @@ async def list_schedules(
     skip: int = 0,
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
     """获取排课列表"""
+    await fetch_user_from_token(db, current_user_data)
     query = select(Schedule).join(Course)
 
     filters = []
@@ -48,13 +92,14 @@ async def list_schedules(
     return [ScheduleResponse.model_validate(s) for s in schedules]
 
 
-@router.post("/", response_model=ScheduleResponse)
+@router.post("", response_model=ScheduleResponse)
 async def create_schedule(
     schedule_data: ScheduleCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
     """创建排课"""
+    await fetch_user_from_token(db, current_user_data)
     schedule = Schedule(**schedule_data.model_dump())
     db.add(schedule)
     await db.flush()
@@ -66,9 +111,10 @@ async def create_schedule(
 async def get_schedule(
     schedule_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
     """获取排课详情"""
+    await fetch_user_from_token(db, current_user_data)
     result = await db.execute(select(Schedule).where(Schedule.id == schedule_id))
     schedule = result.scalar_one_or_none()
     if not schedule:
@@ -81,9 +127,10 @@ async def update_schedule(
     schedule_id: int,
     schedule_data: ScheduleUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
     """更新排课"""
+    await fetch_user_from_token(db, current_user_data)
     result = await db.execute(select(Schedule).where(Schedule.id == schedule_id))
     schedule = result.scalar_one_or_none()
     if not schedule:
@@ -102,9 +149,16 @@ async def enroll_schedule(
     schedule_id: int,
     attendance_data: AttendanceCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
     """报名课程"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
+    if attendance_data.schedule_id != schedule_id:
+        raise HTTPException(status_code=400, detail="请求中的 schedule_id 与路径不一致")
+
+    await _ensure_student_access(attendance_data.student_id, db, current_user)
+
     # 检查排课是否存在
     result = await db.execute(select(Schedule).where(Schedule.id == schedule_id))
     schedule = result.scalar_one_or_none()
@@ -148,9 +202,16 @@ async def checkin_schedule(
     schedule_id: int,
     checkin_data: CheckInRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
     """签到"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
+    if checkin_data.schedule_id != schedule_id:
+        raise HTTPException(status_code=400, detail="请求中的 schedule_id 与路径不一致")
+
+    await _ensure_student_access(checkin_data.student_id, db, current_user)
+
     # 查找考勤记录
     result = await db.execute(
         select(Attendance).where(
@@ -168,7 +229,7 @@ async def checkin_schedule(
         raise HTTPException(status_code=400, detail="已签到")
 
     # 更新签到状态
-    attendance.check_in_time = datetime.utcnow()
+    attendance.check_in_time = datetime.now(timezone.utc)
     attendance.check_in_method = checkin_data.check_in_method
     attendance.status = "checked_in"
 
@@ -181,9 +242,10 @@ async def checkin_schedule(
 async def list_attendances(
     schedule_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
     """获取课程考勤列表"""
+    await fetch_user_from_token(db, current_user_data)
     result = await db.execute(
         select(Attendance).where(Attendance.schedule_id == schedule_id)
     )

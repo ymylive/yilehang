@@ -199,8 +199,8 @@ async function loadData(testId: number) {
     student.value = await studentApi.get(userStore.currentStudent.id)
 
     // 获取体测历史
-    const history = await growthApi.getFitnessHistory(userStore.currentStudent.id, 0, 20)
-    const items = Array.isArray(history) ? history : (history.items || [])
+    const history: any = await growthApi.getFitnessHistory(userStore.currentStudent.id, 0, 20)
+    const items = Array.isArray(history) ? history : (Array.isArray(history?.items) ? history.items : [])
 
     // 找到当前记录和上一条记录
     const currentIndex = items.findIndex((item: any) => item.id === testId)

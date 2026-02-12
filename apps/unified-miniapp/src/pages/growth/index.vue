@@ -68,10 +68,12 @@
         </view>
       </view>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, onMounted, nextTick } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { studentApi, growthApi } from '@/api'

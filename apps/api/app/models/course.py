@@ -1,18 +1,24 @@
 """
 课程相关数据模型
 """
-from datetime import datetime
-from typing import Optional, List
-from enum import Enum
 
-from sqlalchemy import String, Integer, DateTime, ForeignKey, Numeric, Text
+from datetime import datetime, timezone
+from enum import Enum
+from typing import TYPE_CHECKING, List, Optional
+
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
+if TYPE_CHECKING:
+    from app.models.booking import Booking
+    from app.models.user import Coach
+
 
 class CourseType(str, Enum):
     """课程类型"""
+
     GROUP = "group"  # 团课
     PRIVATE = "private"  # 私教
     TRIAL = "trial"  # 体验课
@@ -20,6 +26,7 @@ class CourseType(str, Enum):
 
 class CourseCategory(str, Enum):
     """课程分类"""
+
     BASKETBALL = "basketball"
     FOOTBALL = "football"
     SWIMMING = "swimming"
@@ -32,6 +39,7 @@ class CourseCategory(str, Enum):
 
 class Course(Base):
     """课程表"""
+
     __tablename__ = "courses"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -44,8 +52,14 @@ class Course(Base):
     max_students: Mapped[int] = mapped_column(Integer, default=20)
     price: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
     status: Mapped[str] = mapped_column(String(20), default="active")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     # 关系
     schedules: Mapped[List["Schedule"]] = relationship("Schedule", back_populates="course")
@@ -53,6 +67,7 @@ class Course(Base):
 
 class Venue(Base):
     """场地表"""
+
     __tablename__ = "venues"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -60,7 +75,9 @@ class Venue(Base):
     address: Mapped[Optional[str]] = mapped_column(String(255))
     capacity: Mapped[int] = mapped_column(Integer, default=50)
     status: Mapped[str] = mapped_column(String(20), default="active")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
 
     # 关系
     schedules: Mapped[List["Schedule"]] = relationship("Schedule", back_populates="venue")
@@ -68,6 +85,7 @@ class Venue(Base):
 
 class Schedule(Base):
     """排课表"""
+
     __tablename__ = "schedules"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -81,9 +99,17 @@ class Schedule(Base):
     max_capacity: Mapped[int] = mapped_column(Integer, default=20)  # 最大容量
     booking_deadline: Mapped[int] = mapped_column(Integer, default=60)  # 预约截止（分钟）
     cancel_deadline: Mapped[int] = mapped_column(Integer, default=120)  # 取消截止（分钟）
-    status: Mapped[str] = mapped_column(String(20), default="scheduled")  # scheduled/ongoing/completed/cancelled
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    status: Mapped[str] = mapped_column(
+        String(20), default="scheduled"
+    )  # scheduled/ongoing/completed/cancelled
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     # 关系
     course: Mapped["Course"] = relationship("Course", back_populates="schedules")
@@ -95,6 +121,7 @@ class Schedule(Base):
 
 class Attendance(Base):
     """考勤表"""
+
     __tablename__ = "attendances"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -102,8 +129,12 @@ class Attendance(Base):
     student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id"))
     check_in_time: Mapped[Optional[datetime]] = mapped_column(DateTime)
     check_in_method: Mapped[Optional[str]] = mapped_column(String(20))  # qrcode/manual/face
-    status: Mapped[str] = mapped_column(String(20), default="enrolled")  # enrolled/checked_in/absent/leave
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    status: Mapped[str] = mapped_column(
+        String(20), default="enrolled"
+    )  # enrolled/checked_in/absent/leave
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
 
     # 关系
     schedule: Mapped["Schedule"] = relationship("Schedule", back_populates="attendances")

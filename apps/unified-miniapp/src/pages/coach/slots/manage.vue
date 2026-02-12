@@ -2,7 +2,9 @@
   <view class="slots-page">
     <!-- 说明 -->
     <view class="tips-card">
-      <text class="tips-icon">💡</text>
+      <view class="tips-icon">
+        <wd-icon name="tips" size="30rpx" color="#1976d2" />
+      </view>
       <text class="tips-text">设置您每周的可约时段，学员将在这些时段内预约您的课程</text>
     </view>
 
@@ -260,7 +262,13 @@ onMounted(() => {
   border-radius: 12rpx;
 
   .tips-icon {
-    font-size: 32rpx;
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 16rpx;
+    background: #eaf4ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-right: 16rpx;
   }
 

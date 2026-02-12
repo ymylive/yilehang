@@ -3,6 +3,8 @@
  * 根据用户角色控制页面访问权限
  */
 
+import { trackEvent } from '@/utils/telemetry'
+
 export type UserRole = 'admin' | 'coach' | 'parent' | 'student'
 
 // 角色页面映射配置
@@ -162,12 +164,14 @@ export function enforceRoleRoute(role?: string) {
  */
 export function routeByRole(role?: string) {
   if (!role) {
-    uni.switchTab({ url: '/pages/index/index' })
+    trackEvent('role.route.missing_role')
+    uni.reLaunch({ url: '/pages/user/login' })
     return
   }
   const home = getRoleHomePage(role as UserRole)
   const tabBar = getRoleTabBar(role as UserRole)
   const isTab = tabBar.some(item => `/${item.pagePath}` === home)
+  trackEvent('role.route.redirect', { role, home, mode: isTab ? 'switchTab' : 'navigateTo' })
   if (isTab) {
     uni.switchTab({ url: home })
   } else {

@@ -3,9 +3,12 @@ from fastapi import APIRouter, Depends
 
 from app.core.security import get_current_user
 from app.schemas import (
-    JumpRopeAnalyzeRequest, JumpRopeAnalyzeResponse,
-    AiAdviceRequest, AiAdviceResponse,
-    AiChatRequest, AiChatResponse,
+    AiAdviceRequest,
+    AiAdviceResponse,
+    AiChatRequest,
+    AiChatResponse,
+    JumpRopeAnalyzeRequest,
+    JumpRopeAnalyzeResponse,
 )
 
 router = APIRouter()
@@ -25,10 +28,14 @@ def _bmi_tip(height_cm: float, weight_kg: float):
     return "High BMI: build habits gradually and avoid overtraining"
 
 
-@router.post("/jump-rope/analyze", response_model=JumpRopeAnalyzeResponse, summary="Jump rope analysis")
+@router.post(
+    "/jump-rope/analyze",
+    response_model=JumpRopeAnalyzeResponse,
+    summary="Jump rope analysis",
+)
 async def jump_rope_analyze(
     data: JumpRopeAnalyzeRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     # Placeholder: integrate real CV model later
     return JumpRopeAnalyzeResponse(
@@ -44,7 +51,7 @@ async def jump_rope_analyze(
 @router.post("/advice", response_model=AiAdviceResponse, summary="Training & diet advice")
 async def ai_advice(
     data: AiAdviceRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     sport_advice = [
         "Aim for 3-5 workouts per week, 20-40 minutes each",
@@ -82,7 +89,7 @@ async def ai_advice(
 @router.post("/chat", response_model=AiChatResponse, summary="AI Q&A")
 async def ai_chat(
     data: AiChatRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     answer = (
         "I received your question. This AI module is in beta, "

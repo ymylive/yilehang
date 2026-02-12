@@ -86,10 +86,12 @@
         <text>购买与咨询请联系门店或教练</text>
       </view>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, computed, onMounted } from 'vue'
 import { membershipApi } from '@/api'
 
@@ -189,7 +191,7 @@ onMounted(() => {
 .membership-page {
   min-height: 100vh;
   background-color: #FFFBF5;
-  padding-bottom: 40rpx;
+  padding-bottom: calc(150rpx + env(safe-area-inset-bottom));
 }
 
 .balance-card {

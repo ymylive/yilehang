@@ -1,19 +1,20 @@
 """Authentication services."""
 import asyncio
-import random
-import string
-import smtplib
 import logging
-from email.mime.text import MIMEText
+import random
+import smtplib
+import string
+from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime, timedelta
+from email.mime.text import MIMEText
 from typing import Optional, Tuple
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.security import get_password_hash, verify_password, create_access_token
-from app.models import User, Student, Coach
+from app.core.security import create_access_token, get_password_hash, verify_password
+from app.models import Coach, Student, User
 from app.models.merchant import Merchant, MerchantUser
 
 logger = logging.getLogger(__name__)
@@ -33,13 +34,13 @@ class VerificationCodeStore:
     """In-memory verification code store (replace with Redis in production)."""
 
     def __init__(self) -> None:
-        self._codes: dict[str, dict] = {}
-        self._rate_limit: dict[str, list] = {}  # key -> list of timestamps
+        self._codes: dict[str, dict[str, datetime | str]] = {}
+        self._rate_limit: dict[str, list[datetime]] = {}  # key -> list of timestamps
 
     def set_code(self, key: str, code: str, ttl_minutes: int = 5) -> None:
         self._codes[key] = {
             "code": code,
-            "expires_at": datetime.utcnow() + timedelta(minutes=ttl_minutes),
+            "expires_at": datetime.now(timezone.utc) + timedelta(minutes=ttl_minutes),
         }
 
     def verify_code(self, key: str, code: str) -> bool:
@@ -47,7 +48,7 @@ class VerificationCodeStore:
         if not stored:
             return False
 
-        if datetime.utcnow() > stored["expires_at"]:
+        if datetime.now(timezone.utc) > stored["expires_at"]:
             del self._codes[key]
             return False
 
@@ -62,18 +63,23 @@ class VerificationCodeStore:
         stored = self._codes.get(key)
         if not stored:
             return None
-        if datetime.utcnow() > stored["expires_at"]:
+        if datetime.now(timezone.utc) > stored["expires_at"]:
             del self._codes[key]
             return None
         return stored["code"]
 
-    def check_rate_limit(self, key: str, max_attempts: int = 3, window_minutes: int = 5) -> Tuple[bool, Optional[int]]:
+    def check_rate_limit(
+        self,
+        key: str,
+        max_attempts: int = 3,
+        window_minutes: int = 5,
+    ) -> Tuple[bool, Optional[int]]:
         """Check if key has exceeded rate limit.
 
         Returns:
             (is_allowed, seconds_until_reset)
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         window_start = now - timedelta(minutes=window_minutes)
 
         # Clean up old timestamps
@@ -301,7 +307,7 @@ class AuthService:
     async def update_password(db: AsyncSession, user: User, new_password: str) -> User:
         """Update password."""
         user.password_hash = get_password_hash(new_password)
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
         await db.flush()
         return user
 
@@ -309,7 +315,7 @@ class AuthService:
     async def bind_wechat(db: AsyncSession, user: User, openid: str) -> User:
         """Bind WeChat openid to user."""
         user.wechat_openid = openid
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
         await db.flush()
         return user
 
@@ -330,21 +336,22 @@ class WechatService:
             raise Exception("WECHAT_SECRET is not configured")
 
     @staticmethod
-    async def code2session(code: str, device_id: Optional[str] = None) -> dict:
+    async def code2session(code: str, device_id: Optional[str] = None) -> dict[str, str]:
         """Get WeChat session info by code."""
         if not settings.WECHAT_SECRET:
-            if not settings.ALLOW_WECHAT_LOGIN_WITHOUT_SECRET:
+            allow_dev_fallback = settings.DEBUG and settings.ALLOW_WECHAT_LOGIN_WITHOUT_SECRET
+            if not allow_dev_fallback:
                 WechatService._ensure_wechat_config()
             else:
-                # Security: Only allow fallback in DEBUG mode to prevent predictable ID attacks
-                if not settings.DEBUG:
-                    raise Exception("WeChat login fallback is disabled in production")
                 if not device_id:
                     raise Exception("WECHAT_SECRET not configured and device_id is missing")
-                # Use cryptographically secure random ID instead of predictable pattern
-                import secrets
-                fallback_openid = f"dev_{secrets.token_hex(16)}"
-                logger.warning("[WeChat][DEV-FALLBACK] using fallback openid: %s", fallback_openid[:20])
+                import hashlib
+                fallback_hash = hashlib.sha256(device_id.encode("utf-8")).hexdigest()
+                fallback_openid = f"dev_{fallback_hash[:32]}"
+                logger.warning(
+                    "[WeChat][FALLBACK] using deterministic fallback openid: %s",
+                    fallback_openid[:20],
+                )
                 return {"openid": fallback_openid, "session_key": "dev-fallback"}
         else:
             WechatService._ensure_wechat_config()
@@ -377,7 +384,10 @@ class WechatService:
         if "errcode" in data and data["errcode"] != 0:
             errcode = data["errcode"]
             errmsg = WECHAT_ERROR_MESSAGES.get(errcode, data.get('errmsg', '未知错误'))
-            logger.error(f"[WeChat] code2session failed: errcode={errcode}, errmsg={data.get('errmsg')}")
+            logger.error(
+                f"[WeChat] code2session failed: errcode={errcode}, "
+                f"errmsg={data.get('errmsg')}"
+            )
             raise Exception(errmsg)
 
         logger.info(f"[WeChat] code2session success, openid: {data.get('openid', '')[:8]}...")
@@ -416,12 +426,16 @@ class WechatService:
         if data.get("errcode", 0) != 0:
             errcode = data.get("errcode")
             errmsg = WECHAT_ERROR_MESSAGES.get(errcode, data.get('errmsg', '未知错误'))
-            logger.error(f"[WeChat] getuserphonenumber failed: errcode={errcode}, errmsg={data.get('errmsg')}")
+            logger.error(
+                f"[WeChat] getuserphonenumber failed: errcode={errcode}, "
+                f"errmsg={data.get('errmsg')}"
+            )
             raise Exception(f"获取手机号失败: {errmsg}")
 
         phone_info = data.get("phone_info", {})
         phone = phone_info.get("phoneNumber", "")
-        logger.info(f"[WeChat] getuserphonenumber success, phone: {phone[:3]}****{phone[-4:] if len(phone) >= 7 else ''}")
+        masked_phone = f"{phone[:3]}****{phone[-4:] if len(phone) >= 7 else ''}"
+        logger.info(f"[WeChat] getuserphonenumber success, phone: {masked_phone}")
         return phone
 
     @classmethod
@@ -429,7 +443,7 @@ class WechatService:
         """Get WeChat access token."""
         cls._ensure_wechat_config()
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         if (
             cls._access_token
             and cls._access_token_expires_at
@@ -438,7 +452,7 @@ class WechatService:
             return cls._access_token
 
         async with cls._access_token_lock:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             if (
                 cls._access_token
                 and cls._access_token_expires_at
@@ -470,7 +484,10 @@ class WechatService:
             if "errcode" in data and data["errcode"] != 0:
                 errcode = data["errcode"]
                 errmsg = WECHAT_ERROR_MESSAGES.get(errcode, data.get('errmsg', 'unknown error'))
-                logger.error(f"[WeChat] get_access_token failed: errcode={errcode}, errmsg={data.get('errmsg')}")
+                logger.error(
+                    f"[WeChat] get_access_token failed: errcode={errcode}, "
+                    f"errmsg={data.get('errmsg')}"
+                )
                 raise Exception(f"Failed to fetch access_token: {errmsg}")
 
             access_token = data.get("access_token")
@@ -480,7 +497,7 @@ class WechatService:
             expires_in = int(data.get("expires_in", 7200))
             safe_ttl = max(expires_in - 120, 60)
             cls._access_token = access_token
-            cls._access_token_expires_at = datetime.utcnow() + timedelta(seconds=safe_ttl)
+            cls._access_token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=safe_ttl)
 
             logger.info("[WeChat] get_access_token success")
             return access_token
@@ -496,7 +513,7 @@ class EmailService:
         return (raw_password or "").replace(" ", "").strip()
 
     @staticmethod
-    async def send_code_with_detail(email: str) -> dict:
+    async def send_code_with_detail(email: str) -> dict[str, object]:
         """Send verification code with delivery detail for client hints."""
         code = AuthService.generate_verification_code()
         EMAIL_CODE_STORE.set_code(email, code)
@@ -535,16 +552,25 @@ class EmailService:
 
         try:
             msg = MIMEMultipart("alternative")
-            msg["Subject"] = "易乐航 - 邮箱验证码"
+            msg["Subject"] = "韧翎成长计划 - 邮箱验证码"
             msg["From"] = settings.SMTP_FROM or smtp_user
             msg["To"] = email
 
             html_body = f"""
-            <div style="max-width:480px;margin:0 auto;padding:32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-                <h2 style="color:#FF8800;margin-bottom:8px;">易乐航</h2>
+            <div
+                style="max-width:480px;margin:0 auto;padding:32px;
+                font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"
+            >
+                <h2 style="color:#FF8800;margin-bottom:8px;">韧翎成长计划</h2>
                 <p style="color:#666;font-size:14px;">您的登录验证码如下：</p>
-                <div style="background:#FFF7ED;border:1px solid #FFE0B5;border-radius:12px;padding:24px;text-align:center;margin:16px 0;">
-                    <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#FF8800;">{code}</span>
+                <div
+                    style="background:#FFF7ED;border:1px solid #FFE0B5;border-radius:12px;
+                    padding:24px;text-align:center;margin:16px 0;"
+                >
+                    <span
+                        style="font-size:36px;font-weight:700;letter-spacing:8px;
+                        color:#FF8800;"
+                    >{code}</span>
                 </div>
                 <p style="color:#999;font-size:12px;">验证码 5 分钟内有效，请勿泄露给他人。</p>
             </div>

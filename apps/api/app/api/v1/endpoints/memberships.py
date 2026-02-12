@@ -2,16 +2,22 @@
 课时卡管理API端点
 """
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.endpoints.bookings import get_student_id_for_user
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.models.user import User
+from app.core.security import fetch_user_from_token, get_current_user
+from app.models.booking import Transaction
 from app.schemas.booking import (
-    MembershipCardCreate, MembershipCardUpdate, MembershipCardResponse,
-    StudentMembershipResponse, MembershipRechargeRequest,
-    TransactionResponse
+    MembershipCardCreate,
+    MembershipCardResponse,
+    MembershipCardUpdate,
+    MembershipRechargeRequest,
+    StudentMembershipResponse,
+    TransactionResponse,
 )
 from app.services.booking_service import BookingService, MembershipCardService
 
@@ -23,11 +29,12 @@ router = APIRouter()
 @router.get("", response_model=List[StudentMembershipResponse])
 async def get_my_memberships(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
-    """获取我的课时卡列表"""
-    from app.api.v1.endpoints.bookings import get_student_id_for_user
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
 
+    """获取我的课时卡列表"""
     student_id = await get_student_id_for_user(current_user, db)
     service = BookingService(db)
 
@@ -66,13 +73,12 @@ async def get_my_transactions(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
-    """获取我的消费记录"""
-    from sqlalchemy import select
-    from app.models.booking import Transaction
-    from app.api.v1.endpoints.bookings import get_student_id_for_user
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
 
+    """获取我的消费记录"""
     student_id = await get_student_id_for_user(current_user, db)
 
     result = await db.execute(
@@ -105,8 +111,11 @@ async def get_my_transactions(
 @router.get("/cards", response_model=List[MembershipCardResponse])
 async def get_membership_cards(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    await fetch_user_from_token(db, current_user_data)
+
     """获取所有课时卡类型"""
     service = MembershipCardService(db)
     cards = await service.get_active_cards()
@@ -134,8 +143,11 @@ async def get_membership_cards(
 async def create_membership_card(
     data: MembershipCardCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """创建课时卡类型（管理员）"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="权限不足")
@@ -164,8 +176,11 @@ async def update_membership_card(
     card_id: int,
     data: MembershipCardUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """更新课时卡类型（管理员）"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="权限不足")
@@ -195,8 +210,11 @@ async def update_membership_card(
 async def recharge_membership(
     data: MembershipRechargeRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """管理员手动充值课时"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="权限不足")

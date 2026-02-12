@@ -2,9 +2,9 @@
 能量系统 Schemas
 """
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, Field
+from typing import List, Optional
 
+from pydantic import BaseModel, ConfigDict
 
 # ============ 能量规则 ============
 
@@ -45,8 +45,7 @@ class EnergyRuleResponse(EnergyRuleBase):
     sort_order: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============ 能量账户 ============
@@ -65,8 +64,7 @@ class EnergyAccountResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EnergyAccountSummary(BaseModel):
@@ -92,8 +90,7 @@ class EnergyTransactionResponse(BaseModel):
     description: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EnergyTransactionList(BaseModel):

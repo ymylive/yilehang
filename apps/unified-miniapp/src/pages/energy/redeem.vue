@@ -36,7 +36,9 @@
         >
           <view class="item-image">
             <image v-if="item.image" :src="item.image" mode="aspectFill" />
-            <view v-else class="item-placeholder">🎁</view>
+            <view v-else class="item-placeholder">
+              <wd-icon name="gift" size="56rpx" color="#94a3b8" />
+            </view>
           </view>
           <view class="item-info">
             <text class="item-name">{{ item.name }}</text>
@@ -55,7 +57,9 @@
       </view>
 
       <view class="empty-state" v-else>
-        <text class="empty-icon">🎁</text>
+        <view class="empty-icon">
+          <wd-icon name="gift" size="64rpx" color="#94a3b8" />
+        </view>
         <text class="empty-text">暂无可兑换商品</text>
       </view>
     </view>
@@ -65,7 +69,9 @@
       <view class="detail-card" @click.stop>
         <view class="detail-image">
           <image v-if="selectedItem.image" :src="selectedItem.image" mode="aspectFill" />
-          <view v-else class="detail-placeholder">🎁</view>
+          <view v-else class="detail-placeholder">
+            <wd-icon name="gift" size="86rpx" color="#94a3b8" />
+          </view>
         </view>
         <view class="detail-content">
           <text class="detail-name">{{ selectedItem.name }}</text>
@@ -102,7 +108,9 @@
 
     <!-- 我的兑换订单入口 -->
     <view class="orders-fab" @click="goToOrders">
-      <text class="fab-icon">📋</text>
+      <view class="fab-icon">
+        <wd-icon name="view-list" size="36rpx" color="#2563eb" />
+      </view>
       <text class="fab-text">我的兑换</text>
     </view>
   </view>
@@ -281,6 +289,13 @@ function goToOrders() {
   border-radius: 20rpx;
   overflow: hidden;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+  cursor: pointer;
+}
+
+.item-card:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 8rpx 20rpx rgba(37, 99, 235, 0.16);
 }
 
 .item-image {
@@ -300,7 +315,7 @@ function goToOrders() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 60rpx;
+  background: linear-gradient(135deg, #eff6ff, #f5f8ff);
 }
 
 .item-info {
@@ -359,9 +374,14 @@ function goToOrders() {
 }
 
 .empty-icon {
-  font-size: 80rpx;
-  display: block;
-  margin-bottom: 20rpx;
+  width: 112rpx;
+  height: 112rpx;
+  margin: 0 auto 20rpx;
+  border-radius: 28rpx;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .empty-text {
@@ -403,7 +423,7 @@ function goToOrders() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 100rpx;
+  background: linear-gradient(135deg, #eff6ff, #f7f9ff);
 }
 
 .detail-content {
@@ -501,10 +521,23 @@ function goToOrders() {
   background: #FFFFFF;
   border-radius: 20rpx;
   box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  cursor: pointer;
+}
+
+.orders-fab:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 6rpx 18rpx rgba(37, 99, 235, 0.2);
 }
 
 .fab-icon {
-  font-size: 40rpx;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 18rpx;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .fab-text {

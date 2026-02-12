@@ -4,7 +4,7 @@
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { api } from '@/api'
+import { roleApi } from '@/api'
 
 export interface Role {
   id: number
@@ -78,8 +78,8 @@ export const usePermissionStore = defineStore('permission', () => {
    */
   async function fetchRoles() {
     try {
-      const res: any = await api.get('/roles')
-      roles.value = res.data || []
+      const res: any = await roleApi.getRoles()
+      roles.value = Array.isArray(res?.data) ? res.data : []
       // 设置激活角色（优先使用第一个角色）
       if (roles.value.length > 0 && !activeRole.value) {
         activeRole.value = roles.value[0].code
@@ -96,8 +96,8 @@ export const usePermissionStore = defineStore('permission', () => {
    */
   async function fetchPermissions() {
     try {
-      const res: any = await api.get('/permissions')
-      permissions.value = res.data || []
+      const res: any = await roleApi.getPermissions()
+      permissions.value = Array.isArray(res?.data) ? res.data : []
       return permissions.value
     } catch (error) {
       console.error('Fetch permissions failed:', error)
@@ -110,8 +110,8 @@ export const usePermissionStore = defineStore('permission', () => {
    */
   async function fetchMenus() {
     try {
-      const res: any = await api.get('/menus')
-      menus.value = res.data || []
+      const res: any = await roleApi.getMenus()
+      menus.value = Array.isArray(res?.data) ? res.data : []
       return menus.value
     } catch (error) {
       console.error('Fetch menus failed:', error)
@@ -128,8 +128,8 @@ export const usePermissionStore = defineStore('permission', () => {
     }
 
     try {
-      const res: any = await api.post('/switch-role', { role_code: roleCode })
-      const { access_token, active_role } = res.data || {}
+      const res: any = await roleApi.switchRole(roleCode)
+      const { access_token, active_role } = res?.data || {}
 
       if (access_token) {
         uni.setStorageSync('token', access_token)
@@ -140,7 +140,7 @@ export const usePermissionStore = defineStore('permission', () => {
       // 重新获取权限和菜单
       await Promise.all([fetchPermissions(), fetchMenus()])
 
-      return res.data
+      return res?.data
     } catch (error) {
       console.error('Switch role failed:', error)
       throw error

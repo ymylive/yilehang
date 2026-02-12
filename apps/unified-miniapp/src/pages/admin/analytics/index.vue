@@ -41,10 +41,12 @@
         <text class="col">{{ row.revenue }}</text>
       </view>
     </view>
-  </view>
+  <DynamicTabBar />
+</view>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, onMounted } from 'vue'
 
 const period = ref('week')
@@ -66,6 +68,7 @@ onMounted(() => {
   min-height: 100vh;
   background: #f5f5f5;
   padding: 20rpx;
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
 }
 
 .header {

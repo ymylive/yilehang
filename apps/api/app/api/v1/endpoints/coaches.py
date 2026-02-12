@@ -4,18 +4,23 @@
 import json
 from datetime import date, timedelta
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.models.user import User, Coach
-from app.models.booking import Booking, Review, BookingStatus
+from app.core.security import fetch_user_from_token, get_current_user
+from app.models.booking import Booking, BookingStatus, Review
+from app.models.user import Coach, User
 from app.schemas.booking import (
-    CoachDetailResponse, CoachAvailableSlotsResponse, CoachAvailableTimeSlot,
-    CoachSlotCreate, CoachSlotUpdate, CoachSlotResponse,
-    ReviewResponse, CoachReplyRequest
+    CoachAvailableSlotsResponse,
+    CoachDetailResponse,
+    CoachReplyRequest,
+    CoachSlotCreate,
+    CoachSlotResponse,
+    CoachSlotUpdate,
+    ReviewResponse,
 )
 from app.services.booking_service import BookingService, ReviewService
 
@@ -270,8 +275,11 @@ async def get_coach_reviews(
 @router.get("/me/slots", response_model=List[CoachSlotResponse])
 async def get_my_slots(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """获取我的可约时段配置"""
     if current_user.role != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
@@ -303,8 +311,11 @@ async def get_my_slots(
 async def create_my_slot(
     data: CoachSlotCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """创建我的可约时段"""
     if current_user.role != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
@@ -334,8 +345,11 @@ async def update_my_slot(
     slot_id: int,
     data: CoachSlotUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """更新我的可约时段"""
     if current_user.role != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
@@ -362,8 +376,11 @@ async def update_my_slot(
 async def delete_my_slot(
     slot_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """删除我的可约时段"""
     if current_user.role != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
@@ -380,8 +397,11 @@ async def reply_to_review(
     review_id: int,
     data: CoachReplyRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user)
 ):
+    """Fetch user model"""
+    current_user = await fetch_user_from_token(db, current_user_data)
+
     """回复评价"""
     if current_user.role != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
@@ -507,11 +527,19 @@ async def update_my_profile(
     if "avatar" in data:
         coach.avatar = data["avatar"]
     if "specialty" in data:
-        coach.specialty = ",".join(data["specialty"]) if isinstance(data["specialty"], list) else data["specialty"]
+        coach.specialty = (
+            ",".join(data["specialty"])
+            if isinstance(data["specialty"], list)
+            else data["specialty"]
+        )
     if "introduction" in data:
         coach.introduction = data["introduction"]
     if "certification" in data:
-        coach.certification = json.dumps(data["certification"]) if isinstance(data["certification"], list) else data["certification"]
+        coach.certification = (
+            json.dumps(data["certification"])
+            if isinstance(data["certification"], list)
+            else data["certification"]
+        )
     if "years_of_experience" in data:
         coach.years_of_experience = data["years_of_experience"]
 
@@ -539,7 +567,6 @@ async def get_income_summary(
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
 
-    from datetime import datetime
     today = date.today()
     this_month_start = today.replace(day=1)
     last_month_start = (this_month_start - timedelta(days=1)).replace(day=1)
@@ -577,7 +604,11 @@ async def get_income_summary(
     # 计算收入 (课时费 * 课程数 * 提成比例)
     from app.core.config import settings
     hourly_rate = float(coach.hourly_rate) if coach.hourly_rate else 0
-    commission_rate = float(coach.commission_rate) if coach.commission_rate else settings.COACH_DEFAULT_COMMISSION_RATE
+    commission_rate = (
+        float(coach.commission_rate)
+        if coach.commission_rate
+        else settings.COACH_DEFAULT_COMMISSION_RATE
+    )
 
     this_month_income = this_month_count * hourly_rate * commission_rate
     last_month_income = last_month_count * hourly_rate * commission_rate
@@ -620,8 +651,6 @@ async def get_income_details(
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
 
-    from app.models.user import Student
-
     # 构建查询
     query = select(Booking).where(
         Booking.coach_id == coach.id,
@@ -629,7 +658,6 @@ async def get_income_details(
     )
 
     if month:
-        from datetime import datetime
         try:
             year, mon = month.split("-")
             start_date = date(int(year), int(mon), 1)
@@ -641,7 +669,8 @@ async def get_income_details(
                 Booking.booking_date >= start_date,
                 Booking.booking_date < end_date
             )
-        except:
+        except (ValueError, IndexError):
+            # Invalid month format, skip date filtering
             pass
 
     # Use selectinload to eagerly load student data and avoid N+1 queries
@@ -655,7 +684,11 @@ async def get_income_details(
 
     from app.core.config import settings
     hourly_rate = float(coach.hourly_rate) if coach.hourly_rate else 0
-    commission_rate = float(coach.commission_rate) if coach.commission_rate else settings.COACH_DEFAULT_COMMISSION_RATE
+    commission_rate = (
+        float(coach.commission_rate)
+        if coach.commission_rate
+        else settings.COACH_DEFAULT_COMMISSION_RATE
+    )
 
     details = []
     for booking in bookings:
@@ -831,13 +864,13 @@ async def get_student_detail(
         "total_lessons": total_lessons,
         "recent_lessons": [
             {
-                "id": l.id,
-                "booking_date": l.booking_date.isoformat(),
-                "start_time": l.start_time.strftime("%H:%M"),
-                "end_time": l.end_time.strftime("%H:%M"),
-                "status": l.status
+                "id": lesson.id,
+                "booking_date": lesson.booking_date.isoformat(),
+                "start_time": lesson.start_time.strftime("%H:%M"),
+                "end_time": lesson.end_time.strftime("%H:%M"),
+                "status": lesson.status,
             }
-            for l in lessons
+            for lesson in lessons
         ]
     }
 
@@ -862,8 +895,6 @@ async def get_my_schedule(
     coach = result.scalar_one_or_none()
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
-
-    from app.models.user import Student
 
     if not start_date:
         start_date = date.today()
@@ -1026,7 +1057,6 @@ async def get_booking_detail(
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
 
-    from app.models.user import Student
     from sqlalchemy.orm import selectinload
 
     query = select(Booking).where(Booking.id == booking_id).options(

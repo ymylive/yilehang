@@ -1,4 +1,4 @@
-# 易乐航 ITS 智慧体教云平台
+# 韧翎成长计划
 
 一个以微信小程序为核心载体的青少年体育培训数字化平台，覆盖学员端、教练端、管理后台与后端服务。
 
@@ -39,6 +39,12 @@
 - 🔗 功能完善：添加 3 个缺失的教练端点，修复教练功能损坏
 - 🎨 代码质量：重构重复代码，提取业务规则到配置文件
 - 详见 [修复报告](reports/fix_summary.md) 和 [代码审查报告](reports/code_review_report.md)
+
+**最新更新（2026-02-13）**：
+- 🛡️ 权限与会话安全：补齐对象级访问控制与 WebSocket 票据鉴权，新增对应安全测试用例
+- 📱 统一小程序稳定性：新增页面错误边界、安全导航封装和本地遥测事件记录
+- 🖼️ 静态资源治理：补齐默认头像/空态资源并在构建前执行静态资源引用校验
+- 🌐 生产域名统一：文档与部署模板全部对齐到 `rl.cornna.xyz`
 
 ## 仓库结构
 
@@ -168,8 +174,8 @@ pnpm -C apps/merchant build:h5
 
 详见：`DEPLOYMENT_REPORT.md`
 
-- 线上域名：`https://yilehang.cornna.xyz`
-- API 文档：`https://yilehang.cornna.xyz/docs`
+- 线上域名：`https://rl.cornna.xyz`
+- API 文档：`https://rl.cornna.xyz/docs`
 
 ## 后续开发计划（1 周冲刺）
 
@@ -211,6 +217,14 @@ test: 测试相关
 chore: 工具链/构建维护
 ```
 
+### 域名规范（强制）
+
+- 主域名：`https://rl.cornna.xyz`
+- API 基地址：`https://rl.cornna.xyz/api/v1`
+- WebSocket：`wss://rl.cornna.xyz/api/v1/chat/ws`
+- 上传地址：`https://rl.cornna.xyz/api/v1/upload`
+- 生产环境禁止使用 IP 或其他域名作为请求入口；如需变更域名，必须同步更新前端环境变量、后端反代与部署文档。
+
 ---
 
 如需云端一键部署，请参考：
@@ -223,9 +237,9 @@ chore: 工具链/构建维护
 ## Deployment Update (2026-02-09)
 
 - Re-deployed services after VPS reboot on `82.158.88.34`.
-- Production domain/API kept on `https://yilehang.cornna.xyz`.
+- Production domain/API kept on `https://rl.cornna.xyz`.
 - SSL re-issued and installed via `acme.sh` using Cloudflare DNS validation.
 - Miniapp production env template updated in `deploy/miniapp/env.example`:
-  - `VITE_API_BASE_URL=https://yilehang.cornna.xyz/api/v1`
-  - `VITE_WS_URL=wss://yilehang.cornna.xyz/api/v1/chat/ws`
-  - `VITE_UPLOAD_URL=https://yilehang.cornna.xyz/api/v1/upload`
+  - `VITE_API_BASE_URL=https://rl.cornna.xyz/api/v1`
+  - `VITE_WS_URL=wss://rl.cornna.xyz/api/v1/chat/ws`
+  - `VITE_UPLOAD_URL=https://rl.cornna.xyz/api/v1/upload`

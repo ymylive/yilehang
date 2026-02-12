@@ -1,9 +1,10 @@
 """
 成长档案相关Schema
 """
-from datetime import datetime, date
-from typing import Optional, List
-from pydantic import BaseModel
+from datetime import date, datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict
 
 
 class FitnessMetricBase(BaseModel):
@@ -24,8 +25,7 @@ class FitnessMetricResponse(FitnessMetricBase):
     """体测指标响应Schema"""
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FitnessTestBase(BaseModel):
@@ -51,8 +51,7 @@ class FitnessTestResponse(FitnessTestBase):
     metrics: List[FitnessMetricResponse] = []
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RadarChartData(BaseModel):
@@ -97,5 +96,4 @@ class TrainingSessionResponse(TrainingSessionBase):
     video_url: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

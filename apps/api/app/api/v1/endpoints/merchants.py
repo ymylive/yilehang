@@ -1,30 +1,40 @@
 """
 商家系统 API
 """
-from datetime import datetime, timedelta
-from typing import Optional
-import uuid
 import secrets
+import uuid
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
 
-from app.core import get_db, get_current_user
+from app.core import get_current_user, get_db
 from app.models import Student
 from app.models.merchant import (
-    Merchant, MerchantUser, RedeemItem, RedeemOrder,
-    MerchantStatus, RedeemOrderStatus
+    Merchant,
+    MerchantStatus,
+    MerchantUser,
+    RedeemItem,
+    RedeemOrder,
+    RedeemOrderStatus,
 )
 from app.schemas.merchant import (
-    MerchantResponse, MerchantListResponse, MerchantDetailResponse,
+    MerchantDetailResponse,
+    MerchantListResponse,
+    MerchantResponse,
+    MerchantStatsResponse,
     MerchantUpdate,
-    RedeemItemResponse, RedeemItemListResponse,
-    RedeemOrderCreate, RedeemOrderResponse, RedeemOrderListResponse,
-    RedeemOrderVerifyRequest, RedeemOrderVerifyResponse,
-    MerchantStatsResponse
+    RedeemItemListResponse,
+    RedeemItemResponse,
+    RedeemOrderCreate,
+    RedeemOrderListResponse,
+    RedeemOrderResponse,
+    RedeemOrderVerifyRequest,
+    RedeemOrderVerifyResponse,
 )
-from app.schemas.user import UserLogin, Token, UserResponse
+from app.schemas.user import Token, UserLogin, UserResponse
 from app.services.auth_service import AuthService
 from app.services.energy_service import EnergyService
 
@@ -38,6 +48,10 @@ def _build_token_response(user) -> Token:
         expires_in=expires_in,
         user=UserResponse.model_validate(user)
     )
+
+
+async def _build_order_detail_response(db: AsyncSession, order: RedeemOrder) -> RedeemOrderResponse:
+    return await _build_order_detail_response(db, order)
 
 
 @router.post("/auth/login", response_model=Token)
@@ -156,7 +170,7 @@ async def get_merchant_detail(
     # 统计商品数量和兑换数量
     items_count = await db.execute(
         select(func.count()).select_from(RedeemItem).where(
-            and_(RedeemItem.merchant_id == merchant_id, RedeemItem.is_active == True)
+            and_(RedeemItem.merchant_id == merchant_id, RedeemItem.is_active.is_(True))
         )
     )
     total_redeemed = await db.execute(
@@ -186,7 +200,7 @@ async def get_merchant_items(
         select(RedeemItem).where(
             and_(
                 RedeemItem.merchant_id == merchant_id,
-                RedeemItem.is_active == True
+                RedeemItem.is_active.is_(True),
             )
         ).order_by(RedeemItem.sort_order, RedeemItem.id)
     )
@@ -225,7 +239,7 @@ async def get_all_items(
         .join(Merchant, RedeemItem.merchant_id == Merchant.id)
         .where(
             and_(
-                RedeemItem.is_active == True,
+                RedeemItem.is_active.is_(True),
                 Merchant.status == MerchantStatus.ACTIVE.value
             )
         )
@@ -315,7 +329,7 @@ async def redeem_item(
         energy_cost=item.energy_cost,
         verify_code=_generate_verify_code(),
         status=RedeemOrderStatus.PENDING.value,
-        expire_at=datetime.utcnow() + timedelta(days=item.valid_days)
+        expire_at=datetime.now(timezone.utc) + timedelta(days=item.valid_days)
     )
     db.add(order)
 
@@ -371,27 +385,41 @@ async def get_my_orders(
     result = await db.execute(query)
     orders = result.scalars().all()
 
-    # 获取关联信息
+    # 批量获取关联信息（避免 N+1 查询）
+    items_map = {}
+    merchants_map = {}
+    students_map = {}
+
+    if orders:
+        item_ids = {order.item_id for order in orders}
+        merchant_ids = {order.merchant_id for order in orders}
+        student_ids = {order.student_id for order in orders}
+
+        items_result = await db.execute(
+            select(RedeemItem).where(RedeemItem.id.in_(item_ids))
+        )
+        items_map = {item.id: item for item in items_result.scalars().all()}
+
+        merchants_result = await db.execute(
+            select(Merchant).where(Merchant.id.in_(merchant_ids))
+        )
+        merchants_map = {merchant.id: merchant for merchant in merchants_result.scalars().all()}
+
+        students_result = await db.execute(
+            select(Student).where(Student.id.in_(student_ids))
+        )
+        students_map = {student.id: student for student in students_result.scalars().all()}
+
     order_responses = []
     for order in orders:
-        item_result = await db.execute(
-            select(RedeemItem).where(RedeemItem.id == order.item_id)
-        )
-        item = item_result.scalar_one_or_none()
-
-        merchant_result = await db.execute(
-            select(Merchant).where(Merchant.id == order.merchant_id)
-        )
-        merchant = merchant_result.scalar_one_or_none()
+        item = items_map.get(order.item_id)
+        merchant = merchants_map.get(order.merchant_id)
+        student = students_map.get(order.student_id)
 
         resp = RedeemOrderResponse.model_validate(order)
         if item:
             resp.item_name = item.name
             resp.item_image = item.image
-        student_result = await db.execute(
-            select(Student).where(Student.id == order.student_id)
-        )
-        student = student_result.scalar_one_or_none()
         if student:
             resp.student_name = student.name
         if merchant:
@@ -443,12 +471,15 @@ async def verify_order(
         return RedeemOrderVerifyResponse(success=False, message="订单已核销")
     if order.status == RedeemOrderStatus.CANCELLED.value:
         return RedeemOrderVerifyResponse(success=False, message="订单已取消")
-    if order.status == RedeemOrderStatus.EXPIRED.value or order.expire_at < datetime.utcnow():
+    if (
+        order.status == RedeemOrderStatus.EXPIRED.value
+        or order.expire_at < datetime.now(timezone.utc)
+    ):
         return RedeemOrderVerifyResponse(success=False, message="订单已过期")
 
     # 核销
     order.status = RedeemOrderStatus.VERIFIED.value
-    order.verified_at = datetime.utcnow()
+    order.verified_at = datetime.now(timezone.utc)
     order.verified_by = current_user.get("user_id")
 
     await db.commit()
@@ -489,14 +520,14 @@ async def verify_order_by_code(
         return RedeemOrderVerifyResponse(success=False, message="订单已核销")
     if order.status == RedeemOrderStatus.CANCELLED.value:
         return RedeemOrderVerifyResponse(success=False, message="订单已取消")
-    if order.expire_at < datetime.utcnow():
+    if order.expire_at < datetime.now(timezone.utc):
         order.status = RedeemOrderStatus.EXPIRED.value
         await db.commit()
         return RedeemOrderVerifyResponse(success=False, message="订单已过期")
 
     # 核销
     order.status = RedeemOrderStatus.VERIFIED.value
-    order.verified_at = datetime.utcnow()
+    order.verified_at = datetime.now(timezone.utc)
     order.verified_by = current_user.get("user_id")
 
     await db.commit()
@@ -542,18 +573,7 @@ async def get_order_by_verify_code(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    item_result = await db.execute(select(RedeemItem).where(RedeemItem.id == order.item_id))
-    item = item_result.scalar_one_or_none()
-    student_result = await db.execute(select(Student).where(Student.id == order.student_id))
-    student = student_result.scalar_one_or_none()
-
-    resp = RedeemOrderResponse.model_validate(order)
-    if item:
-        resp.item_name = item.name
-        resp.item_image = item.image
-    if student:
-        resp.student_name = student.name
-    return resp
+    return await _build_order_detail_response(db, order)
 
 
 @router.get("/redeem/{order_id}", response_model=RedeemOrderResponse)
@@ -597,7 +617,7 @@ async def get_merchant_stats(
         raise HTTPException(status_code=403, detail="无商家权限")
 
     merchant_id = merchant_user.merchant_id
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = now - timedelta(days=now.weekday())
     week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -707,22 +727,33 @@ async def get_merchant_orders(
     result = await db.execute(query)
     orders = result.scalars().all()
 
-    # 获取关联信息
+    # 批量获取关联信息（避免 N+1 查询）
+    items_map = {}
+    students_map = {}
+
+    if orders:
+        item_ids = {order.item_id for order in orders}
+        student_ids = {order.student_id for order in orders}
+
+        items_result = await db.execute(
+            select(RedeemItem).where(RedeemItem.id.in_(item_ids))
+        )
+        items_map = {item.id: item for item in items_result.scalars().all()}
+
+        students_result = await db.execute(
+            select(Student).where(Student.id.in_(student_ids))
+        )
+        students_map = {student.id: student for student in students_result.scalars().all()}
+
     order_responses = []
     for order in orders:
-        item_result = await db.execute(
-            select(RedeemItem).where(RedeemItem.id == order.item_id)
-        )
-        item = item_result.scalar_one_or_none()
+        item = items_map.get(order.item_id)
+        student = students_map.get(order.student_id)
 
         resp = RedeemOrderResponse.model_validate(order)
         if item:
             resp.item_name = item.name
             resp.item_image = item.image
-        student_result = await db.execute(
-            select(Student).where(Student.id == order.student_id)
-        )
-        student = student_result.scalar_one_or_none()
         if student:
             resp.student_name = student.name
         order_responses.append(resp)
@@ -761,7 +792,7 @@ async def _get_merchant_user(db: AsyncSession, current_user: dict) -> Optional[M
     user_id = current_user.get("user_id")
     result = await db.execute(
         select(MerchantUser).where(
-            and_(MerchantUser.user_id == user_id, MerchantUser.is_active == True)
+            and_(MerchantUser.user_id == user_id, MerchantUser.is_active.is_(True))
         )
     )
     return result.scalar_one_or_none()
@@ -769,7 +800,7 @@ async def _get_merchant_user(db: AsyncSession, current_user: dict) -> Optional[M
 
 def _generate_order_no() -> str:
     """生成订单号"""
-    return datetime.utcnow().strftime("%Y%m%d%H%M%S") + uuid.uuid4().hex[:8].upper()
+    return datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S") + uuid.uuid4().hex[:8].upper()
 
 
 def _generate_verify_code() -> str:

@@ -1,19 +1,22 @@
-"""
-管理后台仪表盘API
-"""
+﻿"""Dashboard API endpoints."""
+
 from datetime import date, timedelta
-from fastapi import APIRouter, Depends
-from sqlalchemy import select, func, case
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User, Student, Coach
 from app.models.booking import (
-    Booking, BookingStatus, MembershipCard, StudentMembership,
-    Transaction, TransactionType
+    Booking,
+    BookingStatus,
+    StudentMembership,
+    Transaction,
+    TransactionType,
 )
+from app.models.user import Coach, Student
 
 router = APIRouter()
 
@@ -21,108 +24,98 @@ router = APIRouter()
 @router.get("/overview")
 async def get_dashboard_overview(
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
-    """获取仪表盘概览数据"""
+    """Get dashboard overview metrics."""
     if current_user["role"] != "admin":
-        from fastapi import HTTPException
-        raise HTTPException(status_code=403, detail="仅管理员可访问")
+        raise HTTPException(status_code=403, detail="Admin only")
 
     today = date.today()
     this_month_start = today.replace(day=1)
     last_month_start = (this_month_start - timedelta(days=1)).replace(day=1)
 
-    # 学员统计
-    total_students = await db.execute(select(func.count()).select_from(Student))
-    student_count = total_students.scalar() or 0
-
-    # 本月新增学员
-    new_students_this_month = await db.execute(
-        select(func.count()).where(
-            Student.created_at >= this_month_start
-        )
-    )
-    new_student_count = new_students_this_month.scalar() or 0
-
-    # 教练统计
-    total_coaches = await db.execute(
-        select(func.count()).where(Coach.status == "active")
-    )
-    coach_count = total_coaches.scalar() or 0
-
-    # 今日预约数
-    today_bookings = await db.execute(
-        select(func.count()).where(
-            Booking.booking_date == today
-        )
-    )
-    today_booking_count = today_bookings.scalar() or 0
-
-    # 待确认预约
-    pending_bookings = await db.execute(
-        select(func.count()).where(
-            Booking.status == BookingStatus.PENDING.value
-        )
-    )
-    pending_count = pending_bookings.scalar() or 0
-
-    # 本月完成课程数
-    completed_this_month = await db.execute(
-        select(func.count()).where(
+    stats_query = select(
+        select(func.count()).select_from(Student).scalar_subquery().label("student_count"),
+        select(func.count())
+        .where(Student.created_at >= this_month_start)
+        .scalar_subquery()
+        .label("new_student_count"),
+        select(func.count())
+        .where(Coach.status == "active")
+        .scalar_subquery()
+        .label("coach_count"),
+        select(func.count())
+        .where(Booking.booking_date == today)
+        .scalar_subquery()
+        .label("today_booking_count"),
+        select(func.count())
+        .where(Booking.status == BookingStatus.PENDING.value)
+        .scalar_subquery()
+        .label("pending_count"),
+        select(func.count())
+        .where(
             Booking.status == BookingStatus.COMPLETED.value,
-            Booking.booking_date >= this_month_start
+            Booking.booking_date >= this_month_start,
         )
-    )
-    completed_count = completed_this_month.scalar() or 0
-
-    # 本月收入
-    this_month_income = await db.execute(
-        select(func.sum(Transaction.amount)).where(
+        .scalar_subquery()
+        .label("completed_count"),
+        select(func.coalesce(func.sum(Transaction.amount), 0))
+        .where(
             Transaction.type == TransactionType.PURCHASE.value,
-            Transaction.created_at >= this_month_start
+            Transaction.created_at >= this_month_start,
         )
-    )
-    income = this_month_income.scalar() or 0
-
-    # 上月收入
-    last_month_income = await db.execute(
-        select(func.sum(Transaction.amount)).where(
+        .scalar_subquery()
+        .label("income"),
+        select(func.coalesce(func.sum(Transaction.amount), 0))
+        .where(
             Transaction.type == TransactionType.PURCHASE.value,
             Transaction.created_at >= last_month_start,
-            Transaction.created_at < this_month_start
+            Transaction.created_at < this_month_start,
         )
+        .scalar_subquery()
+        .label("last_income"),
+        select(func.count())
+        .where(StudentMembership.status == "active")
+        .scalar_subquery()
+        .label("active_membership_count"),
     )
-    last_income = last_month_income.scalar() or 0
+    stats = (await db.execute(stats_query)).one()
 
-    # 活跃课时卡数
-    active_memberships = await db.execute(
-        select(func.count()).where(
-            StudentMembership.status == "active"
-        )
-    )
-    active_membership_count = active_memberships.scalar() or 0
+    student_count = stats.student_count or 0
+    new_student_count = stats.new_student_count or 0
+    coach_count = stats.coach_count or 0
+    today_booking_count = stats.today_booking_count or 0
+    pending_count = stats.pending_count or 0
+    completed_count = stats.completed_count or 0
+    income = stats.income or 0
+    last_income = stats.last_income or 0
+    active_membership_count = stats.active_membership_count or 0
 
     return {
         "students": {
             "total": student_count,
-            "new_this_month": new_student_count
+            "new_this_month": new_student_count,
         },
         "coaches": {
-            "total": coach_count
+            "total": coach_count,
         },
         "bookings": {
             "today": today_booking_count,
             "pending": pending_count,
-            "completed_this_month": completed_count
+            "completed_this_month": completed_count,
         },
         "revenue": {
             "this_month": float(income),
             "last_month": float(last_income),
-            "growth_rate": round((float(income) - float(last_income)) / float(last_income) * 100, 1) if last_income else 0
+            "growth_rate": (
+                round((float(income) - float(last_income)) / float(last_income) * 100, 1)
+                if last_income
+                else 0
+            ),
         },
         "memberships": {
-            "active": active_membership_count
-        }
+            "active": active_membership_count,
+        },
     }
 
 
@@ -130,12 +123,11 @@ async def get_dashboard_overview(
 async def get_recent_bookings(
     limit: int = 10,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
-    """获取最近预约"""
+    """Get recent bookings for dashboard."""
     if current_user["role"] != "admin":
-        from fastapi import HTTPException
-        raise HTTPException(status_code=403, detail="仅管理员可访问")
+        raise HTTPException(status_code=403, detail="Admin only")
 
     result = await db.execute(
         select(Booking)
@@ -145,28 +137,30 @@ async def get_recent_bookings(
     )
     bookings = result.scalars().all()
 
-    return [{
-        "id": b.id,
-        "student_name": b.student.name if b.student else "未知",
-        "coach_name": b.coach.name if b.coach else "未知",
-        "booking_date": b.booking_date.isoformat(),
-        "start_time": b.start_time.strftime("%H:%M"),
-        "end_time": b.end_time.strftime("%H:%M"),
-        "status": b.status,
-        "created_at": b.created_at.isoformat()
-    } for b in bookings]
+    return [
+        {
+            "id": booking.id,
+            "student_name": booking.student.name if booking.student else "Unknown",
+            "coach_name": booking.coach.name if booking.coach else "Unknown",
+            "booking_date": booking.booking_date.isoformat(),
+            "start_time": booking.start_time.strftime("%H:%M"),
+            "end_time": booking.end_time.strftime("%H:%M"),
+            "status": booking.status,
+            "created_at": booking.created_at.isoformat(),
+        }
+        for booking in bookings
+    ]
 
 
 @router.get("/booking-stats")
 async def get_booking_stats(
     days: int = 7,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
-    """获取预约统计（按天）"""
+    """Get booking counts grouped by day."""
     if current_user["role"] != "admin":
-        from fastapi import HTTPException
-        raise HTTPException(status_code=403, detail="仅管理员可访问")
+        raise HTTPException(status_code=403, detail="Admin only")
 
     today = date.today()
     start_date = today - timedelta(days=days - 1)
@@ -174,61 +168,82 @@ async def get_booking_stats(
     result = await db.execute(
         select(
             Booking.booking_date,
-            func.count().label('total'),
-            func.sum(case((Booking.status == BookingStatus.COMPLETED.value, 1), else_=0)).label('completed')
+            func.count().label("total"),
+            func.sum(case((Booking.status == BookingStatus.COMPLETED.value, 1), else_=0)).label(
+                "completed"
+            ),
         )
         .where(Booking.booking_date.between(start_date, today))
         .group_by(Booking.booking_date)
     )
 
-    stats_dict = {row.booking_date: {"total": row.total, "completed": row.completed or 0} for row in result}
+    stats_dict = {
+        row.booking_date: {"total": row.total, "completed": row.completed or 0}
+        for row in result
+    }
 
-    return [{
-        "date": (start_date + timedelta(days=i)).isoformat(),
-        "total": stats_dict.get(start_date + timedelta(days=i), {}).get("total", 0),
-        "completed": stats_dict.get(start_date + timedelta(days=i), {}).get("completed", 0)
-    } for i in range(days)]
+    return [
+        {
+            "date": (start_date + timedelta(days=i)).isoformat(),
+            "total": stats_dict.get(start_date + timedelta(days=i), {}).get("total", 0),
+            "completed": stats_dict.get(start_date + timedelta(days=i), {}).get("completed", 0),
+        }
+        for i in range(days)
+    ]
 
 
 @router.get("/revenue-stats")
 async def get_revenue_stats(
     months: int = 6,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
-    """获取收入统计（按月）"""
+    """Get monthly revenue stats."""
     if current_user["role"] != "admin":
-        from fastapi import HTTPException
-        raise HTTPException(status_code=403, detail="仅管理员可访问")
+        raise HTTPException(status_code=403, detail="Admin only")
 
     today = date.today()
-    stats = []
-
+    month_dates = []
     for i in range(months - 1, -1, -1):
-        # 计算月份
         month_date = today.replace(day=1)
         for _ in range(i):
             month_date = (month_date - timedelta(days=1)).replace(day=1)
+        month_dates.append(month_date)
 
-        # 下个月第一天
-        if month_date.month == 12:
-            next_month = month_date.replace(year=month_date.year + 1, month=1)
-        else:
-            next_month = month_date.replace(month=month_date.month + 1)
+    if not month_dates:
+        return []
 
-        # 当月收入
-        income = await db.execute(
-            select(func.sum(Transaction.amount)).where(
-                Transaction.type == TransactionType.PURCHASE.value,
-                Transaction.created_at >= month_date,
-                Transaction.created_at < next_month
-            )
+    last_month = month_dates[-1]
+    if last_month.month == 12:
+        range_end = last_month.replace(year=last_month.year + 1, month=1)
+    else:
+        range_end = last_month.replace(month=last_month.month + 1)
+
+    year_expr = func.extract("year", Transaction.created_at)
+    month_expr = func.extract("month", Transaction.created_at)
+    revenue_result = await db.execute(
+        select(
+            year_expr.label("year"),
+            month_expr.label("month"),
+            func.sum(Transaction.amount).label("revenue"),
         )
-        month_income = income.scalar() or 0
+        .where(
+            Transaction.type == TransactionType.PURCHASE.value,
+            Transaction.created_at >= month_dates[0],
+            Transaction.created_at < range_end,
+        )
+        .group_by(year_expr, month_expr)
+    )
 
-        stats.append({
+    revenue_map = {
+        (int(year), int(month)): float(revenue or 0)
+        for year, month, revenue in revenue_result.all()
+    }
+
+    return [
+        {
             "month": month_date.strftime("%Y-%m"),
-            "revenue": float(month_income)
-        })
-
-    return stats
+            "revenue": revenue_map.get((month_date.year, month_date.month), 0.0),
+        }
+        for month_date in month_dates
+    ]

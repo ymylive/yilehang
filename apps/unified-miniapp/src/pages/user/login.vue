@@ -1,12 +1,13 @@
 <template>
+  <PageErrorBoundary page="user.login" @retry="retryLoginPage">
   <view class="page page-enter anim-page-enter">
     <view class="hero anim-fade-up">
       <view class="hero-bubble bubble-1"></view>
       <view class="hero-bubble bubble-2"></view>
       <view class="hero-bubble bubble-3"></view>
       <view class="brand">
-        <view class="logo-fallback">易</view>
-        <text class="title">易乐航</text>
+        <image class="logo-fallback" :src="brandLogoSrc" mode="aspectFit" @error="handleLogoError" />
+        <text class="title">韧翎成长计划</text>
         <text class="subtitle">青春运动成长平台</text>
       </view>
     </view>
@@ -24,7 +25,7 @@
         <text class="card-subtitle">微信授权后快速登录</text>
 
         <!-- #ifdef MP-WEIXIN -->
-        <button class="wechat-btn" :loading="loading" @click="wechatLogin">
+        <button class="wechat-btn" :loading="loading" @tap="wechatLogin">
           {{ loading ? '登录中...' : '微信一键登录' }}
         </button>
         <!-- #endif -->
@@ -78,7 +79,7 @@
 
       <view class="agreement">
         <view class="checkbox" :class="{ checked: agreed }" @click="agreed = !agreed">
-          <text v-if="agreed">✓</text>
+          <wd-icon v-if="agreed" name="check" size="18rpx" color="#ffffff" />
         </view>
         <text class="agreement-text">我已阅读并同意</text>
         <text class="agreement-link" @click="viewAgreement('user')">《用户协议》</text>
@@ -87,9 +88,47 @@
       </view>
     </view>
 
+    <!-- 角色选择弹窗 -->
+    <view v-if="showRoleSelector" class="role-modal" @click="showRoleSelector = false">
+      <view class="role-content" @click.stop>
+        <text class="role-title">选择您的角色</text>
+        <text class="role-subtitle">首次登录，请选择您的身份</text>
+        <view class="role-grid">
+          <view class="role-item" @click="selectRole('parent')">
+            <view class="role-icon">
+              <wd-icon name="usergroup" size="34rpx" color="#2563eb" />
+            </view>
+            <text class="role-name">家长</text>
+            <text class="role-desc">管理孩子学习</text>
+          </view>
+          <view class="role-item" @click="selectRole('student')">
+            <view class="role-icon">
+              <wd-icon name="books" size="34rpx" color="#2563eb" />
+            </view>
+            <text class="role-name">学员</text>
+            <text class="role-desc">参与训练课程</text>
+          </view>
+          <view class="role-item" @click="selectRole('coach')">
+            <view class="role-icon">
+              <wd-icon name="dashboard" size="34rpx" color="#2563eb" />
+            </view>
+            <text class="role-name">教练</text>
+            <text class="role-desc">教学与管理</text>
+          </view>
+          <view class="role-item" @click="selectRole('merchant')">
+            <view class="role-icon">
+              <wd-icon name="shop" size="34rpx" color="#2563eb" />
+            </view>
+            <text class="role-name">商家</text>
+            <text class="role-desc">商品与核销</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <view class="intro-section anim-fade-up anim-delay-2">
       <view class="intro-card">
-        <text class="intro-title">为什么选择易乐航</text>
+        <text class="intro-title">为什么选择韧翎成长计划</text>
         <text class="intro-item">• 体育 + 辅导联动，让放学后两小时更高效</text>
         <text class="intro-item">• 训练过程可视化反馈，成长看得见</text>
         <text class="intro-item">• 家长、教练、商家三方协同，形成成长闭环</text>
@@ -99,17 +138,31 @@
       </view>
     </view>
   </view>
+  </PageErrorBoundary>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import PageErrorBoundary from '@/components/PageErrorBoundary.vue'
+import { onUnmounted, ref } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { usePermissionStore } from '@/stores/permission'
 import { routeByRole } from '@/utils/role-guard'
+import { BRAND_LOGO_INLINE_DATA_URI, BRAND_LOGO_PROJECT_PATH } from '@/utils/brand-logo'
+import { safeNavigate } from '@/utils/safe-nav'
+import { trackError, trackEvent } from '@/utils/telemetry'
 
 const userStore = useUserStore()
+const permissionStore = usePermissionStore()
 const loading = ref(false)
 const agreed = ref(false)
 const loginMode = ref<'wechat' | 'account' | 'email'>('wechat')
+const brandLogoSrc = ref(BRAND_LOGO_PROJECT_PATH)
+
+function handleLogoError() {
+  if (brandLogoSrc.value !== BRAND_LOGO_INLINE_DATA_URI) {
+    brandLogoSrc.value = BRAND_LOGO_INLINE_DATA_URI
+  }
+}
 
 // 账号登录
 const account = ref('')
@@ -121,6 +174,11 @@ const email = ref('')
 const emailCode = ref('')
 const sendingCode = ref(false)
 const countdown = ref(0)
+let countdownTimer: ReturnType<typeof setInterval> | null = null
+
+// 角色选择
+const showRoleSelector = ref(false)
+const pendingRegister = ref<{ email?: string; wechatOpenid?: string; nickname?: string } | null>(null)
 
 function ensureAgreement() {
   if (!agreed.value) {
@@ -144,31 +202,75 @@ function getOrCreateDeviceId() {
   return generated
 }
 
+function clearCountdownTimer() {
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+}
+
+onUnmounted(() => {
+  clearCountdownTimer()
+})
+
 // ========== 微信登录 ==========
+function isWechatCodeExpired(error: any) {
+  const msg = String(error?.message || error?.detail || error?.errMsg || '')
+  return msg.includes('40029') || msg.includes('invalid code') || msg.includes('登录凭证已过期')
+}
+
 async function wechatLogin() {
   if (loading.value) return
   if (!ensureAgreement()) return
+  trackEvent('auth.wechat.attempt', { mode: 'wechat' })
 
   // #ifdef MP-WEIXIN
   loading.value = true
   try {
     const loginRes: any = await new Promise((resolve, reject) => {
-      uni.login({ provider: 'weixin', success: resolve, fail: reject })
+      uni.login({ timeout: 10000, success: resolve, fail: reject })
     })
 
     if (!loginRes?.code) {
       throw new Error('未获取到微信登录凭证')
     }
 
-    // getUserProfile 已被微信废弃，直接用 code 登录
-    // 用户信息通过 open-data 组件展示或后续补充
     const deviceId = getOrCreateDeviceId()
-    await userStore.wechatLogin(loginRes.code, undefined, deviceId)
+    try {
+      await userStore.wechatLogin(loginRes.code, undefined, deviceId)
+    } catch (error: any) {
+      if (!isWechatCodeExpired(error)) throw error
+
+      const retryRes: any = await new Promise((resolve, reject) => {
+        uni.login({ timeout: 10000, success: resolve, fail: reject })
+      })
+      if (!retryRes?.code) throw new Error('微信登录凭证已失效，请重试')
+      await userStore.wechatLogin(retryRes.code, undefined, deviceId)
+    }
+
     const user = await userStore.fetchUserInfo()
+    await permissionStore.init()
+    trackEvent('auth.wechat.success', { role: user?.role || '' })
     routeByRole(user?.role)
   } catch (error: any) {
-    const msg = error?.errMsg || error?.message || '微信登录失败'
-    uni.showToast({ title: msg, icon: 'none' })
+    const detail = error?.detail
+    if (error?.statusCode === 409 && detail?.code === 'WECHAT_ROLE_REQUIRED') {
+      const wechatOpenid = String(detail?.wechat_openid || '').trim()
+      if (!wechatOpenid) {
+        uni.showToast({ title: '微信登录信息不完整，请重试', icon: 'none' })
+        return
+      }
+      pendingRegister.value = {
+        wechatOpenid,
+        nickname: detail?.nickname || '微信用户'
+      }
+      showRoleSelector.value = true
+      trackEvent('auth.wechat.role_required')
+    } else {
+      const msg = error?.errMsg || error?.message || '微信登录失败'
+      trackError('auth.wechat.fail', error, { message: msg })
+      uni.showToast({ title: msg, icon: 'none' })
+    }
   } finally {
     loading.value = false
   }
@@ -179,6 +281,7 @@ async function wechatLogin() {
 async function accountLogin() {
   if (loading.value) return
   if (!ensureAgreement()) return
+  trackEvent('auth.account.attempt', { mode: 'account' })
 
   if (!account.value.trim()) {
     uni.showToast({ title: '请输入用户名/手机号/邮箱', icon: 'none' })
@@ -193,9 +296,18 @@ async function accountLogin() {
   try {
     await userStore.login(account.value.trim(), password.value)
     const user = await userStore.fetchUserInfo()
+    await permissionStore.init()
+    trackEvent('auth.account.success', { role: user?.role || '' })
     routeByRole(user?.role)
   } catch (error: any) {
-    uni.showToast({ title: error?.message || '登录失败', icon: 'none' })
+    if (error?.message?.includes('USER_NOT_REGISTERED') || error?.message?.includes('404')) {
+      pendingRegister.value = { email: account.value.trim() }
+      showRoleSelector.value = true
+      trackEvent('auth.account.role_required')
+    } else {
+      trackError('auth.account.fail', error)
+      uni.showToast({ title: error?.message || '登录失败', icon: 'none' })
+    }
   } finally {
     loading.value = false
   }
@@ -209,6 +321,7 @@ async function sendCode() {
   }
 
   sendingCode.value = true
+  trackEvent('auth.email.code.attempt')
   try {
     const res: any = await userStore.sendEmailCode(email.value)
     const delivery = res?.delivery || 'smtp'
@@ -223,12 +336,19 @@ async function sendCode() {
     } else {
       uni.showToast({ title: '验证码已发送', icon: 'success' })
     }
+
+    clearCountdownTimer()
     countdown.value = 60
-    const timer = setInterval(() => {
+    countdownTimer = setInterval(() => {
       countdown.value--
-      if (countdown.value <= 0) clearInterval(timer)
+      if (countdown.value <= 0) {
+        countdown.value = 0
+        clearCountdownTimer()
+      }
     }, 1000)
+    trackEvent('auth.email.code.success')
   } catch (error: any) {
+    trackError('auth.email.code.fail', error)
     uni.showToast({ title: error?.message || '验证码发送失败', icon: 'none' })
   } finally {
     sendingCode.value = false
@@ -238,6 +358,7 @@ async function sendCode() {
 async function emailLogin() {
   if (loading.value) return
   if (!ensureAgreement()) return
+  trackEvent('auth.email.attempt', { mode: 'email' })
 
   if (!validEmail(email.value)) {
     uni.showToast({ title: '请输入正确的邮箱地址', icon: 'none' })
@@ -252,24 +373,71 @@ async function emailLogin() {
   try {
     await userStore.loginWithEmail(email.value, emailCode.value)
     const user = await userStore.fetchUserInfo()
+    trackEvent('auth.email.success', { role: user?.role || '' })
     uni.showToast({ title: '登录成功', icon: 'success' })
     setTimeout(() => {
       routeByRole(user?.role)
     }, 400)
   } catch (error: any) {
-    uni.showToast({ title: error?.message || '登录失败', icon: 'none' })
+    if (error?.message?.includes('USER_NOT_REGISTERED') || error?.message?.includes('404')) {
+      pendingRegister.value = { email: email.value }
+      showRoleSelector.value = true
+      trackEvent('auth.email.role_required')
+    } else {
+      trackError('auth.email.fail', error)
+      uni.showToast({ title: error?.message || '登录失败', icon: 'none' })
+    }
   } finally {
     loading.value = false
   }
 }
 
+// ========== 角色选择 ==========
+async function selectRole(role: string) {
+  if (!pendingRegister.value) return
+
+  showRoleSelector.value = false
+  loading.value = true
+  trackEvent('auth.register.role.attempt', { role })
+
+  try {
+    await userStore.registerWithRole(
+      pendingRegister.value.email || '',
+      pendingRegister.value.wechatOpenid || '',
+      role,
+      pendingRegister.value.nickname
+    )
+    const user = await userStore.fetchUserInfo()
+    await permissionStore.init()
+    trackEvent('auth.register.role.success', { role: user?.role || role })
+    uni.showToast({ title: '注册成功', icon: 'success' })
+    setTimeout(() => {
+      routeByRole(user?.role)
+    }, 400)
+  } catch (error: any) {
+    trackError('auth.register.role.fail', error, { role })
+    uni.showToast({ title: error?.message || '注册失败', icon: 'none' })
+  } finally {
+    loading.value = false
+    pendingRegister.value = null
+  }
+}
+
 // ========== 导航 ==========
 function goRegister() {
-  uni.navigateTo({ url: '/pages/user/register' })
+  safeNavigate('/pages/user/register')
 }
 
 function goIntro() {
-  uni.navigateTo({ url: '/pages/brand/intro' })
+  safeNavigate('/pages/brand/intro')
+}
+
+function retryLoginPage() {
+  loading.value = false
+  sendingCode.value = false
+  showRoleSelector.value = false
+  clearCountdownTimer()
+  countdown.value = 0
 }
 
 function viewAgreement(type: 'user' | 'privacy') {
@@ -336,12 +504,8 @@ function viewAgreement(type: 'user' | 'privacy') {
   margin: 0 auto;
   border-radius: 26rpx;
   background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ff8800;
-  font-size: 54rpx;
-  font-weight: 700;
+  display: block;
+  overflow: hidden;
   box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.1);
 }
 
@@ -546,8 +710,6 @@ function viewAgreement(type: 'user' | 'privacy') {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 20rpx;
   background: #fff;
 }
 
@@ -608,5 +770,88 @@ function viewAgreement(type: 'user' | 'privacy') {
   margin-top: 8rpx;
   font-size: 22rpx;
   color: #bbb;
+}
+
+.role-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.role-content {
+  width: 600rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 40rpx 30rpx;
+}
+
+.role-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+}
+
+.role-subtitle {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #999;
+  text-align: center;
+}
+
+.role-grid {
+  margin-top: 30rpx;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+}
+
+.role-item {
+  background: #f7f8fa;
+  border-radius: 16rpx;
+  padding: 30rpx 20rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  border: 1rpx solid rgba(226, 232, 240, 0.9);
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  cursor: pointer;
+}
+
+.role-item:active {
+  transform: translateY(2rpx);
+  border-color: rgba(147, 197, 253, 0.88);
+  box-shadow: 0 8rpx 18rpx rgba(37, 99, 235, 0.14);
+}
+
+.role-icon {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #eff6ff, #f3f8ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.role-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #333;
+}
+
+.role-desc {
+  font-size: 22rpx;
+  color: #999;
 }
 </style>

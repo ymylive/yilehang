@@ -1,4 +1,4 @@
--- 易乐航种子数据
+-- 韧翎成长计划种子数据
 -- 插入测试用户
 INSERT INTO users (phone, password_hash, role, nickname, status) VALUES
 ('13800138001', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.S6GgrMYRnML4Gy', 'admin', '管理员', 'active'),

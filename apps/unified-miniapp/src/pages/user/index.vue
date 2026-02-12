@@ -1,4 +1,5 @@
-﻿<template>
+<template>
+  <PageErrorBoundary page="user.index" @retry="retryLoad">
   <view class="user-page">
     <view class="hero">
       <view class="hero-glow" aria-hidden="true"></view>
@@ -30,19 +31,19 @@
         </view>
         <view class="merchant-actions">
           <view class="merchant-action-item" @click="goTo('/pages/merchant/index')">
-            <view class="action-icon">🏪</view>
+            <view class="action-icon"><wd-icon name="shop" size="38rpx" /></view>
             <text class="action-label">工作台</text>
           </view>
           <view class="merchant-action-item" @click="goTo('/pages/merchant/verify')">
-            <view class="action-icon">📷</view>
+            <view class="action-icon"><wd-icon name="scan" size="38rpx" /></view>
             <text class="action-label">扫码核销</text>
           </view>
           <view class="merchant-action-item" @click="goTo('/pages/merchant/orders')">
-            <view class="action-icon">📋</view>
+            <view class="action-icon"><wd-icon name="view-list" size="38rpx" /></view>
             <text class="action-label">订单管理</text>
           </view>
           <view class="merchant-action-item" @click="goTo('/pages/merchant/stats')">
-            <view class="action-icon">📊</view>
+            <view class="action-icon"><wd-icon name="chart-bar" size="38rpx" /></view>
             <text class="action-label">数据统计</text>
           </view>
         </view>
@@ -55,19 +56,19 @@
         </view>
         <view class="coach-actions">
           <view class="coach-action-item" @click="goTo('/pages/coach/workbench/index')">
-            <view class="action-icon">📋</view>
+            <view class="action-icon"><wd-icon name="dashboard" size="38rpx" /></view>
             <text class="action-label">工作台</text>
           </view>
           <view class="coach-action-item" @click="goTo('/pages/coach/schedule/index')">
-            <view class="action-icon">📅</view>
+            <view class="action-icon"><wd-icon name="calendar" size="38rpx" /></view>
             <text class="action-label">我的课表</text>
           </view>
           <view class="coach-action-item" @click="goTo('/pages/coach/students/index')">
-            <view class="action-icon">👥</view>
+            <view class="action-icon"><wd-icon name="usergroup" size="38rpx" /></view>
             <text class="action-label">我的学员</text>
           </view>
           <view class="coach-action-item" @click="goTo('/pages/coach/income/index')">
-            <view class="action-icon">💰</view>
+            <view class="action-icon"><wd-icon name="wallet" size="38rpx" /></view>
             <text class="action-label">收入统计</text>
           </view>
         </view>
@@ -124,50 +125,50 @@
 
       <view class="menu-card" v-if="userStore.isLoggedIn && (userStore.isParent || userStore.isStudent)">
         <view class="menu-item" @click="goTo('/pages/membership/index')" v-if="userStore.isParent || userStore.isStudent">
-          <view class="menu-icon">卡</view>
+          <view class="menu-icon"><wd-icon name="books" size="30rpx" /></view>
           <text class="menu-label">我的会员卡</text>
           <text class="menu-badge" v-if="userStore.currentStudent?.remaining_lessons">{{ userStore.currentStudent.remaining_lessons }}次</text>
           <text class="menu-arrow">›</text>
         </view>
 
         <view class="menu-item" @click="goTo('/pages/chat/index')">
-          <view class="menu-icon">聊</view>
+          <view class="menu-icon"><wd-icon name="chat" size="30rpx" /></view>
           <text class="menu-label">聊天消息</text>
           <text class="menu-arrow">›</text>
         </view>
 
         <view class="menu-item" @click="goTo('/pages/user/messages')">
-          <view class="menu-icon">信</view>
+          <view class="menu-icon"><wd-icon name="notification" size="30rpx" /></view>
           <text class="menu-label">系统通知</text>
           <text class="menu-arrow">›</text>
         </view>
 
         <view class="menu-item" @click="goTo('/pages/schedule/index')" v-if="userStore.isParent || userStore.isStudent">
-          <view class="menu-icon">单</view>
+          <view class="menu-icon"><wd-icon name="calendar" size="30rpx" /></view>
           <text class="menu-label">我的课表</text>
           <text class="menu-arrow">›</text>
         </view>
 
         <view class="menu-item" @click="goTo('/pages/membership/transactions')" v-if="userStore.isParent || userStore.isStudent">
-          <view class="menu-icon">券</view>
+          <view class="menu-icon"><wd-icon name="view-list" size="30rpx" /></view>
           <text class="menu-label">消费记录</text>
           <text class="menu-arrow">›</text>
         </view>
 
         <view class="menu-item" @click="goTo('/pages/review/create')" v-if="userStore.isStudent || userStore.isParent">
-          <view class="menu-icon">意</view>
+          <view class="menu-icon"><wd-icon name="star" size="30rpx" /></view>
           <text class="menu-label">课程评价</text>
           <text class="menu-arrow">›</text>
         </view>
 
         <view class="menu-item" @click="goTo('/pages/user/profile')">
-          <view class="menu-icon">设</view>
+          <view class="menu-icon"><wd-icon name="setting" size="30rpx" /></view>
           <text class="menu-label">个人资料</text>
           <text class="menu-arrow">›</text>
         </view>
 
         <view class="menu-item" @click="goTo('/pages/index/index')">
-          <view class="menu-icon">关</view>
+          <view class="menu-icon"><wd-icon name="home" size="30rpx" /></view>
           <text class="menu-label">平台首页</text>
           <text class="menu-arrow">›</text>
         </view>
@@ -177,13 +178,18 @@
         <button class="logout-btn" @click="logout">退出登录</button>
       </view>
     </view>
-  </view>
+  <DynamicTabBar />
+ </view>
+ </PageErrorBoundary>
 </template>
 
 <script setup lang="ts">
+import DynamicTabBar from '@/components/DynamicTabBar.vue'
+import PageErrorBoundary from '@/components/PageErrorBoundary.vue'
 import { ref, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { studentApi } from '@/api'
+import { safeNavigate } from '@/utils/safe-nav'
 
 const userStore = useUserStore()
 const students = ref<any[]>([])
@@ -194,10 +200,16 @@ onMounted(async () => {
   }
 })
 
+function retryLoad() {
+  if (userStore.isLoggedIn && userStore.isParent) {
+    loadStudents()
+  }
+}
+
 async function loadStudents() {
   try {
-    const res = await studentApi.list()
-    students.value = res || []
+    const res: any = await studentApi.list()
+    students.value = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : [])
 
     if (!userStore.currentStudent && students.value.length) {
       userStore.setCurrentStudent(students.value[0])
@@ -224,23 +236,23 @@ function selectStudent(student: any) {
 }
 
 function addStudent() {
-  uni.navigateTo({ url: '/pages/user/create-student-account' })
+  safeNavigate('/pages/user/create-student-account')
 }
 
 function createStudentAccount(student: any) {
-  uni.navigateTo({ url: `/pages/user/create-student-account?id=${student.id}` })
+  safeNavigate(`/pages/user/create-student-account?id=${student.id}`)
 }
 
 function editProfile() {
-  uni.navigateTo({ url: '/pages/user/profile' })
+  safeNavigate('/pages/user/profile')
 }
 
 function goLogin() {
-  uni.navigateTo({ url: '/pages/user/login' })
+  safeNavigate('/pages/user/login')
 }
 
 function goTo(url: string) {
-  uni.navigateTo({ url })
+  safeNavigate(url)
 }
 
 function logout() {
@@ -260,7 +272,7 @@ function logout() {
 .user-page {
   min-height: 100vh;
   background: #f7f8fb;
-  padding-bottom: 120rpx;
+  padding-bottom: var(--tabbar-content-offset, calc(120rpx + env(safe-area-inset-bottom)));
 }
 
 .hero {
@@ -383,8 +395,9 @@ function logout() {
 .menu-card,
 .logout-wrap {
   border-radius: 22rpx;
-  background: #fff;
-  box-shadow: 0 10rpx 24rpx rgba(31, 37, 51, 0.05);
+  background: linear-gradient(180deg, #ffffff, #fdfefe);
+  border: 1rpx solid rgba(228, 234, 245, 0.9);
+  box-shadow: 0 12rpx 26rpx rgba(31, 37, 51, 0.06);
 }
 
 .student-card {
@@ -534,18 +547,29 @@ function logout() {
   flex-direction: column;
   align-items: center;
   gap: 8rpx;
-  padding: 16rpx 0;
+  padding: 20rpx 0;
   border-radius: 16rpx;
-  background: #f8f9fc;
+  background: linear-gradient(180deg, #f9fbff, #f4f8ff);
+  border: 1rpx solid rgba(222, 232, 247, 0.9);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+  cursor: pointer;
 }
 
 .merchant-action-item:active,
 .coach-action-item:active {
-  background: #fff4e4;
+  transform: translateY(2rpx);
+  box-shadow: 0 8rpx 18rpx rgba(40, 68, 109, 0.12);
 }
 
 .action-icon {
-  font-size: 40rpx;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #edf4ff, #e7f0ff);
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-label {
@@ -570,6 +594,8 @@ function logout() {
   gap: 12rpx;
   padding: 0 20rpx;
   border-bottom: 1rpx solid #eef1f6;
+  transition: background-color 180ms ease, transform 180ms ease;
+  cursor: pointer;
 }
 
 .menu-item:last-child {
@@ -577,20 +603,20 @@ function logout() {
 }
 
 .menu-item:active {
-  background: #fff8ee;
+  background: #f8fbff;
+  transform: translateY(1rpx);
 }
 
 .menu-icon {
   width: 58rpx;
   height: 58rpx;
   border-radius: 16rpx;
-  background: linear-gradient(135deg, #fff6e6, #ffe5c4);
-  color: #df7e17;
-  font-size: 24rpx;
-  font-weight: 700;
+  background: linear-gradient(135deg, #edf4ff, #e7f0ff);
+  color: #3b82f6;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: inset 0 0 0 1rpx rgba(203, 217, 239, 0.9);
 }
 
 .menu-label {

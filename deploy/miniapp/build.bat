@@ -1,5 +1,5 @@
 @echo off
-REM 易乐航统一小程序 - 一键构建脚本 (Windows)
+REM 韧翎成长计划统一小程序 - 一键构建脚本 (Windows)
 
 setlocal enabledelayedexpansion
 
@@ -8,7 +8,7 @@ set "MINIAPP_DIR=%PROJECT_ROOT%\apps\unified-miniapp"
 set "BUILD_OUTPUT=%MINIAPP_DIR%\dist\build\mp-weixin"
 
 echo ==========================================
-echo 易乐航统一小程序 - 构建脚本
+echo 韧翎成长计划统一小程序 - 构建脚本
 echo ==========================================
 
 REM 检查 pnpm

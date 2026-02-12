@@ -1,4 +1,4 @@
-version: '3.8'
+﻿version: '3.8'
 
 services:
   # PostgreSQL database
@@ -29,7 +29,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-yilehang}
       DEBUG: ${DEBUG:-false}
-      SECRET_KEY: ${SECRET_KEY:-change-this-in-production}
+      SECRET_KEY: ${SECRET_KEY:?set-in-env}
       WECHAT_APPID: ${WECHAT_APPID:-}
       WECHAT_SECRET: ${WECHAT_SECRET:-}
       ALLOW_WECHAT_LOGIN_WITHOUT_SECRET: ${ALLOW_WECHAT_LOGIN_WITHOUT_SECRET:-false}
@@ -58,7 +58,7 @@ services:
       - "443:443"
     volumes:
       - ./nginx-ssl.conf:/etc/nginx/nginx.conf:ro
-      - /root/.acme.sh/yilehang.cornna.xyz:/etc/nginx/ssl/yilehang.cornna.xyz:ro
+      - /root/.acme.sh/rl.cornna.xyz:/etc/nginx/ssl/rl.cornna.xyz:ro
     depends_on:
       - api
     restart: unless-stopped

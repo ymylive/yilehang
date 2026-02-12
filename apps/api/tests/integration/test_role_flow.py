@@ -11,6 +11,7 @@ Test Coverage:
 """
 import pytest
 from httpx import AsyncClient
+from app.models.rbac import Permission, Role, role_permissions, user_roles
 
 
 class TestRoleLogin:
@@ -456,6 +457,92 @@ class TestRBACRoleAPI:
                 response = await client.post(endpoint, json={"role_code": "admin"})
             assert response.status_code == 401, f"{method} {endpoint} should require auth"
 
+    @pytest.mark.asyncio
+    async def test_tc041_switch_role_success_updates_active_role_and_token(
+        self,
+        client: AsyncClient,
+        parent_token: str,
+        test_users: dict,
+        db_session,
+    ):
+        """TC041: Switching role returns token consistent with new active role."""
+        parent_user = test_users["parent"]
+
+        parent_role = Role(code="parent", name="家长", is_system=True, is_active=True, sort_order=1)
+        student_role = Role(code="student", name="学员", is_system=True, is_active=True, sort_order=2)
+        parent_perm = Permission(
+            code="booking:read",
+            name="Read booking",
+            type="api",
+            resource="/api/v1/bookings",
+            action="GET",
+            is_active=True,
+        )
+        student_perm = Permission(
+            code="training:read",
+            name="Read training",
+            type="api",
+            resource="/api/v1/training/history",
+            action="GET",
+            is_active=True,
+        )
+        db_session.add_all([parent_role, student_role, parent_perm, student_perm])
+        await db_session.flush()
+
+        await db_session.execute(
+            user_roles.insert(),
+            [
+                {"user_id": parent_user.id, "role_id": parent_role.id, "is_active": True},
+                {"user_id": parent_user.id, "role_id": student_role.id, "is_active": False},
+            ],
+        )
+        await db_session.execute(
+            role_permissions.insert(),
+            [
+                {"role_id": parent_role.id, "permission_id": parent_perm.id},
+                {"role_id": student_role.id, "permission_id": student_perm.id},
+            ],
+        )
+        await db_session.commit()
+
+        switch_resp = await client.post(
+            "/api/v1/user/switch-role",
+            headers={"Authorization": f"Bearer {parent_token}"},
+            json={"role_code": "student"},
+        )
+        assert switch_resp.status_code == 200
+
+        switch_data = switch_resp.json()["data"]
+        assert switch_data["active_role"] == "student"
+        assert switch_data["token_type"] == "bearer"
+        assert "access_token" in switch_data
+        assert set(switch_data["roles"]) == {"parent", "student"}
+
+        new_token = switch_data["access_token"]
+
+        me_resp = await client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {new_token}"},
+        )
+        assert me_resp.status_code == 200
+        assert me_resp.json()["role"] == "student"
+
+        roles_resp = await client.get(
+            "/api/v1/user/roles",
+            headers={"Authorization": f"Bearer {new_token}"},
+        )
+        assert roles_resp.status_code == 200
+        role_codes = {item["code"] for item in roles_resp.json()["data"]}
+        assert role_codes == {"parent", "student"}
+
+        perms_resp = await client.get(
+            "/api/v1/user/permissions",
+            headers={"Authorization": f"Bearer {new_token}"},
+        )
+        assert perms_resp.status_code == 200
+        perm_codes = {item["code"] for item in perms_resp.json()["data"]}
+        assert perm_codes == {"booking:read", "training:read"}
+
 
 class TestRBACCrossRoleAccess:
     """Test cross-role access control with RBAC system."""
@@ -499,13 +586,39 @@ class TestRBACCrossRoleAccess:
     async def test_tc034_admin_can_access_dashboard(
         self, client: AsyncClient, admin_token: str
     ):
-        """TC034: Admin role can access dashboard."""
-        response = await client.get(
-            "/api/v1/dashboard/stats",
-            headers={"Authorization": f"Bearer {admin_token}"}
-        )
-        # Admin should have access (200 or data-related error, not 403)
-        assert response.status_code != 403
+        """TC034: Admin role can access all real dashboard routes."""
+        endpoints = [
+            "/api/v1/dashboard/overview",
+            "/api/v1/dashboard/recent-bookings",
+            "/api/v1/dashboard/booking-stats",
+            "/api/v1/dashboard/revenue-stats",
+        ]
+
+        for endpoint in endpoints:
+            response = await client.get(
+                endpoint,
+                headers={"Authorization": f"Bearer {admin_token}"},
+            )
+            assert response.status_code == 200, f"Admin should access {endpoint}"
+
+    @pytest.mark.asyncio
+    async def test_tc042_non_admin_cannot_access_dashboard_routes(
+        self, client: AsyncClient, coach_token: str
+    ):
+        """TC042: Non-admin role is denied on all dashboard routes."""
+        endpoints = [
+            "/api/v1/dashboard/overview",
+            "/api/v1/dashboard/recent-bookings",
+            "/api/v1/dashboard/booking-stats",
+            "/api/v1/dashboard/revenue-stats",
+        ]
+
+        for endpoint in endpoints:
+            response = await client.get(
+                endpoint,
+                headers={"Authorization": f"Bearer {coach_token}"},
+            )
+            assert response.status_code == 403, f"Coach should be denied for {endpoint}"
 
 
 class TestRBACRoleInheritance:

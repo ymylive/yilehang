@@ -6,29 +6,35 @@
 - POST /switch-role   切换当前激活角色
 """
 import logging
+from datetime import timedelta
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
+from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import create_access_token, get_current_user
-from app.middleware.role_auth import (
-    get_current_user_with_roles,
-    get_user_permissions,
+from app.core.security import create_access_token
+from app.middleware.role_auth import get_current_user_with_roles
+from app.models.rbac import (
+    Menu,
+    Permission,
+    Role,
+    role_menus,
+    role_permissions,
+    user_roles,
 )
 from app.models.user import User
-from app.models.rbac import (
-    Role, Permission, Menu,
-    user_roles, role_permissions, role_menus,
-)
 from app.schemas.role import (
-    RoleResponse, UserRolesResponse,
-    PermissionResponse, UserPermissionsResponse,
-    MenuResponse, UserMenusResponse,
-    SwitchRoleRequest, SwitchRoleResponse,
+    MenuResponse,
+    PermissionResponse,
+    RoleResponse,
+    SwitchRoleRequest,
+    SwitchRoleResponse,
+    UserMenusResponse,
+    UserPermissionsResponse,
+    UserRolesResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -48,7 +54,7 @@ async def get_user_roles(
     result = await db.execute(
         select(Role)
         .join(user_roles, user_roles.c.role_id == Role.id)
-        .where(user_roles.c.user_id == user_id, Role.is_active == True)
+        .where(user_roles.c.user_id == user_id, Role.is_active.is_(True))
         .order_by(Role.sort_order)
     )
     roles = result.scalars().all()
@@ -85,7 +91,7 @@ async def get_permissions(
     # admin 返回所有权限
     if "admin" in current_user.get("roles", []):
         result = await db.execute(
-            select(Permission).where(Permission.is_active == True)
+            select(Permission).where(Permission.is_active.is_(True))
         )
         perms = result.scalars().all()
         return UserPermissionsResponse(
@@ -99,8 +105,8 @@ async def get_permissions(
         .join(user_roles, user_roles.c.role_id == Role.id)
         .where(
             user_roles.c.user_id == user_id,
-            Role.is_active == True,
-            Permission.is_active == True,
+            Role.is_active.is_(True),
+            Permission.is_active.is_(True),
         )
         .distinct()
     )
@@ -125,7 +131,7 @@ async def get_menus(
     if "admin" in current_user.get("roles", []):
         result = await db.execute(
             select(Menu)
-            .where(Menu.is_active == True, Menu.is_visible == True)
+            .where(Menu.is_active.is_(True), Menu.is_visible.is_(True))
             .order_by(Menu.sort_order)
         )
         all_menus = result.scalars().all()
@@ -137,9 +143,9 @@ async def get_menus(
             .join(user_roles, user_roles.c.role_id == Role.id)
             .where(
                 user_roles.c.user_id == user_id,
-                Role.is_active == True,
-                Menu.is_active == True,
-                Menu.is_visible == True,
+                Role.is_active.is_(True),
+                Menu.is_active.is_(True),
+                Menu.is_visible.is_(True),
             )
             .distinct()
             .order_by(Menu.sort_order)
@@ -174,7 +180,7 @@ async def switch_role(
 
     # 查找目标角色 ID
     role_result = await db.execute(
-        select(Role).where(Role.code == target_code, Role.is_active == True)
+        select(Role).where(Role.code == target_code, Role.is_active.is_(True))
     )
     target_role = role_result.scalar_one_or_none()
 
@@ -203,9 +209,6 @@ async def switch_role(
     await db.commit()
 
     # 生成新 token（包含新的 active_role）
-    from datetime import timedelta
-    from app.core.config import settings
-
     access_token = create_access_token(
         data={
             "sub": str(user_id),

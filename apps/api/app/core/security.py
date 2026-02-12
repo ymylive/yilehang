@@ -1,14 +1,14 @@
 """
 安全模块 - JWT认证
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from jose import JWTError, jwt
 import bcrypt
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 
 from app.core.config import settings
 
@@ -27,7 +27,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         # passlib + bcrypt>=4 may throw backend errors; fallback to raw bcrypt.
         try:
             if hashed_password.startswith("$2"):
-                return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+                return bcrypt.checkpw(
+                    plain_password.encode("utf-8"),
+                    hashed_password.encode("utf-8"),
+                )
         except Exception:
             return False
         return False
@@ -42,9 +45,11 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     """创建访问令牌"""
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
@@ -73,7 +78,7 @@ def decode_access_token(token: str) -> Optional[dict]:
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
-    """获取当前用户"""
+    """获取当前用户（返回字典，用于简单认证）"""
     payload = decode_token(token)
     user_id: str = payload.get("sub")
     if user_id is None:
@@ -82,3 +87,29 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             detail="无效的认证凭据",
         )
     return {"user_id": int(user_id), "role": payload.get("role")}
+
+
+async def fetch_user_from_token(db, current_user_data: dict):
+    """从认证数据获取完整User对象的辅助函数
+
+    Args:
+        db: AsyncSession - 数据库会话
+        current_user_data: dict - 来自 get_current_user 的认证数据
+
+    Returns:
+        User - 完整的用户模型对象
+
+    Raises:
+        HTTPException: 404 如果用户不存在
+    """
+    from sqlalchemy import select
+
+    from app.models.user import User
+
+    result = await db.execute(select(User).where(User.id == current_user_data["user_id"]))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    return user

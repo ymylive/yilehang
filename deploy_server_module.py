@@ -92,7 +92,7 @@ def upload_directory(client, local_path, remote_path, exclude_patterns=None):
 
 def main():
     print("=" * 60)
-    print("易乐航服务端模块部署")
+    print("韧翎成长计划服务端模块部署")
     print("=" * 60)
     print(f"目标服务器: {SERVER_HOST}")
     print(f"项目目录: {PROJECT_DIR}")
