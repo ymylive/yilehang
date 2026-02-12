@@ -30,21 +30,21 @@
           <text class="section-title">商家工作台</text>
         </view>
         <view class="merchant-actions">
-          <view class="merchant-action-item" @click="goTo('/pages/merchant/index')">
+          <view class="merchant-action-item" @click="goTo('/pages/index/index')">
             <view class="action-icon"><wd-icon name="shop" size="38rpx" /></view>
-            <text class="action-label">工作台</text>
+            <text class="action-label">平台首页</text>
           </view>
-          <view class="merchant-action-item" @click="goTo('/pages/merchant/verify')">
+          <view class="merchant-action-item" @click="goTo('/pages/user/messages')">
             <view class="action-icon"><wd-icon name="scan" size="38rpx" /></view>
-            <text class="action-label">扫码核销</text>
+            <text class="action-label">系统通知</text>
           </view>
-          <view class="merchant-action-item" @click="goTo('/pages/merchant/orders')">
+          <view class="merchant-action-item" @click="goTo('/pages/chat/index')">
             <view class="action-icon"><wd-icon name="view-list" size="38rpx" /></view>
-            <text class="action-label">订单管理</text>
+            <text class="action-label">聊天消息</text>
           </view>
-          <view class="merchant-action-item" @click="goTo('/pages/merchant/stats')">
+          <view class="merchant-action-item" @click="showMerchantFeatureUnavailable">
             <view class="action-icon"><wd-icon name="chart-bar" size="38rpx" /></view>
-            <text class="action-label">数据统计</text>
+            <text class="action-label">功能建设中</text>
           </view>
         </view>
       </view>
@@ -253,6 +253,10 @@ function goLogin() {
 
 function goTo(url: string) {
   safeNavigate(url)
+}
+
+function showMerchantFeatureUnavailable() {
+  uni.showToast({ title: '商家功能暂未开放', icon: 'none' })
 }
 
 function logout() {

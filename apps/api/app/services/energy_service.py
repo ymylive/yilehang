@@ -3,9 +3,9 @@
 """
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TypedDict, cast
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.energy import (
@@ -17,10 +17,82 @@ from app.models.energy import (
 )
 
 logger = logging.getLogger(__name__)
+MAX_CAS_RETRIES = 3
+
+
+class AccountSnapshot(TypedDict):
+    id: int
+    balance: int
+    total_earned: int
+    total_spent: int
+    level: int
+    version: int
 
 
 class EnergyService:
     """能量系统服务"""
+
+    @staticmethod
+    async def _get_account_snapshot(
+        db: AsyncSession, student_id: int
+    ) -> Optional[AccountSnapshot]:
+        """读取账户快照用于CAS更新。"""
+        result = await db.execute(
+            select(
+                EnergyAccount.id,
+                EnergyAccount.balance,
+                EnergyAccount.total_earned,
+                EnergyAccount.total_spent,
+                EnergyAccount.level,
+                EnergyAccount.version,
+            ).where(EnergyAccount.student_id == student_id)
+        )
+        row = result.mappings().one_or_none()
+        return cast(AccountSnapshot, cast(object, dict(row))) if row else None
+
+    @staticmethod
+    async def _cas_update_account(
+        db: AsyncSession,
+        account_id: int,
+        expected_version: int,
+        balance_delta: int,
+        total_earned_delta: int = 0,
+        total_spent_delta: int = 0,
+        new_level: Optional[int] = None,
+    ) -> Optional[AccountSnapshot]:
+        """基于版本号执行账户CAS更新，成功返回最新快照。"""
+        values: dict[str, object] = {
+            "balance": EnergyAccount.balance + balance_delta,
+            "total_earned": EnergyAccount.total_earned + total_earned_delta,
+            "total_spent": EnergyAccount.total_spent + total_spent_delta,
+            "version": EnergyAccount.version + 1,
+            "updated_at": datetime.now(timezone.utc),
+        }
+        if new_level is not None:
+            values["level"] = new_level
+
+        result = await db.execute(
+            update(EnergyAccount)
+            .where(
+                and_(
+                    EnergyAccount.id == account_id,
+                    EnergyAccount.version == expected_version,
+                )
+            )
+            .values(**values)
+            .returning(
+                EnergyAccount.id,
+                EnergyAccount.balance,
+                EnergyAccount.total_earned,
+                EnergyAccount.total_spent,
+                EnergyAccount.level,
+                EnergyAccount.version,
+            )
+        )
+        row = result.mappings().one_or_none()
+        if not row:
+            return None
+        return cast(AccountSnapshot, cast(object, dict(row)))
 
     @staticmethod
     async def get_or_create_account(db: AsyncSession, student_id: int) -> EnergyAccount:
@@ -38,7 +110,7 @@ class EnergyService:
         return account
 
     @staticmethod
-    async def get_account_with_level(db: AsyncSession, student_id: int) -> dict:
+    async def get_account_with_level(db: AsyncSession, student_id: int) -> dict[str, object]:
         """获取账户信息（含等级详情）"""
         account = await EnergyService.get_or_create_account(db, student_id)
 
@@ -159,40 +231,50 @@ class EnergyService:
             return False, 0, 0, limit_msg
 
         # 获取账户
-        account = await EnergyService.get_or_create_account(db, student_id)
+        await EnergyService.get_or_create_account(db, student_id)
 
         # 计算积分
         amount = int(rule.points * float(rule.multiplier))
 
-        # 乐观锁更新
-        account.balance += amount
-        account.total_earned += amount
-        account.version += 1
+        for _ in range(MAX_CAS_RETRIES):
+            snapshot = await EnergyService._get_account_snapshot(db, student_id)
+            if not snapshot:
+                await EnergyService.get_or_create_account(db, student_id)
+                continue
 
-        # 更新等级
-        new_level = EnergyService.calculate_level(account.total_earned)
-        if new_level > account.level:
-            account.level = new_level
+            new_total_earned = snapshot["total_earned"] + amount
+            new_level = max(snapshot["level"], EnergyService.calculate_level(new_total_earned))
+            updated = await EnergyService._cas_update_account(
+                db,
+                account_id=snapshot["id"],
+                expected_version=snapshot["version"],
+                balance_delta=amount,
+                total_earned_delta=amount,
+                new_level=new_level,
+            )
+            if not updated:
+                continue
 
-        # 创建交易记录
-        transaction = EnergyTransaction(
-            account_id=account.id,
-            student_id=student_id,
-            type=EnergyTransactionType.EARN.value,
-            source_type=rule.source_type,
-            amount=amount,
-            balance_after=account.balance,
-            rule_id=rule.id,
-            reference_type=reference_type,
-            reference_id=reference_id,
-            description=description or rule.name
-        )
-        db.add(transaction)
+            transaction = EnergyTransaction(
+                account_id=snapshot["id"],
+                student_id=student_id,
+                type=EnergyTransactionType.EARN.value,
+                source_type=rule.source_type,
+                amount=amount,
+                balance_after=updated["balance"],
+                rule_id=rule.id,
+                reference_type=reference_type,
+                reference_id=reference_id,
+                description=description or rule.name,
+            )
+            db.add(transaction)
 
-        await db.flush()
+            await db.flush()
 
-        logger.info(f"Student {student_id} earned {amount} energy via {rule_code}")
-        return True, amount, account.balance, f"获得 {amount} 能量"
+            logger.info(f"Student {student_id} earned {amount} energy via {rule_code}")
+            return True, amount, updated["balance"], f"获得 {amount} 能量"
+
+        return False, 0, 0, "系统繁忙，请稍后重试"
 
     @staticmethod
     async def spend(
@@ -209,36 +291,50 @@ class EnergyService:
         Returns:
             (success, amount, balance, message)
         """
-        account = await EnergyService.get_or_create_account(db, student_id)
+        await EnergyService.get_or_create_account(db, student_id)
 
-        if account.balance < amount:
-            return False, 0, account.balance, f"能量不足，当前余额 {account.balance}"
+        for _ in range(MAX_CAS_RETRIES):
+            snapshot = await EnergyService._get_account_snapshot(db, student_id)
+            if not snapshot:
+                await EnergyService.get_or_create_account(db, student_id)
+                continue
 
-        # 乐观锁更新
-        account.balance -= amount
-        account.total_spent += amount
-        account.version += 1
+            if snapshot["balance"] < amount:
+                return False, 0, snapshot["balance"], f"能量不足，当前余额 {snapshot['balance']}"
 
-        # 创建交易记录
-        transaction = EnergyTransaction(
-            account_id=account.id,
-            student_id=student_id,
-            type=EnergyTransactionType.SPEND.value,
-            amount=-amount,
-            balance_after=account.balance,
-            reference_type=reference_type,
-            reference_id=reference_id,
-            description=description or "能量消费"
-        )
-        db.add(transaction)
+            updated = await EnergyService._cas_update_account(
+                db,
+                account_id=snapshot["id"],
+                expected_version=snapshot["version"],
+                balance_delta=-amount,
+                total_spent_delta=amount,
+            )
+            if not updated:
+                continue
 
-        await db.flush()
+            transaction = EnergyTransaction(
+                account_id=snapshot["id"],
+                student_id=student_id,
+                type=EnergyTransactionType.SPEND.value,
+                amount=-amount,
+                balance_after=updated["balance"],
+                reference_type=reference_type,
+                reference_id=reference_id,
+                description=description or "能量消费",
+            )
+            db.add(transaction)
 
-        logger.info(
-            f"Student {student_id} spent {amount} energy "
-            f"for {reference_type}:{reference_id}"
-        )
-        return True, amount, account.balance, f"消费 {amount} 能量"
+            await db.flush()
+
+            logger.info(
+                f"Student {student_id} spent {amount} energy "
+                f"for {reference_type}:{reference_id}"
+            )
+            return True, amount, updated["balance"], f"消费 {amount} 能量"
+
+        latest = await EnergyService._get_account_snapshot(db, student_id)
+        latest_balance = latest["balance"] if latest else 0
+        return False, 0, latest_balance, "系统繁忙，请稍后重试"
 
     @staticmethod
     async def refund(
@@ -250,34 +346,51 @@ class EnergyService:
         description: Optional[str] = None
     ) -> Tuple[bool, int, int, str]:
         """退还能量积分"""
-        account = await EnergyService.get_or_create_account(db, student_id)
+        await EnergyService.get_or_create_account(db, student_id)
 
-        account.balance += amount
-        account.total_spent -= amount
-        account.version += 1
+        for _ in range(MAX_CAS_RETRIES):
+            snapshot = await EnergyService._get_account_snapshot(db, student_id)
+            if not snapshot:
+                await EnergyService.get_or_create_account(db, student_id)
+                continue
 
-        transaction = EnergyTransaction(
-            account_id=account.id,
-            student_id=student_id,
-            type=EnergyTransactionType.REFUND.value,
-            amount=amount,
-            balance_after=account.balance,
-            reference_type=reference_type,
-            reference_id=reference_id,
-            description=description or "能量退还"
-        )
-        db.add(transaction)
+            updated = await EnergyService._cas_update_account(
+                db,
+                account_id=snapshot["id"],
+                expected_version=snapshot["version"],
+                balance_delta=amount,
+                total_spent_delta=-amount,
+            )
+            if not updated:
+                continue
 
-        await db.flush()
+            transaction = EnergyTransaction(
+                account_id=snapshot["id"],
+                student_id=student_id,
+                type=EnergyTransactionType.REFUND.value,
+                amount=amount,
+                balance_after=updated["balance"],
+                reference_type=reference_type,
+                reference_id=reference_id,
+                description=description or "能量退还",
+            )
+            db.add(transaction)
 
-        return True, amount, account.balance, f"退还 {amount} 能量"
+            await db.flush()
+
+            return True, amount, updated["balance"], f"退还 {amount} 能量"
+
+        latest = await EnergyService._get_account_snapshot(db, student_id)
+        latest_balance = latest["balance"] if latest else 0
+        return False, 0, latest_balance, "系统繁忙，请稍后重试"
 
     @staticmethod
     def calculate_level(total_earned: int) -> int:
         """根据累计获取计算等级"""
         level = 1
         for lvl, info in sorted(ENERGY_LEVELS.items(), reverse=True):
-            if total_earned >= info["min_points"]:
+            min_points = int(info["min_points"])
+            if total_earned >= min_points:
                 level = lvl
                 break
         return level
@@ -289,7 +402,7 @@ class EnergyService:
         page: int = 1,
         page_size: int = 20,
         type_filter: Optional[str] = None
-    ) -> Tuple[list, int]:
+    ) -> Tuple[list[EnergyTransaction], int]:
         """获取交易记录"""
         query = select(EnergyTransaction).where(
             EnergyTransaction.student_id == student_id

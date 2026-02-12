@@ -8,6 +8,7 @@ Coverage:
 - Error handling (invalid credentials, expired codes, rate limits)
 - Edge cases (auto-register on email login, disabled accounts)
 """
+
 from unittest.mock import patch
 
 import pytest
@@ -17,6 +18,7 @@ from app.services.auth_service import EMAIL_CODE_STORE
 
 # ============ Account + Password Login ============
 
+
 class TestAccountLogin:
     """Tests for POST /api/v1/auth/login"""
 
@@ -24,8 +26,7 @@ class TestAccountLogin:
     async def test_login_with_email(self, client: AsyncClient, test_users):
         """Login with email + password succeeds."""
         resp = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "admin@test.com", "password": "admin123"}
+            "/api/v1/auth/login", json={"account": "admin@test.com", "password": "admin123"}
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -37,8 +38,7 @@ class TestAccountLogin:
     async def test_login_with_phone(self, client: AsyncClient, test_users):
         """Login with phone + password succeeds."""
         resp = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "13800000000", "password": "admin123"}
+            "/api/v1/auth/login", json={"account": "13800000000", "password": "admin123"}
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -48,8 +48,7 @@ class TestAccountLogin:
     async def test_login_with_nickname(self, client: AsyncClient, test_users):
         """Login with nickname + password succeeds."""
         resp = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "Coach User", "password": "coach123"}
+            "/api/v1/auth/login", json={"account": "Coach User", "password": "coach123"}
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -59,8 +58,7 @@ class TestAccountLogin:
     async def test_login_wrong_password(self, client: AsyncClient, test_users):
         """Login with wrong password returns 401."""
         resp = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "admin@test.com", "password": "wrongpass"}
+            "/api/v1/auth/login", json={"account": "admin@test.com", "password": "wrongpass"}
         )
         assert resp.status_code == 401
         assert "Invalid" in resp.json()["detail"]
@@ -69,26 +67,21 @@ class TestAccountLogin:
     async def test_login_nonexistent_account(self, client: AsyncClient, test_users):
         """Login with non-existent account returns 401."""
         resp = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "nobody@test.com", "password": "pass123"}
+            "/api/v1/auth/login", json={"account": "nobody@test.com", "password": "pass123"}
         )
         assert resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_login_empty_account(self, client: AsyncClient, test_users):
         """Login with empty account returns 401."""
-        resp = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "", "password": "pass123"}
-        )
+        resp = await client.post("/api/v1/auth/login", json={"account": "", "password": "pass123"})
         assert resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_login_returns_token_and_user(self, client: AsyncClient, test_users):
         """Login response contains access_token, expires_in, and user object."""
         resp = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "parent@test.com", "password": "parent123"}
+            "/api/v1/auth/login", json={"account": "parent@test.com", "password": "parent123"}
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -99,6 +92,7 @@ class TestAccountLogin:
 
 
 # ============ Email Verification Code ============
+
 
 class TestEmailCodeSend:
     """Tests for POST /api/v1/auth/login/email/send"""
@@ -113,8 +107,7 @@ class TestEmailCodeSend:
             mock_settings.DEV_PRINT_CODE_ON_SEND_FAIL = False
 
             resp = await client.post(
-                "/api/v1/auth/login/email/send",
-                json={"email": "test@example.com"}
+                "/api/v1/auth/login/email/send", json={"email": "test@example.com"}
             )
             assert resp.status_code == 200
             data = resp.json()
@@ -124,10 +117,7 @@ class TestEmailCodeSend:
     @pytest.mark.asyncio
     async def test_send_code_invalid_email(self, client: AsyncClient):
         """Send code with invalid email returns 422."""
-        resp = await client.post(
-            "/api/v1/auth/login/email/send",
-            json={"email": "not-an-email"}
-        )
+        resp = await client.post("/api/v1/auth/login/email/send", json={"email": "not-an-email"})
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
@@ -140,8 +130,7 @@ class TestEmailCodeSend:
             mock_settings.DEV_PRINT_CODE_ON_SEND_FAIL = True
 
             resp = await client.post(
-                "/api/v1/auth/login/email/send",
-                json={"email": "fallback@example.com"}
+                "/api/v1/auth/login/email/send", json={"email": "fallback@example.com"}
             )
             assert resp.status_code == 200
             data = resp.json()
@@ -159,8 +148,7 @@ class TestEmailCodeLogin:
         EMAIL_CODE_STORE.set_code(email, "123456")
 
         resp = await client.post(
-            "/api/v1/auth/login/email",
-            json={"email": email, "code": "123456"}
+            "/api/v1/auth/login/email", json={"email": email, "code": "123456"}
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -174,8 +162,7 @@ class TestEmailCodeLogin:
         EMAIL_CODE_STORE.set_code(email, "123456")
 
         resp = await client.post(
-            "/api/v1/auth/login/email",
-            json={"email": email, "code": "999999"}
+            "/api/v1/auth/login/email", json={"email": email, "code": "999999"}
         )
         assert resp.status_code == 400
         assert "Invalid" in resp.json()["detail"]
@@ -187,8 +174,7 @@ class TestEmailCodeLogin:
         EMAIL_CODE_STORE.set_code(email, "123456", ttl_minutes=0)
 
         resp = await client.post(
-            "/api/v1/auth/login/email",
-            json={"email": email, "code": "123456"}
+            "/api/v1/auth/login/email", json={"email": email, "code": "123456"}
         )
         assert resp.status_code == 400
 
@@ -196,8 +182,7 @@ class TestEmailCodeLogin:
     async def test_email_login_no_code_stored(self, client: AsyncClient, test_users):
         """Email code login without sending code first returns 400."""
         resp = await client.post(
-            "/api/v1/auth/login/email",
-            json={"email": "nocode@test.com", "code": "123456"}
+            "/api/v1/auth/login/email", json={"email": "nocode@test.com", "code": "123456"}
         )
         assert resp.status_code == 400
 
@@ -208,8 +193,7 @@ class TestEmailCodeLogin:
         EMAIL_CODE_STORE.set_code(new_email, "654321")
 
         resp = await client.post(
-            "/api/v1/auth/login/email",
-            json={"email": new_email, "code": "654321"}
+            "/api/v1/auth/login/email", json={"email": new_email, "code": "654321"}
         )
         assert resp.status_code == 404
         assert resp.json()["detail"] == "USER_NOT_REGISTERED"
@@ -222,20 +206,19 @@ class TestEmailCodeLogin:
 
         # First login succeeds
         resp1 = await client.post(
-            "/api/v1/auth/login/email",
-            json={"email": email, "code": "111111"}
+            "/api/v1/auth/login/email", json={"email": email, "code": "111111"}
         )
         assert resp1.status_code == 200
 
         # Second login with same code fails
         resp2 = await client.post(
-            "/api/v1/auth/login/email",
-            json={"email": email, "code": "111111"}
+            "/api/v1/auth/login/email", json={"email": email, "code": "111111"}
         )
         assert resp2.status_code == 400
 
 
 # ============ WeChat Login ============
+
 
 class TestRegisterWithRole:
     """Tests for POST /api/v1/auth/register/with-role"""
@@ -251,6 +234,78 @@ class TestRegisterWithRole:
         assert resp.json()["detail"] == "Role is required"
 
 
+class TestPublicRegistrationHardening:
+    """Tests for privileged role blocking in public registration endpoints."""
+
+    @pytest.mark.asyncio
+    async def test_register_rejects_admin_role(self, client: AsyncClient):
+        """POST /auth/register rejects admin self-registration."""
+        resp = await client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "register_admin_blocked@test.com",
+                "password": "Pass1234",
+                "role": "admin",
+                "nickname": "blocked_admin",
+            },
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "Invalid role"
+
+    @pytest.mark.asyncio
+    async def test_register_email_rejects_admin_role(self, client: AsyncClient):
+        """POST /auth/register/email rejects admin self-registration."""
+        email = "register_email_admin_blocked@test.com"
+        EMAIL_CODE_STORE.set_code(email, "123456")
+
+        resp = await client.post(
+            "/api/v1/auth/register/email",
+            json={
+                "email": email,
+                "code": "123456",
+                "password": "Pass1234",
+                "role": "admin",
+                "nickname": "blocked_admin_email",
+            },
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "Invalid role"
+
+    @pytest.mark.asyncio
+    async def test_register_allows_parent_role(self, client: AsyncClient):
+        """POST /auth/register still allows non-privileged roles."""
+        resp = await client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "register_parent_ok@test.com",
+                "password": "Pass1234",
+                "role": "parent",
+                "nickname": "ok_parent",
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json()["user"]["role"] == "parent"
+
+    @pytest.mark.asyncio
+    async def test_register_email_allows_parent_role(self, client: AsyncClient):
+        """POST /auth/register/email still allows non-privileged roles."""
+        email = "register_email_parent_ok@test.com"
+        EMAIL_CODE_STORE.set_code(email, "654321")
+
+        resp = await client.post(
+            "/api/v1/auth/register/email",
+            json={
+                "email": email,
+                "code": "654321",
+                "password": "Pass1234",
+                "role": "parent",
+                "nickname": "ok_parent_email",
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json()["user"]["role"] == "parent"
+
+
 class TestWechatLogin:
     """Tests for POST /api/v1/auth/login/wechat"""
 
@@ -261,11 +316,7 @@ class TestWechatLogin:
             mock_c2s.return_value = {"openid": "wx_test_openid_001", "session_key": "sk"}
 
             resp = await client.post(
-                "/api/v1/auth/login/wechat",
-                json={
-                    "code": "mock_wx_code",
-                    "device_id": "dev-123"
-                }
+                "/api/v1/auth/login/wechat", json={"code": "mock_wx_code", "device_id": "dev-123"}
             )
             assert resp.status_code == 409
             detail = resp.json()["detail"]
@@ -282,9 +333,12 @@ class TestWechatLogin:
                 "/api/v1/auth/login/wechat",
                 json={
                     "code": "mock_wx_code",
-                    "user_info": {"nickName": "TestUser", "avatarUrl": "https://example.com/avatar.jpg"},
-                    "device_id": "dev-123"
-                }
+                    "user_info": {
+                        "nickName": "TestUser",
+                        "avatarUrl": "https://example.com/avatar.jpg",
+                    },
+                    "device_id": "dev-123",
+                },
             )
             assert resp.status_code == 409
             detail = resp.json()["detail"]
@@ -299,11 +353,7 @@ class TestWechatLogin:
             mock_c2s.return_value = {"openid": "wx_test_openid_003", "session_key": "sk"}
 
             resp = await client.post(
-                "/api/v1/auth/login/wechat",
-                json={
-                    "code": "mock_wx_code",
-                    "device_id": "dev-123"
-                }
+                "/api/v1/auth/login/wechat", json={"code": "mock_wx_code", "device_id": "dev-123"}
             )
             assert resp.status_code == 409
             detail = resp.json()["detail"]
@@ -312,9 +362,7 @@ class TestWechatLogin:
 
     @pytest.mark.asyncio
     async def test_wechat_login_legacy_placeholder_user_requires_role_selection(
-        self,
-        client: AsyncClient,
-        db_session
+        self, client: AsyncClient, db_session
     ):
         """Legacy placeholder WeChat users must complete role selection."""
         from app.models import User
@@ -351,16 +399,15 @@ class TestWechatLogin:
                 json={
                     "wechat_openid": "wx_returning_user",
                     "role": "parent",
-                    "nickname": "ReturningUser"
-                }
+                    "nickname": "ReturningUser",
+                },
             )
             assert register_resp.status_code == 200
             registered_user_id = register_resp.json()["user"]["id"]
 
             # First login - returns registered user
             resp1 = await client.post(
-                "/api/v1/auth/login/wechat",
-                json={"code": "code1", "device_id": "dev-1"}
+                "/api/v1/auth/login/wechat", json={"code": "code1", "device_id": "dev-1"}
             )
             assert resp1.status_code == 200
             user_id_1 = resp1.json()["user"]["id"]
@@ -368,8 +415,7 @@ class TestWechatLogin:
 
             # Second login - returns same user
             resp2 = await client.post(
-                "/api/v1/auth/login/wechat",
-                json={"code": "code2", "device_id": "dev-1"}
+                "/api/v1/auth/login/wechat", json={"code": "code2", "device_id": "dev-1"}
             )
             assert resp2.status_code == 200
             user_id_2 = resp2.json()["user"]["id"]
@@ -383,8 +429,7 @@ class TestWechatLogin:
             mock_c2s.side_effect = Exception("登录凭证已过期，请重试")
 
             resp = await client.post(
-                "/api/v1/auth/login/wechat",
-                json={"code": "expired_code", "device_id": "dev-1"}
+                "/api/v1/auth/login/wechat", json={"code": "expired_code", "device_id": "dev-1"}
             )
             assert resp.status_code == 400
             assert "登录凭证已过期" in resp.json()["detail"]
@@ -396,14 +441,14 @@ class TestWechatLogin:
             mock_c2s.return_value = {"session_key": "sk"}  # no openid
 
             resp = await client.post(
-                "/api/v1/auth/login/wechat",
-                json={"code": "bad_code", "device_id": "dev-1"}
+                "/api/v1/auth/login/wechat", json={"code": "bad_code", "device_id": "dev-1"}
             )
             assert resp.status_code == 400
             assert "WeChat" in resp.json()["detail"]
 
 
 # ============ Disabled Account ============
+
 
 class TestDisabledAccount:
     """Tests for login with disabled accounts."""
@@ -419,14 +464,13 @@ class TestDisabledAccount:
             password_hash=get_password_hash("pass123"),
             role="parent",
             nickname="Disabled",
-            status="disabled"
+            status="disabled",
         )
         db_session.add(disabled_user)
         await db_session.commit()
 
         resp = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "disabled@test.com", "password": "pass123"}
+            "/api/v1/auth/login", json={"account": "disabled@test.com", "password": "pass123"}
         )
         assert resp.status_code == 403
         assert "disabled" in resp.json()["detail"].lower()
@@ -442,7 +486,7 @@ class TestDisabledAccount:
             password_hash=get_password_hash("pass123"),
             role="parent",
             nickname="Disabled2",
-            status="disabled"
+            status="disabled",
         )
         db_session.add(disabled_user)
         await db_session.commit()
@@ -450,13 +494,13 @@ class TestDisabledAccount:
         EMAIL_CODE_STORE.set_code("disabled2@test.com", "123456")
 
         resp = await client.post(
-            "/api/v1/auth/login/email",
-            json={"email": "disabled2@test.com", "code": "123456"}
+            "/api/v1/auth/login/email", json={"email": "disabled2@test.com", "code": "123456"}
         )
         assert resp.status_code == 403
 
 
 # ============ VerificationCodeStore Unit Tests ============
+
 
 class TestVerificationCodeStore:
     """Unit tests for in-memory verification code store."""

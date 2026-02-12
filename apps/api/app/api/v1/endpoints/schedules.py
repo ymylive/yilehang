@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import and_, select
+from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -181,6 +181,19 @@ async def enroll_schedule(
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="已报名该课程")
 
+    # 原子更新报名人数，避免并发超额
+    update_result = await db.execute(
+        update(Schedule)
+        .where(
+            Schedule.id == schedule_id,
+            Schedule.enrolled_count < Schedule.capacity,
+        )
+        .values(enrolled_count=Schedule.enrolled_count + 1)
+        .returning(Schedule.id)
+    )
+    if update_result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=400, detail="课程已满")
+
     # 创建考勤记录
     attendance = Attendance(
         schedule_id=schedule_id,
@@ -188,9 +201,6 @@ async def enroll_schedule(
         status="enrolled"
     )
     db.add(attendance)
-
-    # 更新报名人数
-    schedule.enrolled_count += 1
 
     await db.flush()
     await db.refresh(attendance)

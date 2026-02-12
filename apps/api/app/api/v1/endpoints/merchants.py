@@ -51,7 +51,18 @@ def _build_token_response(user) -> Token:
 
 
 async def _build_order_detail_response(db: AsyncSession, order: RedeemOrder) -> RedeemOrderResponse:
-    return await _build_order_detail_response(db, order)
+    item_result = await db.execute(select(RedeemItem).where(RedeemItem.id == order.item_id))
+    item = item_result.scalar_one_or_none()
+    student_result = await db.execute(select(Student).where(Student.id == order.student_id))
+    student = student_result.scalar_one_or_none()
+
+    resp = RedeemOrderResponse.model_validate(order)
+    if item:
+        resp.item_name = item.name
+        resp.item_image = item.image
+    if student:
+        resp.student_name = student.name
+    return resp
 
 
 @router.post("/auth/login", response_model=Token)

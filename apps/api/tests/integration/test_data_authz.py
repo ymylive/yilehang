@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_password_hash
@@ -239,3 +239,46 @@ async def test_parent_can_enroll_own_student(
         headers={"Authorization": f"Bearer {parent_token}"},
     )
     assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_enroll_capacity_not_exceeded_across_multiple_requests(
+    authz_seed_data: dict[str, int],
+    db_session: AsyncSession,
+):
+    await db_session.execute(
+        update(Schedule)
+        .where(Schedule.id == authz_seed_data["schedule_id"])
+        .values(capacity=1, enrolled_count=0)
+    )
+    await db_session.commit()
+
+    first_update = await db_session.execute(
+        update(Schedule)
+        .where(
+            Schedule.id == authz_seed_data["schedule_id"],
+            Schedule.enrolled_count < Schedule.capacity,
+        )
+        .values(enrolled_count=Schedule.enrolled_count + 1)
+        .returning(Schedule.id)
+    )
+    second_update = await db_session.execute(
+        update(Schedule)
+        .where(
+            Schedule.id == authz_seed_data["schedule_id"],
+            Schedule.enrolled_count < Schedule.capacity,
+        )
+        .values(enrolled_count=Schedule.enrolled_count + 1)
+        .returning(Schedule.id)
+    )
+    await db_session.commit()
+
+    assert first_update.scalar_one_or_none() == authz_seed_data["schedule_id"]
+    assert second_update.scalar_one_or_none() is None
+
+    enrolled_count = (
+        await db_session.execute(
+            select(Schedule.enrolled_count).where(Schedule.id == authz_seed_data["schedule_id"])
+        )
+    ).scalar_one()
+    assert enrolled_count == 1

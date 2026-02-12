@@ -5,7 +5,7 @@
 
 import { trackEvent } from '@/utils/telemetry'
 
-export type UserRole = 'admin' | 'coach' | 'parent' | 'student'
+export type UserRole = 'admin' | 'coach' | 'parent' | 'student' | 'merchant'
 
 // 角色页面映射配置
 export const ROLE_PAGE_MAP: Record<UserRole, {
@@ -83,6 +83,18 @@ export const ROLE_PAGE_MAP: Record<UserRole, {
       { pagePath: 'pages/training/index', text: '训练' },
       { pagePath: 'pages/growth/index', text: '成长' },
       { pagePath: 'pages/schedule/index', text: '课表' },
+      { pagePath: 'pages/user/index', text: '我的' }
+    ]
+  },
+  merchant: {
+    home: '/pages/user/index',
+    allowedPrefixes: [
+      'pages/index/',
+      'pages/user/',
+      'pages/chat/'
+    ],
+    tabBar: [
+      { pagePath: 'pages/index/index', text: '首页' },
       { pagePath: 'pages/user/index', text: '我的' }
     ]
   }

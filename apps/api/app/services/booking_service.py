@@ -21,7 +21,7 @@ from app.models.booking import (
     TransactionType,
 )
 from app.models.course import Schedule
-from app.models.user import Student
+from app.models.user import Coach, Student
 from app.schemas.booking import (
     BookingCancelRequest,
     BookingCreate,
@@ -104,6 +104,13 @@ class BookingService:
         auto_deduct: bool = True
     ) -> Booking:
         """创建预约"""
+        await self.db.execute(
+            select(Coach.id).where(Coach.id == data.coach_id).with_for_update()
+        )
+        await self.db.execute(
+            select(Student.id).where(Student.id == student_id).with_for_update()
+        )
+
         # 检查教练时段冲突
         if await self.check_booking_conflict(
             data.coach_id, data.booking_date, data.start_time, data.end_time
@@ -117,7 +124,7 @@ class BookingService:
             raise ValueError("该时段您已有其他预约")
 
         # 获取学员的有效课时卡
-        membership = await self.get_active_membership(student_id)
+        membership = await self._get_active_membership_for_update(student_id)
         if not membership:
             raise ValueError("您没有可用的课时卡")
         if membership.remaining_times <= 0:
@@ -146,6 +153,24 @@ class BookingService:
         await self.db.commit()
         await self.db.refresh(booking)
         return booking
+
+    async def _get_active_membership_for_update(self, student_id: int) -> Optional[StudentMembership]:
+        """获取并锁定学员有效课时卡（优先使用即将过期的）"""
+        result = await self.db.execute(
+            select(StudentMembership)
+            .where(
+                StudentMembership.student_id == student_id,
+                StudentMembership.status == MembershipStatus.ACTIVE.value,
+                StudentMembership.remaining_times > 0,
+                or_(
+                    StudentMembership.expire_date.is_(None),
+                    StudentMembership.expire_date >= date.today()
+                )
+            )
+            .order_by(StudentMembership.expire_date.asc().nullslast())
+            .with_for_update()
+        )
+        return result.scalar_one_or_none()
 
     async def cancel_booking(
         self,
@@ -371,7 +396,12 @@ class BookingService:
         membership_id: int
     ) -> Transaction:
         """扣除课时"""
-        membership = await self.db.get(StudentMembership, membership_id)
+        result = await self.db.execute(
+            select(StudentMembership)
+            .where(StudentMembership.id == membership_id)
+            .with_for_update()
+        )
+        membership = result.scalar_one_or_none()
         if not membership or membership.remaining_times <= 0:
             raise ValueError("课时余额不足")
 

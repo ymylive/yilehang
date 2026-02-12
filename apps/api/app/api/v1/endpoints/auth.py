@@ -1,4 +1,5 @@
 """Authentication API endpoints."""
+
 from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
@@ -31,6 +32,25 @@ from app.schemas import (
 from app.services.auth_service import AuthService, EmailService, WechatService
 
 router = APIRouter()
+PUBLIC_REGISTER_ALLOWED_ROLES = {"parent", "student", "coach", "merchant"}
+
+
+def _payload_str(payload: dict[str, object], key: str) -> Optional[str]:
+    value = payload.get(key)
+    return value if isinstance(value, str) else None
+
+
+def _safe_strip_str(value: object) -> str:
+    return value.strip() if isinstance(value, str) else ""
+
+
+def _current_user_id(current_user: dict[str, object]) -> int:
+    user_id = current_user.get("user_id")
+    if isinstance(user_id, int):
+        return user_id
+    if isinstance(user_id, str) and user_id.isdigit():
+        return int(user_id)
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
 
 
 def _validate_password_strength(password: str) -> None:
@@ -38,34 +58,29 @@ def _validate_password_strength(password: str) -> None:
     if len(password) < 8:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters long"
+            detail="Password must be at least 8 characters long",
         )
     if not any(c.isalpha() for c in password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain at least one letter"
+            detail="Password must contain at least one letter",
         )
     if not any(c.isdigit() for c in password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain at least one number"
+            detail="Password must contain at least one number",
         )
 
 
 def _ensure_active(user: User) -> None:
     if user.status != "active":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is disabled"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled")
 
 
 def _token_response(user: User) -> Token:
     access_token, expires_in = AuthService.create_token(user)
     return Token(
-        access_token=access_token,
-        expires_in=expires_in,
-        user=UserResponse.model_validate(user)
+        access_token=access_token, expires_in=expires_in, user=UserResponse.model_validate(user)
     )
 
 
@@ -128,34 +143,29 @@ def _requires_wechat_role_selection(user: User) -> bool:
 
 # ============ Registration ============
 
+
 async def _validate_user_uniqueness(
-    db: AsyncSession,
-    email: str,
-    phone: Optional[str] = None,
-    nickname: Optional[str] = None
+    db: AsyncSession, email: str, phone: Optional[str] = None, nickname: Optional[str] = None
 ) -> None:
     """Validate user uniqueness constraints."""
     existing_user = await AuthService.get_user_by_email(db, email)
     if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
 
     if phone:
         existing_phone = await AuthService.get_user_by_phone(db, phone)
         if existing_phone:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Phone already in use"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Phone already in use"
             )
 
     if nickname:
         existing_nickname = await AuthService.get_user_by_nickname(db, nickname)
         if existing_nickname:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username already in use"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Username already in use"
             )
 
 
@@ -165,18 +175,14 @@ async def _create_role_profile(
     role: str,
     name: str,
     specialty: Optional[str] = None,
-    introduction: Optional[str] = None
+    introduction: Optional[str] = None,
 ) -> None:
     """Create role-specific profile."""
     if role == "student":
         await AuthService.create_student_profile(db=db, user_id=user_id, name=name)
     elif role == "coach":
         await AuthService.create_coach_profile(
-            db=db,
-            user_id=user_id,
-            name=name,
-            specialty=specialty,
-            introduction=introduction
+            db=db, user_id=user_id, name=name, specialty=specialty, introduction=introduction
         )
     elif role == "merchant":
         await AuthService.create_merchant_profile(db=db, user_id=user_id, name=name)
@@ -185,6 +191,9 @@ async def _create_role_profile(
 @router.post("/register", response_model=Token, summary="Email registration")
 async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     """Email + password registration (no email code verification)."""
+    if user_data.role not in PUBLIC_REGISTER_ALLOWED_ROLES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role")
+
     _validate_password_strength(user_data.password)
     await _validate_user_uniqueness(db, user_data.email, user_data.phone, user_data.nickname)
 
@@ -194,14 +203,14 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
         phone=user_data.phone,
         password=user_data.password,
         role=user_data.role,
-        nickname=user_data.nickname
+        nickname=user_data.nickname,
     )
 
     await _create_role_profile(
         db=db,
         user_id=user.id,
         role=user_data.role,
-        name=user_data.nickname or user_data.email.split("@")[0]
+        name=user_data.nickname or user_data.email.split("@")[0],
     )
 
     await db.commit()
@@ -211,35 +220,34 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
 @router.post("/register/email", response_model=Token, summary="Email code registration")
 async def register_with_email(data: EmailRegister, db: AsyncSession = Depends(get_db)):
     """Email registration with verification code."""
+    if data.role not in PUBLIC_REGISTER_ALLOWED_ROLES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role")
+
     _validate_password_strength(data.password)
     is_valid = await EmailService.verify_code(data.email, data.code)
     if not is_valid:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired verification code"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification code"
         )
 
     existing_user = await AuthService.get_user_by_email(db, data.email)
     if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
 
     if data.phone:
         existing_phone = await AuthService.get_user_by_phone(db, data.phone)
         if existing_phone:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Phone already in use"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Phone already in use"
             )
 
     if data.nickname:
         existing_nickname = await AuthService.get_user_by_nickname(db, data.nickname)
         if existing_nickname:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username already in use"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Username already in use"
             )
 
     user = await AuthService.create_user(
@@ -248,14 +256,11 @@ async def register_with_email(data: EmailRegister, db: AsyncSession = Depends(ge
         phone=data.phone,
         password=data.password,
         role=data.role,
-        nickname=data.nickname
+        nickname=data.nickname,
     )
 
     await _create_role_profile(
-        db=db,
-        user_id=user.id,
-        role=data.role,
-        name=data.nickname or data.email.split("@")[0]
+        db=db, user_id=user.id, role=data.role, name=data.nickname or data.email.split("@")[0]
     )
 
     await db.commit()
@@ -273,7 +278,7 @@ async def register_coach(coach_data: CoachRegister, db: AsyncSession = Depends(g
         phone=coach_data.phone,
         password=coach_data.password,
         role="coach",
-        nickname=coach_data.name
+        nickname=coach_data.name,
     )
 
     specialty_str = ",".join(coach_data.specialty) if coach_data.specialty else None
@@ -283,7 +288,7 @@ async def register_coach(coach_data: CoachRegister, db: AsyncSession = Depends(g
         role="coach",
         name=coach_data.name,
         specialty=specialty_str,
-        introduction=coach_data.introduction
+        introduction=coach_data.introduction,
     )
 
     await db.commit()
@@ -297,18 +302,18 @@ async def register_with_role(
     wechat_openid: Optional[str] = None,
     role: Optional[str] = None,
     nickname: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Register user with explicit role selection (for email or WeChat login)."""
     payload = payload or {}
     if email is None:
-        email = payload.get("email")
+        email = _payload_str(payload, "email")
     if wechat_openid is None:
-        wechat_openid = payload.get("wechat_openid")
+        wechat_openid = _payload_str(payload, "wechat_openid")
     if role is None:
-        role = payload.get("role")
+        role = _payload_str(payload, "role")
     if nickname is None:
-        nickname = payload.get("nickname")
+        nickname = _payload_str(payload, "nickname")
 
     email = str(email).strip() if email is not None else None
     wechat_openid = str(wechat_openid).strip() if wechat_openid is not None else None
@@ -316,29 +321,22 @@ async def register_with_role(
     nickname = str(nickname).strip() if nickname is not None else None
 
     if not role:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Role is required"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role is required")
 
-    if role not in ["parent", "student", "coach", "merchant"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid role"
-        )
+    if role not in PUBLIC_REGISTER_ALLOWED_ROLES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role")
 
     if not email and not wechat_openid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Either email or wechat_openid is required"
+            detail="Either email or wechat_openid is required",
         )
 
     if email:
         existing_user = await AuthService.get_user_by_email(db, email)
         if existing_user:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
             )
 
     if wechat_openid:
@@ -357,7 +355,7 @@ async def register_with_role(
                     db=db,
                     user_id=existing_user.id,
                     role=role,
-                    name=existing_user.nickname or f"user_{existing_user.id}"
+                    name=existing_user.nickname or f"user_{existing_user.id}",
                 )
 
                 await db.commit()
@@ -365,8 +363,7 @@ async def register_with_role(
                 return _token_response(existing_user)
 
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="WeChat account already registered"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="WeChat account already registered"
             )
 
     normalized_nickname = nickname
@@ -379,14 +376,14 @@ async def register_with_role(
         password="",
         role=role,
         nickname=normalized_nickname,
-        openid=wechat_openid
+        openid=wechat_openid,
     )
 
     await _create_role_profile(
         db=db,
         user_id=user.id,
         role=role,
-        name=normalized_nickname or (email.split("@")[0] if email else f"user_{user.id}")
+        name=normalized_nickname or (email.split("@")[0] if email else f"user_{user.id}"),
     )
 
     await db.commit()
@@ -395,6 +392,7 @@ async def register_with_role(
 
 # ============ Login ============
 
+
 @router.post("/login", response_model=Token, summary="Account + password login")
 async def login(login_data: UserLogin, db: AsyncSession = Depends(get_db)):
     account = (login_data.account or login_data.phone or login_data.email or "").strip()
@@ -402,8 +400,7 @@ async def login(login_data: UserLogin, db: AsyncSession = Depends(get_db)):
 
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid account or password"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid account or password"
         )
 
     _ensure_active(user)
@@ -422,19 +419,19 @@ async def send_email_code(data: EmailCodeRequest):
     if not is_allowed:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Too many requests. Please try again in {seconds_until_reset} seconds."
+            detail=f"Too many requests. Please try again in {seconds_until_reset} seconds.",
         )
 
     result = await EmailService.send_code_with_detail(data.email)
     if not result.get("success"):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=result.get("message") or "Failed to send verification code"
+            detail=result.get("message") or "Failed to send verification code",
         )
 
     response = {
         "message": result.get("message") or "Verification code sent",
-        "delivery": result.get("delivery") or "smtp"
+        "delivery": result.get("delivery") or "smtp",
     }
 
     return response
@@ -445,16 +442,12 @@ async def login_with_email(login_data: EmailCodeLogin, db: AsyncSession = Depend
     is_valid = await EmailService.verify_code(login_data.email, login_data.code)
     if not is_valid:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired verification code"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification code"
         )
 
     user = await AuthService.get_user_by_email(db, login_data.email)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="USER_NOT_REGISTERED"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="USER_NOT_REGISTERED")
 
     _ensure_active(user)
     return _token_response(user)
@@ -469,11 +462,11 @@ async def wechat_login(wechat_data: WechatLogin, db: AsyncSession = Depends(get_
         if not openid:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to get WeChat openid from session"
+                detail="Failed to get WeChat openid from session",
             )
 
-        incoming_nickname = ((wechat_data.user_info or {}).get("nickName") or "").strip()[:50]
-        incoming_avatar = ((wechat_data.user_info or {}).get("avatarUrl") or "").strip()
+        incoming_nickname = _safe_strip_str((wechat_data.user_info or {}).get("nickName"))[:50]
+        incoming_avatar = _safe_strip_str((wechat_data.user_info or {}).get("avatarUrl"))
 
         user = await AuthService.get_user_by_openid(db, openid)
         if not user:
@@ -483,8 +476,8 @@ async def wechat_login(wechat_data: WechatLogin, db: AsyncSession = Depends(get_
                     "code": "WECHAT_ROLE_REQUIRED",
                     "message": "First WeChat login requires role selection",
                     "wechat_openid": openid,
-                    "nickname": incoming_nickname or ""
-                }
+                    "nickname": incoming_nickname or "",
+                },
             )
 
         if _requires_wechat_role_selection(user):
@@ -494,8 +487,8 @@ async def wechat_login(wechat_data: WechatLogin, db: AsyncSession = Depends(get_
                     "code": "WECHAT_ROLE_REQUIRED",
                     "message": "First WeChat login requires role selection",
                     "wechat_openid": openid,
-                    "nickname": incoming_nickname or user.nickname or ""
-                }
+                    "nickname": incoming_nickname or user.nickname or "",
+                },
             )
 
         if wechat_data.user_info:
@@ -517,6 +510,7 @@ async def wechat_login(wechat_data: WechatLogin, db: AsyncSession = Depends(get_
         raise
     except Exception as e:
         import logging
+
         logger = logging.getLogger(__name__)
         message = str(e)
         logger.error(f"WeChat login error: {message}", exc_info=True)
@@ -525,10 +519,8 @@ async def wechat_login(wechat_data: WechatLogin, db: AsyncSession = Depends(get_
             detail = message
         else:
             detail = f"WeChat login failed: {message}"
-        raise HTTPException(
-            status_code=http_status,
-            detail=detail
-        )
+        raise HTTPException(status_code=http_status, detail=detail)
+
 
 @router.post("/login/wechat-phone", response_model=Token, summary="WeChat phone login")
 async def wechat_phone_login(data: WechatPhoneLogin, db: AsyncSession = Depends(get_db)):
@@ -545,8 +537,7 @@ async def wechat_phone_login(data: WechatPhoneLogin, db: AsyncSession = Depends(
 
         if not phone:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to get phone number"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to get phone number"
             )
 
         user = await AuthService.get_user_by_phone(db, phone)
@@ -557,11 +548,7 @@ async def wechat_phone_login(data: WechatPhoneLogin, db: AsyncSession = Depends(
                 await db.commit()
         else:
             user = await AuthService.create_user(
-                db=db,
-                phone=phone,
-                password="",
-                role="parent",
-                openid=openid
+                db=db, phone=phone, password="", role="parent", openid=openid
             )
             await db.commit()
 
@@ -577,13 +564,11 @@ async def wechat_phone_login(data: WechatPhoneLogin, db: AsyncSession = Depends(
             detail = message
         else:
             detail = f"Login failed: {message}"
-        raise HTTPException(
-            status_code=http_status,
-            detail=detail
-        )
+        raise HTTPException(status_code=http_status, detail=detail)
 
 
 # ============ Password management ============
+
 
 @router.post("/password/reset", summary="Reset password via email code")
 async def reset_password(data: PasswordReset, db: AsyncSession = Depends(get_db)):
@@ -607,16 +592,12 @@ async def reset_password(data: PasswordReset, db: AsyncSession = Depends(get_db)
     is_valid = await EmailService.verify_code(data.email, data.code)
     if not is_valid:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired verification code"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification code"
         )
 
     user = await AuthService.get_user_by_email(db, data.email)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     await AuthService.update_password(db, user, data.new_password)
     await db.commit()
@@ -628,21 +609,16 @@ async def reset_password(data: PasswordReset, db: AsyncSession = Depends(get_db)
 async def change_password(
     data: PasswordChange,
     current_user: dict[str, object] = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     _validate_password_strength(data.new_password)
-    user = await AuthService.get_user_by_id(db, current_user["user_id"])
+    user_id = _current_user_id(current_user)
+    user = await AuthService.get_user_by_id(db, user_id)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     if not user.password_hash or not verify_password(data.old_password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid old password"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid old password")
 
     await AuthService.update_password(db, user, data.new_password)
     await db.commit()
@@ -652,10 +628,10 @@ async def change_password(
 
 # ============ User info ============
 
+
 @router.get("/me", response_model=UserDetailResponse, summary="Get current user")
 async def get_current_user_info(
-    current_user: dict[str, object] = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: dict[str, object] = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     # Preload relations to avoid async lazy-load errors (MissingGreenlet).
     result = await db.execute(
@@ -665,10 +641,7 @@ async def get_current_user_info(
     )
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     response = UserDetailResponse(
         id=user.id,
@@ -679,7 +652,7 @@ async def get_current_user_info(
         role=user.role,
         status=user.status,
         created_at=user.created_at,
-        wechat_bindded=bool(user.wechat_openid)
+        wechat_bindded=bool(user.wechat_openid),
     )
 
     if user.student:
@@ -694,22 +667,19 @@ async def get_current_user_info(
 async def update_user_info(
     data: UserUpdate,
     current_user: dict[str, object] = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
-    user = await AuthService.get_user_by_id(db, current_user["user_id"])
+    user_id = _current_user_id(current_user)
+    user = await AuthService.get_user_by_id(db, user_id)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     if data.nickname is not None:
         if data.nickname:
             existing = await AuthService.get_user_by_nickname(db, data.nickname)
             if existing and existing.id != user.id:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Username already in use"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="Username already in use"
                 )
         user.nickname = data.nickname
     if data.avatar is not None:
@@ -720,8 +690,7 @@ async def update_user_info(
             existing = await AuthService.get_user_by_phone(db, data.phone)
             if existing and existing.id != user.id:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Phone already in use"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="Phone already in use"
                 )
         user.phone = data.phone or None
 
@@ -738,25 +707,20 @@ async def logout(current_user: dict[str, object] = Depends(get_current_user)):
 
 # ============ Student management (parent) ============
 
+
 @router.post("/students", response_model=StudentResponse, summary="Add student")
 async def add_student(
     data: StudentRegister,
     current_user: dict[str, object] = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     if current_user["role"] not in ["parent", "admin"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Permission denied"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
+
+    parent_id = _current_user_id(current_user)
 
     student_user = await AuthService.create_user(
-        db=db,
-        email=None,
-        phone=None,
-        password="",
-        role="student",
-        nickname=data.name
+        db=db, email=None, phone=None, password="", role="student", nickname=data.name
     )
 
     student = await AuthService.create_student_profile(
@@ -765,7 +729,7 @@ async def add_student(
         name=data.name,
         gender=data.gender,
         birth_date=data.birth_date,
-        parent_id=current_user["user_id"]
+        parent_id=parent_id,
     )
 
     await db.commit()
@@ -781,16 +745,13 @@ async def create_student_account(
     student_id: int,
     data: UserCreate,
     current_user: dict[str, object] = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Parent creates an independent account for their student."""
     from app.models import ParentStudentRelation, Student
 
     if current_user["role"] not in ["parent", "admin"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Permission denied"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
 
     # Verify the student belongs to this parent
     student_query = select(Student).where(Student.id == student_id)
@@ -798,48 +759,39 @@ async def create_student_account(
     student = result.scalar_one_or_none()
 
     if not student:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
 
     # Check if parent owns this student
     if student.parent_id != current_user["user_id"]:
         # Also check parent_student_relations table
         relation_query = select(ParentStudentRelation).where(
             ParentStudentRelation.parent_id == current_user["user_id"],
-            ParentStudentRelation.student_id == student_id
+            ParentStudentRelation.student_id == student_id,
         )
         relation_result = await db.execute(relation_query)
         if not relation_result.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have permission to manage this student"
+                detail="You don't have permission to manage this student",
             )
 
     # Check if student already has an account
     if student.user_id:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Student already has an account"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Student already has an account"
         )
 
     # Check email uniqueness
     existing_user = await AuthService.get_user_by_email(db, data.email)
     if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
 
     # Create user account for student
     _validate_password_strength(data.password)
     user = await AuthService.create_user(
-        db=db,
-        email=data.email,
-        password=data.password,
-        role="student",
-        nickname=student.name
+        db=db, email=data.email, password=data.password, role="student", nickname=student.name
     )
 
     # Link student to user
@@ -851,22 +803,20 @@ async def create_student_account(
 
 # ============ Dev/Test helpers ============
 
+
 @router.get("/dev/email-code/{email}", summary="[DEV] Get email verification code")
 async def dev_get_email_code(email: str):
     """Dev-only endpoint to retrieve the current verification code for testing.
     Should be disabled in production."""
     from app.core.config import settings
+
     if not (settings.DEBUG and settings.DEV_PRINT_CODE):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Endpoint not available"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint not available")
     from app.services.auth_service import EMAIL_CODE_STORE
+
     code = EMAIL_CODE_STORE.get_code(email)
     if not code:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active code for this email"
+            status_code=status.HTTP_404_NOT_FOUND, detail="No active code for this email"
         )
     return {"email": email, "code": code}
-
