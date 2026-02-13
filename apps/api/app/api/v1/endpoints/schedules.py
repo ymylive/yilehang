@@ -1,6 +1,7 @@
 """
 排课相关API
 """
+
 from datetime import datetime, timezone
 from typing import List
 
@@ -68,7 +69,7 @@ async def list_schedules(
     skip: int = 0,
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """获取排课列表"""
     await fetch_user_from_token(db, current_user_data)
@@ -96,7 +97,7 @@ async def list_schedules(
 async def create_schedule(
     schedule_data: ScheduleCreate,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """创建排课"""
     await fetch_user_from_token(db, current_user_data)
@@ -111,7 +112,7 @@ async def create_schedule(
 async def get_schedule(
     schedule_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """获取排课详情"""
     await fetch_user_from_token(db, current_user_data)
@@ -127,7 +128,7 @@ async def update_schedule(
     schedule_id: int,
     schedule_data: ScheduleUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """更新排课"""
     await fetch_user_from_token(db, current_user_data)
@@ -149,7 +150,7 @@ async def enroll_schedule(
     schedule_id: int,
     attendance_data: AttendanceCreate,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """报名课程"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -174,7 +175,7 @@ async def enroll_schedule(
         select(Attendance).where(
             and_(
                 Attendance.schedule_id == schedule_id,
-                Attendance.student_id == attendance_data.student_id
+                Attendance.student_id == attendance_data.student_id,
             )
         )
     )
@@ -196,9 +197,7 @@ async def enroll_schedule(
 
     # 创建考勤记录
     attendance = Attendance(
-        schedule_id=schedule_id,
-        student_id=attendance_data.student_id,
-        status="enrolled"
+        schedule_id=schedule_id, student_id=attendance_data.student_id, status="enrolled"
     )
     db.add(attendance)
 
@@ -212,7 +211,7 @@ async def checkin_schedule(
     schedule_id: int,
     checkin_data: CheckInRequest,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """签到"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -227,7 +226,7 @@ async def checkin_schedule(
         select(Attendance).where(
             and_(
                 Attendance.schedule_id == schedule_id,
-                Attendance.student_id == checkin_data.student_id
+                Attendance.student_id == checkin_data.student_id,
             )
         )
     )
@@ -252,12 +251,10 @@ async def checkin_schedule(
 async def list_attendances(
     schedule_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """获取课程考勤列表"""
     await fetch_user_from_token(db, current_user_data)
-    result = await db.execute(
-        select(Attendance).where(Attendance.schedule_id == schedule_id)
-    )
+    result = await db.execute(select(Attendance).where(Attendance.schedule_id == schedule_id))
     attendances = result.scalars().all()
     return [AttendanceResponse.model_validate(a) for a in attendances]

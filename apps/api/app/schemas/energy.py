@@ -1,6 +1,7 @@
 """
 能量系统 Schemas
 """
+
 from datetime import datetime
 from typing import List, Optional
 
@@ -8,8 +9,10 @@ from pydantic import BaseModel, ConfigDict
 
 # ============ 能量规则 ============
 
+
 class EnergyRuleBase(BaseModel):
     """能量规则基础"""
+
     name: str
     code: str
     source_type: str
@@ -23,11 +26,13 @@ class EnergyRuleBase(BaseModel):
 
 class EnergyRuleCreate(EnergyRuleBase):
     """创建能量规则"""
+
     pass
 
 
 class EnergyRuleUpdate(BaseModel):
     """更新能量规则"""
+
     name: Optional[str] = None
     points: Optional[int] = None
     multiplier: Optional[float] = None
@@ -40,6 +45,7 @@ class EnergyRuleUpdate(BaseModel):
 
 class EnergyRuleResponse(EnergyRuleBase):
     """能量规则响应"""
+
     id: int
     is_active: bool
     sort_order: int
@@ -50,8 +56,10 @@ class EnergyRuleResponse(EnergyRuleBase):
 
 # ============ 能量账户 ============
 
+
 class EnergyAccountResponse(BaseModel):
     """能量账户响应"""
+
     id: int
     student_id: int
     balance: int
@@ -69,6 +77,7 @@ class EnergyAccountResponse(BaseModel):
 
 class EnergyAccountSummary(BaseModel):
     """能量账户摘要（首页展示用）"""
+
     balance: int
     level: int
     level_name: str
@@ -80,8 +89,10 @@ class EnergyAccountSummary(BaseModel):
 
 # ============ 能量交易 ============
 
+
 class EnergyTransactionResponse(BaseModel):
     """能量交易记录响应"""
+
     id: int
     type: str
     source_type: Optional[str] = None
@@ -95,6 +106,7 @@ class EnergyTransactionResponse(BaseModel):
 
 class EnergyTransactionList(BaseModel):
     """能量交易记录列表"""
+
     items: List[EnergyTransactionResponse]
     total: int
     page: int
@@ -103,8 +115,10 @@ class EnergyTransactionList(BaseModel):
 
 # ============ 能量获取请求 ============
 
+
 class EnergyEarnRequest(BaseModel):
     """能量获取请求（内部调用）"""
+
     student_id: int
     rule_code: str
     reference_type: Optional[str] = None
@@ -114,6 +128,7 @@ class EnergyEarnRequest(BaseModel):
 
 class EnergyEarnResponse(BaseModel):
     """能量获取响应"""
+
     success: bool
     amount: int = 0
     balance: int = 0
@@ -122,8 +137,10 @@ class EnergyEarnResponse(BaseModel):
 
 # ============ 能量消费请求 ============
 
+
 class EnergySpendRequest(BaseModel):
     """能量消费请求"""
+
     student_id: int
     amount: int
     reference_type: str
@@ -133,6 +150,7 @@ class EnergySpendRequest(BaseModel):
 
 class EnergySpendResponse(BaseModel):
     """能量消费响应"""
+
     success: bool
     amount: int = 0
     balance: int = 0
@@ -141,8 +159,10 @@ class EnergySpendResponse(BaseModel):
 
 # ============ 排行榜 ============
 
+
 class LeaderboardEntry(BaseModel):
     """排行榜条目"""
+
     rank: int
     student_id: int
     student_name: str
@@ -154,6 +174,7 @@ class LeaderboardEntry(BaseModel):
 
 class LeaderboardResponse(BaseModel):
     """排行榜响应"""
+
     type: str  # energy/training/fitness
     period: str  # week/month/all
     items: List[LeaderboardEntry]

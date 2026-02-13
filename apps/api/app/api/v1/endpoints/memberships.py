@@ -1,6 +1,7 @@
 """
 课时卡管理API端点
 """
+
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -26,10 +27,10 @@ router = APIRouter()
 
 # ==================== 学员端API ====================
 
+
 @router.get("", response_model=List[StudentMembershipResponse])
 async def get_my_memberships(
-    db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db), current_user_data: dict = Depends(get_current_user)
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -61,8 +62,10 @@ async def get_my_memberships(
                 description=m.card.description,
                 is_active=m.card.is_active,
                 sort_order=m.card.sort_order,
-                created_at=m.card.created_at
-            ) if m.card else None
+                created_at=m.card.created_at,
+            )
+            if m.card
+            else None,
         )
         for m in memberships
     ]
@@ -73,7 +76,7 @@ async def get_my_transactions(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -100,7 +103,7 @@ async def get_my_transactions(
             membership_id=t.membership_id,
             booking_id=t.booking_id,
             description=t.description,
-            created_at=t.created_at
+            created_at=t.created_at,
         )
         for t in transactions
     ]
@@ -108,10 +111,10 @@ async def get_my_transactions(
 
 # ==================== 管理端API ====================
 
+
 @router.get("/cards", response_model=List[MembershipCardResponse])
 async def get_membership_cards(
-    db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db), current_user_data: dict = Depends(get_current_user)
 ):
     """Fetch user model"""
     await fetch_user_from_token(db, current_user_data)
@@ -133,7 +136,7 @@ async def get_membership_cards(
             description=c.description,
             is_active=c.is_active,
             sort_order=c.sort_order,
-            created_at=c.created_at
+            created_at=c.created_at,
         )
         for c in cards
     ]
@@ -143,7 +146,7 @@ async def get_membership_cards(
 async def create_membership_card(
     data: MembershipCardCreate,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -167,7 +170,7 @@ async def create_membership_card(
         description=card.description,
         is_active=card.is_active,
         sort_order=card.sort_order,
-        created_at=card.created_at
+        created_at=card.created_at,
     )
 
 
@@ -176,7 +179,7 @@ async def update_membership_card(
     card_id: int,
     data: MembershipCardUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -200,7 +203,7 @@ async def update_membership_card(
             description=card.description,
             is_active=card.is_active,
             sort_order=card.sort_order,
-            created_at=card.created_at
+            created_at=card.created_at,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -210,7 +213,7 @@ async def update_membership_card(
 async def recharge_membership(
     data: MembershipRechargeRequest,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -229,7 +232,7 @@ async def recharge_membership(
             remaining_times=membership.remaining_times,
             expire_date=membership.expire_date,
             status=membership.status,
-            purchase_date=membership.purchase_date
+            purchase_date=membership.purchase_date,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -1,6 +1,7 @@
 """
 数据库连接模块
 """
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -27,6 +28,7 @@ AsyncSessionLocal = async_sessionmaker(
 
 class Base(DeclarativeBase):
     """声明式基类"""
+
     pass
 
 

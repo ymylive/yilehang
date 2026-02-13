@@ -1,6 +1,7 @@
 """
 训练相关API
 """
+
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,9 +15,7 @@ from app.schemas import TrainingSessionCreate, TrainingSessionResponse
 router = APIRouter()
 
 
-async def _get_permitted_student_ids(
-    db: AsyncSession, current_user: dict[str, object]
-) -> set[int]:
+async def _get_permitted_student_ids(db: AsyncSession, current_user: dict[str, object]) -> set[int]:
     role = current_user.get("role")
     user_id = current_user.get("user_id")
     if not user_id:
@@ -64,50 +63,50 @@ EXERCISE_TYPES = [
         "name": "深蹲",
         "description": "标准深蹲动作",
         "calories_per_rep": 0.32,
-        "difficulty": "normal"
+        "difficulty": "normal",
     },
     {
         "id": "jumping_jack",
         "name": "开合跳",
         "description": "全身有氧运动",
         "calories_per_rep": 0.2,
-        "difficulty": "easy"
+        "difficulty": "easy",
     },
     {
         "id": "high_knees",
         "name": "高抬腿",
         "description": "原地高抬腿跑",
         "calories_per_rep": 0.15,
-        "difficulty": "normal"
+        "difficulty": "normal",
     },
     {
         "id": "pushup",
         "name": "俯卧撑",
         "description": "标准俯卧撑",
         "calories_per_rep": 0.5,
-        "difficulty": "hard"
+        "difficulty": "hard",
     },
     {
         "id": "jump_rope",
         "name": "跳绳",
         "description": "模拟跳绳动作",
         "calories_per_rep": 0.1,
-        "difficulty": "normal"
+        "difficulty": "normal",
     },
     {
         "id": "lunge",
         "name": "弓步蹲",
         "description": "交替弓步蹲",
         "calories_per_rep": 0.35,
-        "difficulty": "normal"
+        "difficulty": "normal",
     },
     {
         "id": "plank",
         "name": "平板支撑",
         "description": "核心力量训练",
         "calories_per_rep": 0.05,  # 每秒
-        "difficulty": "hard"
-    }
+        "difficulty": "hard",
+    },
 ]
 
 
@@ -122,7 +121,7 @@ async def start_training(
     exercise_type: str,
     student_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user),
 ):
     """开始训练会话"""
     await _ensure_student_access(student_id, db, current_user)
@@ -136,11 +135,7 @@ async def start_training(
         "message": "训练开始",
         "exercise": exercise,
         "student_id": student_id,
-        "tips": [
-            "请确保摄像头能够拍摄到全身",
-            "保持适当距离，约2-3米",
-            "确保光线充足"
-        ]
+        "tips": ["请确保摄像头能够拍摄到全身", "保持适当距离，约2-3米", "确保光线充足"],
     }
 
 
@@ -148,7 +143,7 @@ async def start_training(
 async def complete_training(
     session_data: TrainingSessionCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user),
 ):
     """完成训练并保存记录"""
     await _ensure_student_access(session_data.student_id, db, current_user)
@@ -166,7 +161,7 @@ async def complete_training(
         reps_count=session_data.reps_count,
         accuracy_score=session_data.accuracy_score,
         calories_burned=calories,
-        video_url=session_data.video_url
+        video_url=session_data.video_url,
     )
     db.add(session)
     await db.flush()
@@ -181,7 +176,7 @@ async def get_training_history(
     skip: int = 0,
     limit: int = 20,
     db: AsyncSession = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user),
 ):
     """获取训练历史"""
     await _ensure_student_access(student_id, db, current_user)

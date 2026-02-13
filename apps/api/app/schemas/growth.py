@@ -1,6 +1,7 @@
 """
 成长档案相关Schema
 """
+
 from datetime import date, datetime
 from typing import List, Optional
 
@@ -9,6 +10,7 @@ from pydantic import BaseModel, ConfigDict
 
 class FitnessMetricBase(BaseModel):
     """体测指标基础Schema"""
+
     metric_type: str
     metric_name: str
     value: float
@@ -18,11 +20,13 @@ class FitnessMetricBase(BaseModel):
 
 class FitnessMetricCreate(FitnessMetricBase):
     """体测指标创建Schema"""
+
     pass
 
 
 class FitnessMetricResponse(FitnessMetricBase):
     """体测指标响应Schema"""
+
     id: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -30,6 +34,7 @@ class FitnessMetricResponse(FitnessMetricBase):
 
 class FitnessTestBase(BaseModel):
     """体测记录基础Schema"""
+
     test_date: date
     height: Optional[float] = None
     weight: Optional[float] = None
@@ -38,6 +43,7 @@ class FitnessTestBase(BaseModel):
 
 class FitnessTestCreate(FitnessTestBase):
     """体测记录创建Schema"""
+
     student_id: int
     tester_id: Optional[int] = None
     metrics: List[FitnessMetricCreate] = []
@@ -45,6 +51,7 @@ class FitnessTestCreate(FitnessTestBase):
 
 class FitnessTestResponse(FitnessTestBase):
     """体测记录响应Schema"""
+
     id: int
     student_id: int
     bmi: Optional[float] = None
@@ -56,6 +63,7 @@ class FitnessTestResponse(FitnessTestBase):
 
 class RadarChartData(BaseModel):
     """雷达图数据"""
+
     speed: float = 0
     agility: float = 0
     endurance: float = 0
@@ -65,6 +73,7 @@ class RadarChartData(BaseModel):
 
 class GrowthProfile(BaseModel):
     """成长档案"""
+
     student_id: int
     student_name: str
     current_radar: RadarChartData
@@ -76,6 +85,7 @@ class GrowthProfile(BaseModel):
 
 class TrainingSessionBase(BaseModel):
     """训练记录基础Schema"""
+
     exercise_type: str
     duration: int
     reps_count: int = 0
@@ -85,12 +95,14 @@ class TrainingSessionBase(BaseModel):
 
 class TrainingSessionCreate(TrainingSessionBase):
     """训练记录创建Schema"""
+
     student_id: int
     video_url: Optional[str] = None
 
 
 class TrainingSessionResponse(TrainingSessionBase):
     """训练记录响应Schema"""
+
     id: int
     student_id: int
     video_url: Optional[str] = None

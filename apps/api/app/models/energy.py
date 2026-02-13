@@ -133,4 +133,3 @@ ENERGY_LEVELS = {
     5: {"name": "精英", "min_points": 3000, "icon": "🏆"},
     6: {"name": "大师", "min_points": 6000, "icon": "👑"},
 }
-

@@ -6,6 +6,7 @@ Tests:
 - Permission query response time
 - Token validation throughput
 """
+
 import asyncio
 import os
 import statistics
@@ -58,9 +59,9 @@ class TestConcurrentLogin:
         max_time = max(response_times)
         min_time = min(response_times)
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("Concurrent Login Performance (100 users)")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"Success Rate: {success_rate:.1f}% ({success_count}/100)")
         print(f"Avg Response Time: {avg_time:.2f}ms")
         print(f"P50 Response Time: {p50_time:.2f}ms")
@@ -68,7 +69,7 @@ class TestConcurrentLogin:
         print(f"P99 Response Time: {p99_time:.2f}ms")
         print(f"Min Response Time: {min_time:.2f}ms")
         print(f"Max Response Time: {max_time:.2f}ms")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         # Assertions
         database_url = os.getenv("TEST_DATABASE_URL", "")
@@ -83,9 +84,7 @@ class TestPermissionQueryPerformance:
     """Test permission query response times."""
 
     @pytest.mark.asyncio
-    async def test_permission_query_response_time(
-        self, client: AsyncClient, admin_token: str
-    ):
+    async def test_permission_query_response_time(self, client: AsyncClient, admin_token: str):
         """Measure response time for permission-related queries."""
         iterations = 50
         response_times = []
@@ -93,8 +92,7 @@ class TestPermissionQueryPerformance:
         for _ in range(iterations):
             start = time.perf_counter()
             response = await client.get(
-                "/api/v1/auth/me",
-                headers={"Authorization": f"Bearer {admin_token}"}
+                "/api/v1/auth/me", headers={"Authorization": f"Bearer {admin_token}"}
             )
             elapsed_ms = (time.perf_counter() - start) * 1000
             assert response.status_code == 200
@@ -104,21 +102,24 @@ class TestPermissionQueryPerformance:
         p95_time = sorted(response_times)[int(len(response_times) * 0.95)]
         p99_time = sorted(response_times)[int(len(response_times) * 0.99)]
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Permission Query Performance ({iterations} iterations)")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"Avg Response Time: {avg_time:.2f}ms")
         print(f"P95 Response Time: {p95_time:.2f}ms")
         print(f"P99 Response Time: {p99_time:.2f}ms")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         assert p95_time < 500, f"P95 response time {p95_time:.2f}ms exceeds 500ms threshold"
 
     @pytest.mark.asyncio
     async def test_multi_role_permission_query(
-        self, client: AsyncClient,
-        admin_token: str, coach_token: str,
-        parent_token: str, student_token: str
+        self,
+        client: AsyncClient,
+        admin_token: str,
+        coach_token: str,
+        parent_token: str,
+        student_token: str,
     ):
         """Measure response time for permission queries across all roles."""
         tokens = {
@@ -136,8 +137,7 @@ class TestPermissionQueryPerformance:
             for _ in range(iterations):
                 start = time.perf_counter()
                 response = await client.get(
-                    "/api/v1/auth/me",
-                    headers={"Authorization": f"Bearer {token}"}
+                    "/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}
                 )
                 elapsed_ms = (time.perf_counter() - start) * 1000
                 assert response.status_code == 200
@@ -149,15 +149,15 @@ class TestPermissionQueryPerformance:
                 "max": max(times),
             }
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("Multi-Role Permission Query Performance")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         for role, stats in role_times.items():
             print(
                 f"  {role:10s}: avg={stats['avg']:.2f}ms "
                 f" p95={stats['p95']:.2f}ms  max={stats['max']:.2f}ms"
             )
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         # All roles should respond within 500ms at P95
         for role, stats in role_times.items():
@@ -170,9 +170,7 @@ class TestTokenValidationThroughput:
     """Test token validation throughput."""
 
     @pytest.mark.asyncio
-    async def test_token_validation_throughput(
-        self, client: AsyncClient, admin_token: str
-    ):
+    async def test_token_validation_throughput(self, client: AsyncClient, admin_token: str):
         """Measure how many token validations can be processed per second."""
         duration_seconds = 3
         request_count = 0
@@ -181,8 +179,7 @@ class TestTokenValidationThroughput:
 
         while (time.perf_counter() - start_time) < duration_seconds:
             response = await client.get(
-                "/api/v1/auth/me",
-                headers={"Authorization": f"Bearer {admin_token}"}
+                "/api/v1/auth/me", headers={"Authorization": f"Bearer {admin_token}"}
             )
             request_count += 1
             if response.status_code != 200:
@@ -191,13 +188,13 @@ class TestTokenValidationThroughput:
         elapsed = time.perf_counter() - start_time
         rps = request_count / elapsed
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Token Validation Throughput ({duration_seconds}s)")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"Total Requests: {request_count}")
         print(f"Errors: {errors}")
         print(f"Requests/Second: {rps:.1f}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         assert errors == 0, f"{errors} errors during throughput test"
         # Minimum 10 RPS for single-threaded async test

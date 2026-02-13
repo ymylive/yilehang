@@ -1,4 +1,4 @@
-﻿"""Dashboard API endpoints."""
+"""Dashboard API endpoints."""
 
 from datetime import date, timedelta
 
@@ -40,10 +40,7 @@ async def get_dashboard_overview(
         .where(Student.created_at >= this_month_start)
         .scalar_subquery()
         .label("new_student_count"),
-        select(func.count())
-        .where(Coach.status == "active")
-        .scalar_subquery()
-        .label("coach_count"),
+        select(func.count()).where(Coach.status == "active").scalar_subquery().label("coach_count"),
         select(func.count())
         .where(Booking.booking_date == today)
         .scalar_subquery()
@@ -178,8 +175,7 @@ async def get_booking_stats(
     )
 
     stats_dict = {
-        row.booking_date: {"total": row.total, "completed": row.completed or 0}
-        for row in result
+        row.booking_date: {"total": row.total, "completed": row.completed or 0} for row in result
     }
 
     return [

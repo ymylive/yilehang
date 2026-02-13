@@ -1,6 +1,7 @@
 """
 教练相关API端点（扩展）
 """
+
 import json
 from datetime import date, timedelta
 from typing import List, Optional
@@ -60,7 +61,7 @@ async def get_coaches(
     specialty: Optional[str] = Query(None, description="专长筛选"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """获取教练列表"""
     # 构建基础查询
@@ -82,8 +83,7 @@ async def get_coaches(
     # 学员数统计（去重）
     students_subq = (
         select(
-            Booking.coach_id,
-            func.count(func.distinct(Booking.student_id)).label('student_count')
+            Booking.coach_id, func.count(func.distinct(Booking.student_id)).label("student_count")
         )
         .where(Booking.coach_id.in_(coach_ids))
         .group_by(Booking.coach_id)
@@ -92,14 +92,8 @@ async def get_coaches(
 
     # 课程数统计
     lessons_subq = (
-        select(
-            Booking.coach_id,
-            func.count(Booking.id).label('lesson_count')
-        )
-        .where(
-            Booking.coach_id.in_(coach_ids),
-            Booking.status == BookingStatus.COMPLETED.value
-        )
+        select(Booking.coach_id, func.count(Booking.id).label("lesson_count"))
+        .where(Booking.coach_id.in_(coach_ids), Booking.status == BookingStatus.COMPLETED.value)
         .group_by(Booking.coach_id)
         .subquery()
     )
@@ -108,8 +102,8 @@ async def get_coaches(
     reviews_subq = (
         select(
             Review.coach_id,
-            func.avg(Review.rating).label('avg_rating'),
-            func.count(Review.id).label('review_count')
+            func.avg(Review.rating).label("avg_rating"),
+            func.count(Review.id).label("review_count"),
         )
         .where(Review.coach_id.in_(coach_ids))
         .group_by(Review.coach_id)
@@ -120,10 +114,10 @@ async def get_coaches(
     stats_query = (
         select(
             Coach.id,
-            func.coalesce(students_subq.c.student_count, 0).label('total_students'),
-            func.coalesce(lessons_subq.c.lesson_count, 0).label('total_lessons'),
-            func.coalesce(reviews_subq.c.avg_rating, 0.0).label('avg_rating'),
-            func.coalesce(reviews_subq.c.review_count, 0).label('review_count')
+            func.coalesce(students_subq.c.student_count, 0).label("total_students"),
+            func.coalesce(lessons_subq.c.lesson_count, 0).label("total_lessons"),
+            func.coalesce(reviews_subq.c.avg_rating, 0.0).label("avg_rating"),
+            func.coalesce(reviews_subq.c.review_count, 0).label("review_count"),
         )
         .select_from(Coach)
         .outerjoin(students_subq, Coach.id == students_subq.c.coach_id)
@@ -139,30 +133,29 @@ async def get_coaches(
     response = []
     for coach in coaches:
         stats = stats_dict.get(coach.id)
-        response.append(CoachDetailResponse(
-            id=coach.id,
-            coach_no=coach.coach_no,
-            name=coach.name,
-            avatar=coach.avatar,
-            specialty=parse_specialty(coach.specialty),
-            introduction=coach.introduction,
-            certificates=parse_json_field(coach.certificates),
-            years_of_experience=coach.years_of_experience,
-            hourly_rate=float(coach.hourly_rate) if coach.hourly_rate else None,
-            total_students=int(stats.total_students) if stats else 0,
-            total_lessons=int(stats.total_lessons) if stats else 0,
-            avg_rating=round(float(stats.avg_rating), 1) if stats else 0.0,
-            review_count=int(stats.review_count) if stats else 0
-        ))
+        response.append(
+            CoachDetailResponse(
+                id=coach.id,
+                coach_no=coach.coach_no,
+                name=coach.name,
+                avatar=coach.avatar,
+                specialty=parse_specialty(coach.specialty),
+                introduction=coach.introduction,
+                certificates=parse_json_field(coach.certificates),
+                years_of_experience=coach.years_of_experience,
+                hourly_rate=float(coach.hourly_rate) if coach.hourly_rate else None,
+                total_students=int(stats.total_students) if stats else 0,
+                total_lessons=int(stats.total_lessons) if stats else 0,
+                avg_rating=round(float(stats.avg_rating), 1) if stats else 0.0,
+                review_count=int(stats.review_count) if stats else 0,
+            )
+        )
 
     return response
 
 
 @router.get("/{coach_id}", response_model=CoachDetailResponse)
-async def get_coach_detail(
-    coach_id: int,
-    db: AsyncSession = Depends(get_db)
-):
+async def get_coach_detail(coach_id: int, db: AsyncSession = Depends(get_db)):
     """获取教练详情"""
     coach = await db.get(Coach, coach_id)
     if not coach:
@@ -171,25 +164,20 @@ async def get_coach_detail(
     # 获取统计信息
     student_count = await db.execute(
         select(func.count()).select_from(
-            select(Booking.student_id)
-            .where(Booking.coach_id == coach.id)
-            .distinct()
-            .subquery()
+            select(Booking.student_id).where(Booking.coach_id == coach.id).distinct().subquery()
         )
     )
     total_students = student_count.scalar() or 0
 
     lesson_count = await db.execute(
         select(func.count()).where(
-            Booking.coach_id == coach.id,
-            Booking.status == BookingStatus.COMPLETED.value
+            Booking.coach_id == coach.id, Booking.status == BookingStatus.COMPLETED.value
         )
     )
     total_lessons = lesson_count.scalar() or 0
 
     rating_result = await db.execute(
-        select(func.avg(Review.rating), func.count(Review.id))
-        .where(Review.coach_id == coach.id)
+        select(func.avg(Review.rating), func.count(Review.id)).where(Review.coach_id == coach.id)
     )
     rating_row = rating_result.one()
     avg_rating = float(rating_row[0]) if rating_row[0] else 0.0
@@ -208,7 +196,7 @@ async def get_coach_detail(
         total_students=total_students,
         total_lessons=total_lessons,
         avg_rating=round(avg_rating, 1),
-        review_count=review_count
+        review_count=review_count,
     )
 
 
@@ -217,7 +205,7 @@ async def get_coach_available_slots(
     coach_id: int,
     start_date: Optional[date] = Query(None, description="开始日期"),
     end_date: Optional[date] = Query(None, description="结束日期"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """获取教练可约时段"""
     coach = await db.get(Coach, coach_id)
@@ -232,11 +220,7 @@ async def get_coach_available_slots(
     service = BookingService(db)
     slots = await service.get_coach_available_times(coach_id, start_date, end_date)
 
-    return CoachAvailableSlotsResponse(
-        coach_id=coach_id,
-        coach_name=coach.name,
-        slots=slots
-    )
+    return CoachAvailableSlotsResponse(coach_id=coach_id, coach_name=coach.name, slots=slots)
 
 
 @router.get("/{coach_id}/reviews", response_model=List[ReviewResponse])
@@ -244,13 +228,14 @@ async def get_coach_reviews(
     coach_id: int,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """获取教练评价列表"""
     service = ReviewService(db)
     reviews, total, avg_rating = await service.get_coach_reviews(coach_id, page, page_size)
 
     import json
+
     return [
         ReviewResponse(
             id=r.id,
@@ -264,7 +249,7 @@ async def get_coach_reviews(
             coach_reply=r.coach_reply,
             coach_reply_at=r.coach_reply_at,
             created_at=r.created_at,
-            student_name="匿名用户" if r.is_anonymous else None
+            student_name="匿名用户" if r.is_anonymous else None,
         )
         for r in reviews
     ]
@@ -272,10 +257,10 @@ async def get_coach_reviews(
 
 # ==================== 教练端API ====================
 
+
 @router.get("/me/slots", response_model=List[CoachSlotResponse])
 async def get_my_slots(
-    db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db), current_user_data: dict = Depends(get_current_user)
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -301,7 +286,7 @@ async def get_my_slots(
             slot_duration=s.slot_duration,
             max_students=s.max_students,
             is_active=s.is_active,
-            created_at=s.created_at
+            created_at=s.created_at,
         )
         for s in slots
     ]
@@ -311,7 +296,7 @@ async def get_my_slots(
 async def create_my_slot(
     data: CoachSlotCreate,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -336,7 +321,7 @@ async def create_my_slot(
         slot_duration=slot.slot_duration,
         max_students=slot.max_students,
         is_active=slot.is_active,
-        created_at=slot.created_at
+        created_at=slot.created_at,
     )
 
 
@@ -345,7 +330,7 @@ async def update_my_slot(
     slot_id: int,
     data: CoachSlotUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -366,7 +351,7 @@ async def update_my_slot(
             slot_duration=slot.slot_duration,
             max_students=slot.max_students,
             is_active=slot.is_active,
-            created_at=slot.created_at
+            created_at=slot.created_at,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -376,7 +361,7 @@ async def update_my_slot(
 async def delete_my_slot(
     slot_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -397,7 +382,7 @@ async def reply_to_review(
     review_id: int,
     data: CoachReplyRequest,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -414,6 +399,7 @@ async def reply_to_review(
     try:
         review = await service.reply_review(review_id, coach.id, data.reply)
         import json
+
         return ReviewResponse(
             id=review.id,
             booking_id=review.booking_id,
@@ -425,7 +411,7 @@ async def reply_to_review(
             is_anonymous=review.is_anonymous,
             coach_reply=review.coach_reply,
             coach_reply_at=review.coach_reply_at,
-            created_at=review.created_at
+            created_at=review.created_at,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -433,18 +419,16 @@ async def reply_to_review(
 
 # ==================== 教练个人资料 ====================
 
+
 @router.get("/me/profile")
 async def get_my_profile(
-    db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
     """获取教练个人资料"""
     if current_user["role"] != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
-    result = await db.execute(
-        select(Coach).where(Coach.user_id == current_user["user_id"])
-    )
+    result = await db.execute(select(Coach).where(Coach.user_id == current_user["user_id"]))
     coach = result.scalar_one_or_none()
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
@@ -455,31 +439,27 @@ async def get_my_profile(
     # 获取统计信息
     student_count = await db.execute(
         select(func.count()).select_from(
-            select(Booking.student_id)
-            .where(Booking.coach_id == coach.id)
-            .distinct()
-            .subquery()
+            select(Booking.student_id).where(Booking.coach_id == coach.id).distinct().subquery()
         )
     )
     total_students = student_count.scalar() or 0
 
     lesson_count = await db.execute(
         select(func.count()).where(
-            Booking.coach_id == coach.id,
-            Booking.status == BookingStatus.COMPLETED.value
+            Booking.coach_id == coach.id, Booking.status == BookingStatus.COMPLETED.value
         )
     )
     total_lessons = lesson_count.scalar() or 0
 
     rating_result = await db.execute(
-        select(func.avg(Review.rating), func.count(Review.id))
-        .where(Review.coach_id == coach.id)
+        select(func.avg(Review.rating), func.count(Review.id)).where(Review.coach_id == coach.id)
     )
     rating_row = rating_result.one()
     avg_rating = float(rating_row[0]) if rating_row[0] else 0.0
     review_count = rating_row[1] or 0
 
     import json
+
     return {
         "id": coach.id,
         "user_id": coach.user_id,
@@ -499,29 +479,26 @@ async def get_my_profile(
         "total_lessons": total_lessons,
         "avg_rating": round(avg_rating, 1),
         "review_count": review_count,
-        "created_at": coach.created_at
+        "created_at": coach.created_at,
     }
 
 
 @router.put("/me/profile")
 async def update_my_profile(
-    data: dict,
-    db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    data: dict, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
     """更新教练个人资料"""
     if current_user["role"] != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
-    result = await db.execute(
-        select(Coach).where(Coach.user_id == current_user["user_id"])
-    )
+    result = await db.execute(select(Coach).where(Coach.user_id == current_user["user_id"]))
     coach = result.scalar_one_or_none()
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
 
     # 可更新的字段
     import json
+
     if "name" in data:
         coach.name = data["name"]
     if "avatar" in data:
@@ -551,18 +528,16 @@ async def update_my_profile(
 
 # ==================== 教练收入管理 ====================
 
+
 @router.get("/me/income/summary")
 async def get_income_summary(
-    db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
     """获取收入汇总"""
     if current_user["role"] != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
-    result = await db.execute(
-        select(Coach).where(Coach.user_id == current_user["user_id"])
-    )
+    result = await db.execute(select(Coach).where(Coach.user_id == current_user["user_id"]))
     coach = result.scalar_one_or_none()
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
@@ -576,7 +551,7 @@ async def get_income_summary(
         select(func.count()).where(
             Booking.coach_id == coach.id,
             Booking.status == BookingStatus.COMPLETED.value,
-            Booking.booking_date >= this_month_start
+            Booking.booking_date >= this_month_start,
         )
     )
     this_month_count = this_month_lessons.scalar() or 0
@@ -587,7 +562,7 @@ async def get_income_summary(
             Booking.coach_id == coach.id,
             Booking.status == BookingStatus.COMPLETED.value,
             Booking.booking_date >= last_month_start,
-            Booking.booking_date < this_month_start
+            Booking.booking_date < this_month_start,
         )
     )
     last_month_count = last_month_lessons.scalar() or 0
@@ -595,14 +570,14 @@ async def get_income_summary(
     # 总完成课程数
     total_lessons = await db.execute(
         select(func.count()).where(
-            Booking.coach_id == coach.id,
-            Booking.status == BookingStatus.COMPLETED.value
+            Booking.coach_id == coach.id, Booking.status == BookingStatus.COMPLETED.value
         )
     )
     total_count = total_lessons.scalar() or 0
 
     # 计算收入 (课时费 * 课程数 * 提成比例)
     from app.core.config import settings
+
     hourly_rate = float(coach.hourly_rate) if coach.hourly_rate else 0
     commission_rate = (
         float(coach.commission_rate)
@@ -615,20 +590,11 @@ async def get_income_summary(
     total_income = total_count * hourly_rate * commission_rate
 
     return {
-        "this_month": {
-            "lessons": this_month_count,
-            "income": round(this_month_income, 2)
-        },
-        "last_month": {
-            "lessons": last_month_count,
-            "income": round(last_month_income, 2)
-        },
-        "total": {
-            "lessons": total_count,
-            "income": round(total_income, 2)
-        },
+        "this_month": {"lessons": this_month_count, "income": round(this_month_income, 2)},
+        "last_month": {"lessons": last_month_count, "income": round(last_month_income, 2)},
+        "total": {"lessons": total_count, "income": round(total_income, 2)},
         "hourly_rate": hourly_rate,
-        "commission_rate": commission_rate
+        "commission_rate": commission_rate,
     }
 
 
@@ -638,23 +604,20 @@ async def get_income_details(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """获取收入明细"""
     if current_user["role"] != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
-    result = await db.execute(
-        select(Coach).where(Coach.user_id == current_user["user_id"])
-    )
+    result = await db.execute(select(Coach).where(Coach.user_id == current_user["user_id"]))
     coach = result.scalar_one_or_none()
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
 
     # 构建查询
     query = select(Booking).where(
-        Booking.coach_id == coach.id,
-        Booking.status == BookingStatus.COMPLETED.value
+        Booking.coach_id == coach.id, Booking.status == BookingStatus.COMPLETED.value
     )
 
     if month:
@@ -665,16 +628,14 @@ async def get_income_details(
                 end_date = date(int(year) + 1, 1, 1)
             else:
                 end_date = date(int(year), int(mon) + 1, 1)
-            query = query.where(
-                Booking.booking_date >= start_date,
-                Booking.booking_date < end_date
-            )
+            query = query.where(Booking.booking_date >= start_date, Booking.booking_date < end_date)
         except (ValueError, IndexError):
             # Invalid month format, skip date filtering
             pass
 
     # Use selectinload to eagerly load student data and avoid N+1 queries
     from sqlalchemy.orm import selectinload
+
     query = query.options(selectinload(Booking.student))
     query = query.order_by(Booking.booking_date.desc())
     query = query.offset((page - 1) * page_size).limit(page_size)
@@ -683,6 +644,7 @@ async def get_income_details(
     bookings = bookings_result.scalars().all()
 
     from app.core.config import settings
+
     hourly_rate = float(coach.hourly_rate) if coach.hourly_rate else 0
     commission_rate = (
         float(coach.commission_rate)
@@ -694,41 +656,38 @@ async def get_income_details(
     for booking in bookings:
         income = hourly_rate * commission_rate
 
-        details.append({
-            "id": booking.id,
-            "booking_date": booking.booking_date.isoformat(),
-            "start_time": booking.start_time.strftime("%H:%M"),
-            "end_time": booking.end_time.strftime("%H:%M"),
-            "student_name": booking.student.name if booking.student else "未知学员",
-            "hourly_rate": hourly_rate,
-            "commission_rate": commission_rate,
-            "income": round(income, 2),
-            "completed_at": booking.updated_at.isoformat() if booking.updated_at else None
-        })
+        details.append(
+            {
+                "id": booking.id,
+                "booking_date": booking.booking_date.isoformat(),
+                "start_time": booking.start_time.strftime("%H:%M"),
+                "end_time": booking.end_time.strftime("%H:%M"),
+                "student_name": booking.student.name if booking.student else "未知学员",
+                "hourly_rate": hourly_rate,
+                "commission_rate": commission_rate,
+                "income": round(income, 2),
+                "completed_at": booking.updated_at.isoformat() if booking.updated_at else None,
+            }
+        )
 
-    return {
-        "items": details,
-        "page": page,
-        "page_size": page_size
-    }
+    return {"items": details, "page": page, "page_size": page_size}
 
 
 # ==================== 教练学员管理 ====================
+
 
 @router.get("/me/students")
 async def get_my_students(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """获取我的学员列表"""
     if current_user["role"] != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
-    result = await db.execute(
-        select(Coach).where(Coach.user_id == current_user["user_id"])
-    )
+    result = await db.execute(select(Coach).where(Coach.user_id == current_user["user_id"]))
     coach = result.scalar_one_or_none()
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
@@ -736,13 +695,14 @@ async def get_my_students(
     from app.models.user import Student
 
     # 获取有预约记录的学员
-    student_ids_query = select(Booking.student_id).where(
-        Booking.coach_id == coach.id
-    ).distinct()
+    student_ids_query = select(Booking.student_id).where(Booking.coach_id == coach.id).distinct()
 
-    students_query = select(Student).where(
-        Student.id.in_(student_ids_query)
-    ).offset((page - 1) * page_size).limit(page_size)
+    students_query = (
+        select(Student)
+        .where(Student.id.in_(student_ids_query))
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
 
     students_result = await db.execute(students_query)
     students = students_result.scalars().all()
@@ -754,14 +714,11 @@ async def get_my_students(
 
     # 批量查询所有学生的课程统计
     lessons_stats = await db.execute(
-        select(
-            Booking.student_id,
-            func.count(Booking.id).label('lesson_count')
-        )
+        select(Booking.student_id, func.count(Booking.id).label("lesson_count"))
         .where(
             Booking.coach_id == coach.id,
             Booking.student_id.in_(student_ids),
-            Booking.status == BookingStatus.COMPLETED.value
+            Booking.status == BookingStatus.COMPLETED.value,
         )
         .group_by(Booking.student_id)
     )
@@ -769,14 +726,11 @@ async def get_my_students(
 
     # 批量查询所有学生的最近上课时间
     last_lessons_subq = (
-        select(
-            Booking.student_id,
-            func.max(Booking.booking_date).label('last_date')
-        )
+        select(Booking.student_id, func.max(Booking.booking_date).label("last_date"))
         .where(
             Booking.coach_id == coach.id,
             Booking.student_id.in_(student_ids),
-            Booking.status == BookingStatus.COMPLETED.value
+            Booking.status == BookingStatus.COMPLETED.value,
         )
         .group_by(Booking.student_id)
     )
@@ -789,37 +743,33 @@ async def get_my_students(
         total_lessons = lessons_dict.get(student.id, 0)
         last_date = last_lessons_dict.get(student.id)
 
-        student_list.append({
-            "id": student.id,
-            "student_no": student.student_no,
-            "name": student.name,
-            "gender": student.gender,
-            "age": student.age,
-            "phone": student.phone,
-            "total_lessons": total_lessons,
-            "last_lesson_date": last_date.isoformat() if last_date else None
-        })
+        student_list.append(
+            {
+                "id": student.id,
+                "student_no": student.student_no,
+                "name": student.name,
+                "gender": student.gender,
+                "age": student.age,
+                "phone": student.phone,
+                "total_lessons": total_lessons,
+                "last_lesson_date": last_date.isoformat() if last_date else None,
+            }
+        )
 
-    return {
-        "items": student_list,
-        "page": page,
-        "page_size": page_size
-    }
+    return {"items": student_list, "page": page, "page_size": page_size}
 
 
 @router.get("/me/students/{student_id}")
 async def get_student_detail(
     student_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """获取学员详情"""
     if current_user["role"] != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
-    result = await db.execute(
-        select(Coach).where(Coach.user_id == current_user["user_id"])
-    )
+    result = await db.execute(select(Coach).where(Coach.user_id == current_user["user_id"]))
     coach = result.scalar_one_or_none()
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
@@ -835,17 +785,17 @@ async def get_student_detail(
         select(func.count()).where(
             Booking.coach_id == coach.id,
             Booking.student_id == student.id,
-            Booking.status == BookingStatus.COMPLETED.value
+            Booking.status == BookingStatus.COMPLETED.value,
         )
     )
     total_lessons = lesson_count.scalar() or 0
 
     # 获取最近课程记录
     recent_lessons = await db.execute(
-        select(Booking).where(
-            Booking.coach_id == coach.id,
-            Booking.student_id == student.id
-        ).order_by(Booking.booking_date.desc()).limit(10)
+        select(Booking)
+        .where(Booking.coach_id == coach.id, Booking.student_id == student.id)
+        .order_by(Booking.booking_date.desc())
+        .limit(10)
     )
     lessons = recent_lessons.scalars().all()
 
@@ -871,11 +821,12 @@ async def get_student_detail(
                 "status": lesson.status,
             }
             for lesson in lessons
-        ]
+        ],
     }
 
 
 # ==================== 教练课表管理 ====================
+
 
 @router.get("/me/schedule")
 async def get_my_schedule(
@@ -883,15 +834,13 @@ async def get_my_schedule(
     end_date: Optional[date] = Query(None),
     status: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """获取我的课表"""
     if current_user["role"] != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
-    result = await db.execute(
-        select(Coach).where(Coach.user_id == current_user["user_id"])
-    )
+    result = await db.execute(select(Coach).where(Coach.user_id == current_user["user_id"]))
     coach = result.scalar_one_or_none()
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
@@ -904,7 +853,7 @@ async def get_my_schedule(
     query = select(Booking).where(
         Booking.coach_id == coach.id,
         Booking.booking_date >= start_date,
-        Booking.booking_date <= end_date
+        Booking.booking_date <= end_date,
     )
 
     if status:
@@ -912,6 +861,7 @@ async def get_my_schedule(
 
     # Use selectinload to eagerly load student data and avoid N+1 queries
     from sqlalchemy.orm import selectinload
+
     query = query.options(selectinload(Booking.student))
     query = query.order_by(Booking.booking_date, Booking.start_time)
     bookings_result = await db.execute(query)
@@ -919,22 +869,24 @@ async def get_my_schedule(
 
     schedule = []
     for booking in bookings:
-        schedule.append({
-            "id": booking.id,
-            "booking_date": booking.booking_date.isoformat(),
-            "start_time": booking.start_time.strftime("%H:%M"),
-            "end_time": booking.end_time.strftime("%H:%M"),
-            "status": booking.status,
-            "student_id": booking.student_id,
-            "student_name": booking.student.name if booking.student else "未知学员",
-            "notes": booking.notes,
-            "created_at": booking.created_at.isoformat()
-        })
+        schedule.append(
+            {
+                "id": booking.id,
+                "booking_date": booking.booking_date.isoformat(),
+                "start_time": booking.start_time.strftime("%H:%M"),
+                "end_time": booking.end_time.strftime("%H:%M"),
+                "status": booking.status,
+                "student_id": booking.student_id,
+                "student_name": booking.student.name if booking.student else "未知学员",
+                "notes": booking.notes,
+                "created_at": booking.created_at.isoformat(),
+            }
+        )
 
     return {
         "items": schedule,
         "start_date": start_date.isoformat(),
-        "end_date": end_date.isoformat()
+        "end_date": end_date.isoformat(),
     }
 
 
@@ -942,15 +894,13 @@ async def get_my_schedule(
 async def confirm_booking(
     booking_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """确认预约"""
     if current_user["role"] != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
-    result = await db.execute(
-        select(Coach).where(Coach.user_id == current_user["user_id"])
-    )
+    result = await db.execute(select(Coach).where(Coach.user_id == current_user["user_id"]))
     coach = result.scalar_one_or_none()
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
@@ -976,15 +926,13 @@ async def complete_booking(
     booking_id: int,
     notes: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """完成课程"""
     if current_user["role"] != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
-    result = await db.execute(
-        select(Coach).where(Coach.user_id == current_user["user_id"])
-    )
+    result = await db.execute(select(Coach).where(Coach.user_id == current_user["user_id"]))
     coach = result.scalar_one_or_none()
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
@@ -1011,15 +959,13 @@ async def complete_booking(
 async def mark_no_show(
     booking_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """标记学员缺席"""
     if current_user["role"] != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
-    result = await db.execute(
-        select(Coach).where(Coach.user_id == current_user["user_id"])
-    )
+    result = await db.execute(select(Coach).where(Coach.user_id == current_user["user_id"]))
     coach = result.scalar_one_or_none()
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
@@ -1044,24 +990,20 @@ async def mark_no_show(
 async def get_booking_detail(
     booking_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """获取教练的单个预约详情"""
     if current_user["role"] != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
-    result = await db.execute(
-        select(Coach).where(Coach.user_id == current_user["user_id"])
-    )
+    result = await db.execute(select(Coach).where(Coach.user_id == current_user["user_id"]))
     coach = result.scalar_one_or_none()
     if not coach:
         raise HTTPException(status_code=404, detail="未找到教练信息")
 
     from sqlalchemy.orm import selectinload
 
-    query = select(Booking).where(Booking.id == booking_id).options(
-        selectinload(Booking.student)
-    )
+    query = select(Booking).where(Booking.id == booking_id).options(selectinload(Booking.student))
     booking_result = await db.execute(query)
     booking = booking_result.scalar_one_or_none()
 
@@ -1086,5 +1028,5 @@ async def get_booking_detail(
         "remark": booking.remark,
         "cancel_reason": booking.cancel_reason,
         "cancelled_at": booking.cancelled_at.isoformat() if booking.cancelled_at else None,
-        "created_at": booking.created_at.isoformat()
+        "created_at": booking.created_at.isoformat(),
     }

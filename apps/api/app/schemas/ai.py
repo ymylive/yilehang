@@ -1,4 +1,5 @@
-﻿"""AI-related schemas."""
+"""AI-related schemas."""
+
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -6,6 +7,7 @@ from pydantic import BaseModel, Field
 
 class JumpRopeAnalyzeRequest(BaseModel):
     """Jump rope analysis request."""
+
     student_id: int = Field(..., description="Student ID")
     video_url: Optional[str] = Field(None, description="Video URL (optional)")
     fps: Optional[int] = Field(30, description="Video FPS")
@@ -15,6 +17,7 @@ class JumpRopeAnalyzeRequest(BaseModel):
 
 class JumpRopeAnalyzeResponse(BaseModel):
     """Jump rope analysis response."""
+
     reps_count: int
     accuracy_score: float
     confidence: float
@@ -25,6 +28,7 @@ class JumpRopeAnalyzeResponse(BaseModel):
 
 class AiAdviceRequest(BaseModel):
     """AI training + diet advice request."""
+
     student_id: Optional[int] = None
     age: Optional[int] = None
     height_cm: Optional[float] = None
@@ -37,6 +41,7 @@ class AiAdviceRequest(BaseModel):
 
 class AiAdviceResponse(BaseModel):
     """AI advice response."""
+
     sport_advice: List[str]
     diet_advice: List[str]
     safety_tips: List[str]
@@ -45,12 +50,14 @@ class AiAdviceResponse(BaseModel):
 
 class AiChatRequest(BaseModel):
     """AI chat request."""
+
     question: str
     context: Optional[Dict[str, Any]] = None
 
 
 class AiChatResponse(BaseModel):
     """AI chat response."""
+
     answer: str
     suggested_actions: List[str]
     disclaimer: str

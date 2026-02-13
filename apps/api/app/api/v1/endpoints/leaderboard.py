@@ -1,6 +1,7 @@
 """
 排行榜 API
 """
+
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -27,7 +28,7 @@ async def get_energy_leaderboard(
     period: str = Query("week", description="时间范围: week/month/all"),
     limit: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """获取能量排行榜"""
     now = datetime.now(timezone.utc)
@@ -44,14 +45,11 @@ async def get_energy_leaderboard(
     if start_time:
         # 按时间段统计
         query = (
-            select(
-                EnergyTransaction.student_id,
-                func.sum(EnergyTransaction.amount).label("total")
-            )
+            select(EnergyTransaction.student_id, func.sum(EnergyTransaction.amount).label("total"))
             .where(
                 and_(
                     EnergyTransaction.type == EnergyTransactionType.EARN.value,
-                    EnergyTransaction.created_at >= start_time
+                    EnergyTransaction.created_at >= start_time,
                 )
             )
             .group_by(EnergyTransaction.student_id)
@@ -73,9 +71,7 @@ async def get_energy_leaderboard(
     student_ids = [student_id for student_id, _ in rows]
 
     # 一次性获取所有学员
-    students_result = await db.execute(
-        select(Student).where(Student.id.in_(student_ids))
-    )
+    students_result = await db.execute(select(Student).where(Student.id.in_(student_ids)))
     students_map = {s.id: s for s in students_result.scalars().all()}
 
     # 一次性获取所有能量账户
@@ -92,15 +88,17 @@ async def get_energy_leaderboard(
         level = account.level if account else 1
         level_info = ENERGY_LEVELS.get(level, ENERGY_LEVELS[1])
 
-        entries.append(LeaderboardEntry(
-            rank=rank,
-            student_id=student_id,
-            student_name=student.name if student else "未知",
-            avatar=None,
-            value=int(total or 0),
-            level=level,
-            level_icon=level_info["icon"]
-        ))
+        entries.append(
+            LeaderboardEntry(
+                rank=rank,
+                student_id=student_id,
+                student_name=student.name if student else "未知",
+                avatar=None,
+                value=int(total or 0),
+                level=level,
+                level_icon=level_info["icon"],
+            )
+        )
 
     # 获取当前用户排名
     my_rank = None
@@ -119,7 +117,7 @@ async def get_energy_leaderboard(
         items=entries,
         my_rank=my_rank,
         my_value=my_value,
-        updated_at=now
+        updated_at=now,
     )
 
 
@@ -128,7 +126,7 @@ async def get_training_leaderboard(
     period: str = Query("week", description="时间范围: week/month/all"),
     limit: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """获取训练排行榜（按训练次数）"""
     now = datetime.now(timezone.utc)
@@ -143,10 +141,7 @@ async def get_training_leaderboard(
 
     # 查询训练次数排行
     query = (
-        select(
-            TrainingSession.student_id,
-            func.count(TrainingSession.id).label("total")
-        )
+        select(TrainingSession.student_id, func.count(TrainingSession.id).label("total"))
         .where(TrainingSession.session_date >= start_time.date())
         .group_by(TrainingSession.student_id)
         .order_by(desc("total"))
@@ -159,22 +154,22 @@ async def get_training_leaderboard(
     student_ids = [student_id for student_id, _ in rows]
     students_map = {}
     if student_ids:
-        students_result = await db.execute(
-            select(Student).where(Student.id.in_(student_ids))
-        )
+        students_result = await db.execute(select(Student).where(Student.id.in_(student_ids)))
         students_map = {student.id: student for student in students_result.scalars().all()}
 
     entries = []
     for rank, (student_id, total) in enumerate(rows, 1):
         student = students_map.get(student_id)
 
-        entries.append(LeaderboardEntry(
-            rank=rank,
-            student_id=student_id,
-            student_name=student.name if student else "未知",
-            avatar=None,
-            value=int(total or 0)
-        ))
+        entries.append(
+            LeaderboardEntry(
+                rank=rank,
+                student_id=student_id,
+                student_name=student.name if student else "未知",
+                avatar=None,
+                value=int(total or 0),
+            )
+        )
 
     # 获取当前用户排名
     my_rank = None
@@ -193,7 +188,7 @@ async def get_training_leaderboard(
         items=entries,
         my_rank=my_rank,
         my_value=my_value,
-        updated_at=now
+        updated_at=now,
     )
 
 
@@ -202,7 +197,7 @@ async def get_fitness_leaderboard(
     metric: str = Query("jump_rope", description="体测项目"),
     limit: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """获取体测进步榜"""
     now = datetime.now(timezone.utc)
@@ -221,30 +216,25 @@ async def get_fitness_leaderboard(
     student_ids = [student_id for student_id, _ in rows]
     students_map = {}
     if student_ids:
-        students_result = await db.execute(
-            select(Student).where(Student.id.in_(student_ids))
-        )
+        students_result = await db.execute(select(Student).where(Student.id.in_(student_ids)))
         students_map = {student.id: student for student in students_result.scalars().all()}
 
     entries = []
     for rank, (student_id, _) in enumerate(rows, 1):
         student = students_map.get(student_id)
 
-        entries.append(LeaderboardEntry(
-            rank=rank,
-            student_id=student_id,
-            student_name=student.name if student else "未知",
-            avatar=None,
-            value=0  # 实际应该是进步分数
-        ))
+        entries.append(
+            LeaderboardEntry(
+                rank=rank,
+                student_id=student_id,
+                student_name=student.name if student else "未知",
+                avatar=None,
+                value=0,  # 实际应该是进步分数
+            )
+        )
 
     return LeaderboardResponse(
-        type="fitness",
-        period="all",
-        items=entries,
-        my_rank=None,
-        my_value=None,
-        updated_at=now
+        type="fitness", period="all", items=entries, my_rank=None, my_value=None, updated_at=now
     )
 
 
@@ -254,14 +244,10 @@ async def _get_student_id(db: AsyncSession, current_user: dict) -> Optional[int]
     role = current_user.get("role")
 
     if role == "student":
-        result = await db.execute(
-            select(Student.id).where(Student.user_id == user_id)
-        )
+        result = await db.execute(select(Student.id).where(Student.user_id == user_id))
         return result.scalar_one_or_none()
     elif role == "parent":
-        result = await db.execute(
-            select(Student.id).where(Student.parent_id == user_id).limit(1)
-        )
+        result = await db.execute(select(Student.id).where(Student.parent_id == user_id).limit(1))
         return result.scalar_one_or_none()
 
     return None

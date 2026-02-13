@@ -2,6 +2,7 @@
 角色权限中间件与依赖注入
 提供 require_role / require_permission 装饰器和 FastAPI 依赖
 """
+
 import logging
 from typing import List, Optional
 
@@ -93,6 +94,7 @@ def require_role(allowed_roles: List[str]):
     或作为参数依赖:
         async def endpoint(user=Depends(require_role(["admin", "coach"]))):
     """
+
     async def _dependency(
         current_user: dict = Depends(get_current_user_with_roles),
     ) -> dict:
@@ -103,7 +105,9 @@ def require_role(allowed_roles: List[str]):
         if not has_role:
             logger.warning(
                 "Role denied: user=%s roles=%s required=%s",
-                current_user["user_id"], user_roles_list, allowed_roles,
+                current_user["user_id"],
+                user_roles_list,
+                allowed_roles,
             )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -122,6 +126,7 @@ def require_permission(required_permissions: List[str]):
         @router.post("/courses", dependencies=[Depends(require_permission(["course:create"]))])
         async def create_course(...): ...
     """
+
     async def _dependency(
         current_user: dict = Depends(get_current_user_with_roles),
         db: AsyncSession = Depends(get_db),
@@ -138,7 +143,8 @@ def require_permission(required_permissions: List[str]):
         if missing:
             logger.warning(
                 "Permission denied: user=%s missing=%s",
-                user_id, missing,
+                user_id,
+                missing,
             )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

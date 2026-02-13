@@ -1,6 +1,7 @@
 """
 学员相关API
 """
+
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -20,9 +21,7 @@ from app.schemas import (
 router = APIRouter()
 
 
-async def _get_permitted_student_ids(
-    db: AsyncSession, current_user: dict[str, object]
-) -> set[int]:
+async def _get_permitted_student_ids(db: AsyncSession, current_user: dict[str, object]) -> set[int]:
     role = current_user.get("role")
     user_id = current_user.get("user_id")
     if not user_id:
@@ -67,6 +66,7 @@ def generate_student_no() -> str:
     """生成学员编号"""
     import random
     import string
+
     return "S" + "".join(random.choices(string.digits, k=8))
 
 
@@ -75,7 +75,7 @@ async def list_students(
     skip: int = 0,
     limit: int = 20,
     db: AsyncSession = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user),
 ):
     """获取学员列表"""
     query = select(Student).where(Student.status == "active")
@@ -95,13 +95,10 @@ async def list_students(
 async def create_student(
     student_data: StudentCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user),
 ):
     """创建学员"""
-    student = Student(
-        student_no=generate_student_no(),
-        **student_data.model_dump()
-    )
+    student = Student(student_no=generate_student_no(), **student_data.model_dump())
     db.add(student)
     await db.flush()
     await db.refresh(student)
@@ -112,7 +109,7 @@ async def create_student(
 async def get_student(
     student_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user),
 ):
     """获取学员详情"""
     await _ensure_student_access(student_id, db, current_user)
@@ -129,7 +126,7 @@ async def update_student(
     student_id: int,
     student_data: StudentUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user),
 ):
     """更新学员信息"""
     await _ensure_student_access(student_id, db, current_user)
@@ -151,7 +148,7 @@ async def update_student(
 async def get_student_growth(
     student_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user),
 ):
     """获取学员成长档案(雷达图数据)"""
     await _ensure_student_access(student_id, db, current_user)
@@ -209,16 +206,14 @@ async def get_student_growth(
     result = await db.execute(
         select(
             func.sum(TrainingSession.duration).label("total_duration"),
-            func.count(TrainingSession.id).label("total_sessions")
-        )
-        .where(TrainingSession.student_id == student_id)
+            func.count(TrainingSession.id).label("total_sessions"),
+        ).where(TrainingSession.student_id == student_id)
     )
     training_stats = result.one()
 
     # 统计体测次数
     result = await db.execute(
-        select(func.count(FitnessTest.id))
-        .where(FitnessTest.student_id == student_id)
+        select(func.count(FitnessTest.id)).where(FitnessTest.student_id == student_id)
     )
     tests_count = result.scalar() or 0
 
@@ -229,5 +224,5 @@ async def get_student_growth(
         previous_radar=previous_radar,
         total_training_hours=(training_stats.total_duration or 0) / 3600,
         total_training_sessions=training_stats.total_sessions or 0,
-        fitness_tests_count=tests_count
+        fitness_tests_count=tests_count,
     )

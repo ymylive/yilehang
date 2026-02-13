@@ -1,6 +1,7 @@
 """
 通知 API
 """
+
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query

@@ -9,6 +9,7 @@ Test Coverage:
 - require_role decorator tests
 - require_permission decorator tests
 """
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -78,7 +79,9 @@ class TestGetUserPermissions:
 
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = [
-            "course:read", "course:create", "booking:read"
+            "course:read",
+            "course:create",
+            "booking:read",
         ]
         mock_db.execute.return_value = mock_result
 
@@ -110,11 +113,7 @@ class TestRequireRoleDecorator:
         """Test that users with matching roles are allowed."""
         dependency = require_role(["admin", "coach"])
 
-        mock_user = {
-            "user_id": 1,
-            "roles": ["coach"],
-            "active_role": "coach"
-        }
+        mock_user = {"user_id": 1, "roles": ["coach"], "active_role": "coach"}
 
         result = await dependency(mock_user)
 
@@ -125,11 +124,7 @@ class TestRequireRoleDecorator:
         """Test that users with any of the allowed roles pass."""
         dependency = require_role(["admin", "coach", "parent"])
 
-        mock_user = {
-            "user_id": 1,
-            "roles": ["parent", "student"],
-            "active_role": "parent"
-        }
+        mock_user = {"user_id": 1, "roles": ["parent", "student"], "active_role": "parent"}
 
         result = await dependency(mock_user)
 
@@ -142,11 +137,7 @@ class TestRequireRoleDecorator:
 
         dependency = require_role(["admin"])
 
-        mock_user = {
-            "user_id": 1,
-            "roles": ["student"],
-            "active_role": "student"
-        }
+        mock_user = {"user_id": 1, "roles": ["student"], "active_role": "student"}
 
         with pytest.raises(HTTPException) as exc_info:
             await dependency(mock_user)
@@ -161,11 +152,7 @@ class TestRequireRoleDecorator:
 
         dependency = require_role(["coach"])
 
-        mock_user = {
-            "user_id": 1,
-            "roles": [],
-            "active_role": ""
-        }
+        mock_user = {"user_id": 1, "roles": [], "active_role": ""}
 
         with pytest.raises(HTTPException) as exc_info:
             await dependency(mock_user)
@@ -181,11 +168,7 @@ class TestRequirePermissionDecorator:
         """Test that admin role bypasses all permission checks."""
         dependency = require_permission(["course:delete", "user:admin"])
 
-        mock_user = {
-            "user_id": 1,
-            "roles": ["admin"],
-            "active_role": "admin"
-        }
+        mock_user = {"user_id": 1, "roles": ["admin"], "active_role": "admin"}
         mock_db = AsyncMock(spec=AsyncSession)
 
         result = await dependency(mock_user, mock_db)
@@ -197,16 +180,14 @@ class TestRequirePermissionDecorator:
         """Test that users with all required permissions pass."""
         dependency = require_permission(["course:read", "course:create"])
 
-        mock_user = {
-            "user_id": 1,
-            "roles": ["coach"],
-            "active_role": "coach"
-        }
+        mock_user = {"user_id": 1, "roles": ["coach"], "active_role": "coach"}
         mock_db = AsyncMock(spec=AsyncSession)
 
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = [
-            "course:read", "course:create", "course:update"
+            "course:read",
+            "course:create",
+            "course:update",
         ]
         mock_db.execute.return_value = mock_result
 
@@ -221,11 +202,7 @@ class TestRequirePermissionDecorator:
 
         dependency = require_permission(["course:read", "course:delete"])
 
-        mock_user = {
-            "user_id": 1,
-            "roles": ["coach"],
-            "active_role": "coach"
-        }
+        mock_user = {"user_id": 1, "roles": ["coach"], "active_role": "coach"}
         mock_db = AsyncMock(spec=AsyncSession)
 
         mock_result = MagicMock()
@@ -245,11 +222,7 @@ class TestRequirePermissionDecorator:
 
         dependency = require_permission(["booking:create"])
 
-        mock_user = {
-            "user_id": 1,
-            "roles": ["student"],
-            "active_role": "student"
-        }
+        mock_user = {"user_id": 1, "roles": ["student"], "active_role": "student"}
         mock_db = AsyncMock(spec=AsyncSession)
 
         mock_result = MagicMock()
@@ -290,7 +263,7 @@ class TestRoleModel:
             description="A test role",
             is_system=False,
             is_active=True,
-            sort_order=10
+            sort_order=10,
         )
 
         assert role.code == "test_role"
@@ -312,7 +285,7 @@ class TestPermissionModel:
             type="api",
             resource="/api/v1/courses",
             action="POST",
-            description="Permission to create courses"
+            description="Permission to create courses",
         )
 
         assert permission.code == "course:create"

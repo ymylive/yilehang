@@ -1,6 +1,7 @@
 """
 成长档案相关API
 """
+
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,9 +15,7 @@ from app.schemas import FitnessTestCreate, FitnessTestResponse
 router = APIRouter()
 
 
-async def _get_permitted_student_ids(
-    db: AsyncSession, current_user: dict[str, object]
-) -> set[int]:
+async def _get_permitted_student_ids(db: AsyncSession, current_user: dict[str, object]) -> set[int]:
     role = current_user.get("role")
     user_id = current_user.get("user_id")
     if not user_id:
@@ -61,7 +60,7 @@ async def _ensure_student_access(
 async def create_fitness_test(
     test_data: FitnessTestCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user),
 ):
     """创建体测记录"""
     await _ensure_student_access(test_data.student_id, db, current_user)
@@ -80,17 +79,14 @@ async def create_fitness_test(
         height=test_data.height,
         weight=test_data.weight,
         bmi=bmi,
-        notes=test_data.notes
+        notes=test_data.notes,
     )
     db.add(test)
     await db.flush()
 
     # 创建体测指标
     for metric_data in test_data.metrics:
-        metric = FitnessMetric(
-            test_id=test.id,
-            **metric_data.model_dump()
-        )
+        metric = FitnessMetric(test_id=test.id, **metric_data.model_dump())
         db.add(metric)
 
     await db.flush()
@@ -105,7 +101,7 @@ async def get_fitness_history(
     skip: int = 0,
     limit: int = 10,
     db: AsyncSession = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user),
 ):
     """获取学员体测历史"""
     await _ensure_student_access(student_id, db, current_user)
@@ -125,7 +121,7 @@ async def get_fitness_history(
 async def get_latest_fitness_test(
     student_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_user)
+    current_user: dict[str, object] = Depends(get_current_user),
 ):
     """获取学员最新体测记录"""
     await _ensure_student_access(student_id, db, current_user)

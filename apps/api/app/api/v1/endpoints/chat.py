@@ -1,6 +1,7 @@
-﻿"""
+"""
 鑱婂ぉ API
 """
+
 import asyncio
 import secrets
 from time import monotonic
@@ -25,6 +26,7 @@ from app.schemas.chat import (
 )
 
 router = APIRouter()
+
 
 # WebSocket 杩炴帴绠＄悊
 class ConnectionManager:
@@ -117,9 +119,7 @@ async def get_conversations(
 
     # 鑾峰彇鍒楄〃
     query = (
-        query.order_by(Conversation.last_message_at.desc().nullslast())
-        .offset(skip)
-        .limit(limit)
+        query.order_by(Conversation.last_message_at.desc().nullslast()).offset(skip).limit(limit)
     )
     result = await db.execute(query)
     conversations = result.scalars().all()
@@ -148,8 +148,7 @@ async def get_conversations(
             .group_by(Message.conversation_id)
         )
         unread_counts = {
-            conversation_id: unread_count
-            for conversation_id, unread_count in unread_result.all()
+            conversation_id: unread_count for conversation_id, unread_count in unread_result.all()
         }
 
     last_messages_map = {}
@@ -187,18 +186,20 @@ async def get_conversations(
                     created_at=last_msg.created_at,
                 )
 
-        items.append(ConversationResponse(
-            id=conv.id,
-            type=conv.type,
-            participant1_id=conv.participant1_id,
-            participant2_id=conv.participant2_id,
-            student_id=conv.student_id,
-            last_message=last_message,
-            last_message_at=conv.last_message_at,
-            unread_count=unread_count,
-            other_user=user_to_brief(other_user) if other_user else None,
-            created_at=conv.created_at,
-        ))
+        items.append(
+            ConversationResponse(
+                id=conv.id,
+                type=conv.type,
+                participant1_id=conv.participant1_id,
+                participant2_id=conv.participant2_id,
+                student_id=conv.student_id,
+                last_message=last_message,
+                last_message_at=conv.last_message_at,
+                unread_count=unread_count,
+                other_user=user_to_brief(other_user) if other_user else None,
+                created_at=conv.created_at,
+            )
+        )
 
     return ConversationListResponse(items=items, total=total)
 
@@ -284,7 +285,7 @@ async def get_messages(
         or_(
             Conversation.participant1_id == current_user.id,
             Conversation.participant2_id == current_user.id,
-        )
+        ),
     )
     conv_result = await db.execute(conv_query)
     conversation = conv_result.scalar_one_or_none()
@@ -300,21 +301,29 @@ async def get_messages(
     total = await db.scalar(count_query) or 0
 
     # 鑾峰彇娑堟伅鍒楄〃
-    query = select(Message).where(
-        Message.conversation_id == conversation_id,
-        Message.is_deleted.is_(False),
-    ).order_by(Message.created_at.desc()).offset(skip).limit(limit)
+    query = (
+        select(Message)
+        .where(
+            Message.conversation_id == conversation_id,
+            Message.is_deleted.is_(False),
+        )
+        .order_by(Message.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
 
     result = await db.execute(query)
     messages = result.scalars().all()
 
     # 鏍囪娑堟伅涓哄凡璇?
     await db.execute(
-        update(Message).where(
+        update(Message)
+        .where(
             Message.conversation_id == conversation_id,
             Message.sender_id != current_user.id,
             Message.status != MessageStatus.READ.value,
-        ).values(status=MessageStatus.READ.value)
+        )
+        .values(status=MessageStatus.READ.value)
     )
     await db.commit()
 
@@ -328,18 +337,20 @@ async def get_messages(
     for msg in messages:
         sender = senders_map.get(msg.sender_id)
 
-        items.append(MessageResponse(
-            id=msg.id,
-            conversation_id=msg.conversation_id,
-            sender_id=msg.sender_id,
-            sender=user_to_brief(sender) if sender else None,
-            type=msg.type,
-            content=msg.content,
-            reply_to_id=msg.reply_to_id,
-            status=msg.status,
-            is_deleted=msg.is_deleted,
-            created_at=msg.created_at,
-        ))
+        items.append(
+            MessageResponse(
+                id=msg.id,
+                conversation_id=msg.conversation_id,
+                sender_id=msg.sender_id,
+                sender=user_to_brief(sender) if sender else None,
+                type=msg.type,
+                content=msg.content,
+                reply_to_id=msg.reply_to_id,
+                status=msg.status,
+                is_deleted=msg.is_deleted,
+                created_at=msg.created_at,
+            )
+        )
 
     return MessageListResponse(
         items=items,
@@ -365,7 +376,7 @@ async def send_message(
         or_(
             Conversation.participant1_id == current_user.id,
             Conversation.participant2_id == current_user.id,
-        )
+        ),
     )
     conv_result = await db.execute(conv_query)
     conversation = conv_result.scalar_one_or_none()
@@ -443,7 +454,7 @@ async def mark_message_read(
         or_(
             Conversation.participant1_id == current_user.id,
             Conversation.participant2_id == current_user.id,
-        )
+        ),
     )
     conv_result = await db.execute(conv_query)
     if not conv_result.scalar_one_or_none():
@@ -503,4 +514,3 @@ async def websocket_endpoint(
                 await websocket.send_text("pong")
     except WebSocketDisconnect:
         manager.disconnect(user_id)
-

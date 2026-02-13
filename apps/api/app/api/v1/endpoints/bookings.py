@@ -1,6 +1,7 @@
 """
 预约管理API端点
 """
+
 from datetime import date
 from typing import Optional
 
@@ -70,8 +71,7 @@ async def get_student_id_for_user(user: User, db: AsyncSession) -> int:
 
     # 家长用户，获取主要关联的学员
     result = await db.execute(
-        select(ParentStudentRelation)
-        .where(
+        select(ParentStudentRelation).where(
             ParentStudentRelation.parent_id == user.id,
             ParentStudentRelation.is_primary.is_(True),
         )
@@ -116,7 +116,7 @@ async def get_my_bookings(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict[str, object] = Depends(get_current_user)
+    current_user_data: dict[str, object] = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -131,7 +131,7 @@ async def get_my_bookings(
         start_date=start_date,
         end_date=end_date,
         page=page,
-        page_size=page_size
+        page_size=page_size,
     )
 
     # 转换为响应格式
@@ -161,19 +161,14 @@ async def get_my_bookings(
         )
         items.append(item)
 
-    return BookingListResponse(
-        items=items,
-        total=total,
-        page=page,
-        page_size=page_size
-    )
+    return BookingListResponse(items=items, total=total, page=page, page_size=page_size)
 
 
 @router.post("", response_model=BookingResponse)
 async def create_booking(
     data: BookingCreate,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict[str, object] = Depends(get_current_user)
+    current_user_data: dict[str, object] = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -205,7 +200,7 @@ async def create_booking(
             cancel_reason=booking.cancel_reason,
             cancelled_at=booking.cancelled_at,
             remark=booking.remark,
-            created_at=booking.created_at
+            created_at=booking.created_at,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -215,7 +210,7 @@ async def create_booking(
 async def get_booking(
     booking_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict[str, object] = Depends(get_current_user)
+    current_user_data: dict[str, object] = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -246,9 +241,7 @@ async def get_booking(
         student_name=booking.student.name if booking.student else None,
         coach_name=booking.coach.name if booking.coach else None,
         course_name=(
-            booking.schedule.course.name
-            if booking.schedule and booking.schedule.course
-            else None
+            booking.schedule.course.name if booking.schedule and booking.schedule.course else None
         ),
     )
 
@@ -258,7 +251,7 @@ async def cancel_booking(
     booking_id: int,
     data: BookingCancelRequest,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict[str, object] = Depends(get_current_user)
+    current_user_data: dict[str, object] = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -286,7 +279,7 @@ async def cancel_booking(
             cancel_reason=booking.cancel_reason,
             cancelled_at=booking.cancelled_at,
             remark=booking.remark,
-            created_at=booking.created_at
+            created_at=booking.created_at,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -297,7 +290,7 @@ async def reschedule_booking(
     booking_id: int,
     data: BookingRescheduleRequest,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict[str, object] = Depends(get_current_user)
+    current_user_data: dict[str, object] = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -325,7 +318,7 @@ async def reschedule_booking(
             cancel_reason=booking.cancel_reason,
             cancelled_at=booking.cancelled_at,
             remark=booking.remark,
-            created_at=booking.created_at
+            created_at=booking.created_at,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

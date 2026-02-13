@@ -1,6 +1,7 @@
 """
 商家系统 Schemas
 """
+
 from datetime import datetime
 from typing import List, Optional
 
@@ -8,8 +9,10 @@ from pydantic import BaseModel, ConfigDict
 
 # ============ 商家 ============
 
+
 class MerchantBase(BaseModel):
     """商家基础"""
+
     name: str
     logo: Optional[str] = None
     category: str
@@ -21,12 +24,14 @@ class MerchantBase(BaseModel):
 
 class MerchantCreate(MerchantBase):
     """创建商家"""
+
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
 
 class MerchantUpdate(BaseModel):
     """更新商家"""
+
     name: Optional[str] = None
     logo: Optional[str] = None
     category: Optional[str] = None
@@ -42,6 +47,7 @@ class MerchantUpdate(BaseModel):
 
 class MerchantResponse(MerchantBase):
     """商家响应"""
+
     id: int
     status: str
     is_featured: bool
@@ -54,20 +60,24 @@ class MerchantResponse(MerchantBase):
 
 class MerchantListResponse(BaseModel):
     """商家列表响应"""
+
     items: List[MerchantResponse]
     total: int
 
 
 class MerchantDetailResponse(MerchantResponse):
     """商家详情响应"""
+
     items_count: int = 0
     total_redeemed: int = 0
 
 
 # ============ 兑换商品 ============
 
+
 class RedeemItemBase(BaseModel):
     """兑换商品基础"""
+
     name: str
     image: Optional[str] = None
     description: Optional[str] = None
@@ -82,11 +92,13 @@ class RedeemItemBase(BaseModel):
 
 class RedeemItemCreate(RedeemItemBase):
     """创建兑换商品"""
+
     merchant_id: int
 
 
 class RedeemItemUpdate(BaseModel):
     """更新兑换商品"""
+
     name: Optional[str] = None
     image: Optional[str] = None
     description: Optional[str] = None
@@ -102,6 +114,7 @@ class RedeemItemUpdate(BaseModel):
 
 class RedeemItemResponse(RedeemItemBase):
     """兑换商品响应"""
+
     id: int
     merchant_id: int
     is_active: bool
@@ -116,19 +129,23 @@ class RedeemItemResponse(RedeemItemBase):
 
 class RedeemItemListResponse(BaseModel):
     """兑换商品列表响应"""
+
     items: List[RedeemItemResponse]
     total: int
 
 
 # ============ 兑换订单 ============
 
+
 class RedeemOrderCreate(BaseModel):
     """创建兑换订单"""
+
     item_id: int
 
 
 class RedeemOrderResponse(BaseModel):
     """兑换订单响应"""
+
     id: int
     order_no: str
     student_id: int
@@ -152,6 +169,7 @@ class RedeemOrderResponse(BaseModel):
 
 class RedeemOrderListResponse(BaseModel):
     """兑换订单列表响应"""
+
     items: List[RedeemOrderResponse]
     total: int
     page: int
@@ -160,11 +178,13 @@ class RedeemOrderListResponse(BaseModel):
 
 class RedeemOrderVerifyRequest(BaseModel):
     """核销请求"""
+
     verify_code: str
 
 
 class RedeemOrderVerifyResponse(BaseModel):
     """核销响应"""
+
     success: bool
     message: str
     order: Optional[RedeemOrderResponse] = None
@@ -172,8 +192,10 @@ class RedeemOrderVerifyResponse(BaseModel):
 
 # ============ 商家统计 ============
 
+
 class MerchantStatsResponse(BaseModel):
     """商家统计响应"""
+
     merchant_id: int
     today_verified: int = 0
     today_pending: int = 0
@@ -185,8 +207,10 @@ class MerchantStatsResponse(BaseModel):
 
 # ============ 商家用户 ============
 
+
 class MerchantUserResponse(BaseModel):
     """商家用户响应"""
+
     id: int
     merchant_id: int
     user_id: int

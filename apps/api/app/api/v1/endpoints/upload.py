@@ -1,6 +1,7 @@
 """
 文件上传 API
 """
+
 import os
 import uuid
 from datetime import datetime
@@ -158,10 +159,7 @@ async def upload_avatar(
     current_user.avatar = avatar_url
     await db.commit()
 
-    return {
-        "url": avatar_url,
-        "message": "头像上传成功"
-    }
+    return {"url": avatar_url, "message": "头像上传成功"}
 
 
 @router.post("/avatar/sync-wechat")
@@ -186,10 +184,7 @@ async def sync_wechat_avatar(
     # 如果用户已有微信头像URL，直接使用
     # 实际场景中，微信头像URL在登录时已经获取并存储
     if current_user.avatar and "wx.qlogo.cn" in current_user.avatar:
-        return {
-            "url": current_user.avatar,
-            "message": "已使用微信头像"
-        }
+        return {"url": current_user.avatar, "message": "已使用微信头像"}
 
     raise HTTPException(status_code=400, detail="请通过微信登录获取头像")
 
@@ -215,7 +210,4 @@ async def upload_image(
     # 生成 URL
     image_url = f"/uploads/images/{date_path}/{filename}"
 
-    return {
-        "url": image_url,
-        "message": "图片上传成功"
-    }
+    return {"url": image_url, "message": "图片上传成功"}

@@ -1,6 +1,7 @@
 """
 能量系统服务层
 """
+
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple, TypedDict, cast
@@ -33,9 +34,7 @@ class EnergyService:
     """能量系统服务"""
 
     @staticmethod
-    async def _get_account_snapshot(
-        db: AsyncSession, student_id: int
-    ) -> Optional[AccountSnapshot]:
+    async def _get_account_snapshot(db: AsyncSession, student_id: int) -> Optional[AccountSnapshot]:
         """读取账户快照用于CAS更新。"""
         result = await db.execute(
             select(
@@ -136,18 +135,12 @@ class EnergyService:
     async def get_rule_by_code(db: AsyncSession, code: str) -> Optional[EnergyRule]:
         """根据代码获取积分规则"""
         result = await db.execute(
-            select(EnergyRule).where(
-                and_(EnergyRule.code == code, EnergyRule.is_active.is_(True))
-            )
+            select(EnergyRule).where(and_(EnergyRule.code == code, EnergyRule.is_active.is_(True)))
         )
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def check_limit(
-        db: AsyncSession,
-        student_id: int,
-        rule: EnergyRule
-    ) -> Tuple[bool, str]:
+    async def check_limit(db: AsyncSession, student_id: int, rule: EnergyRule) -> Tuple[bool, str]:
         """检查积分获取限制"""
         now = datetime.now(timezone.utc)
 
@@ -160,7 +153,7 @@ class EnergyService:
                         EnergyTransaction.student_id == student_id,
                         EnergyTransaction.rule_id == rule.id,
                         EnergyTransaction.type == EnergyTransactionType.EARN.value,
-                        EnergyTransaction.created_at >= today_start
+                        EnergyTransaction.created_at >= today_start,
                     )
                 )
             )
@@ -178,7 +171,7 @@ class EnergyService:
                         EnergyTransaction.student_id == student_id,
                         EnergyTransaction.rule_id == rule.id,
                         EnergyTransaction.type == EnergyTransactionType.EARN.value,
-                        EnergyTransaction.created_at >= week_start
+                        EnergyTransaction.created_at >= week_start,
                     )
                 )
             )
@@ -195,7 +188,7 @@ class EnergyService:
                         EnergyTransaction.student_id == student_id,
                         EnergyTransaction.rule_id == rule.id,
                         EnergyTransaction.type == EnergyTransactionType.EARN.value,
-                        EnergyTransaction.created_at >= month_start
+                        EnergyTransaction.created_at >= month_start,
                     )
                 )
             )
@@ -212,7 +205,7 @@ class EnergyService:
         rule_code: str,
         reference_type: Optional[str] = None,
         reference_id: Optional[int] = None,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ) -> Tuple[bool, int, int, str]:
         """
         获取能量积分
@@ -283,7 +276,7 @@ class EnergyService:
         amount: int,
         reference_type: str,
         reference_id: int,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ) -> Tuple[bool, int, int, str]:
         """
         消费能量积分
@@ -327,8 +320,7 @@ class EnergyService:
             await db.flush()
 
             logger.info(
-                f"Student {student_id} spent {amount} energy "
-                f"for {reference_type}:{reference_id}"
+                f"Student {student_id} spent {amount} energy for {reference_type}:{reference_id}"
             )
             return True, amount, updated["balance"], f"消费 {amount} 能量"
 
@@ -343,7 +335,7 @@ class EnergyService:
         amount: int,
         reference_type: str,
         reference_id: int,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ) -> Tuple[bool, int, int, str]:
         """退还能量积分"""
         await EnergyService.get_or_create_account(db, student_id)
@@ -401,12 +393,10 @@ class EnergyService:
         student_id: int,
         page: int = 1,
         page_size: int = 20,
-        type_filter: Optional[str] = None
+        type_filter: Optional[str] = None,
     ) -> Tuple[list[EnergyTransaction], int]:
         """获取交易记录"""
-        query = select(EnergyTransaction).where(
-            EnergyTransaction.student_id == student_id
-        )
+        query = select(EnergyTransaction).where(EnergyTransaction.student_id == student_id)
 
         if type_filter:
             query = query.where(EnergyTransaction.type == type_filter)
@@ -433,7 +423,7 @@ class EnergyService:
                 and_(
                     EnergyTransaction.student_id == student_id,
                     EnergyTransaction.type == EnergyTransactionType.EARN.value,
-                    EnergyTransaction.created_at >= today_start
+                    EnergyTransaction.created_at >= today_start,
                 )
             )
         )
@@ -450,7 +440,7 @@ class EnergyService:
                 and_(
                     EnergyTransaction.student_id == student_id,
                     EnergyTransaction.type == EnergyTransactionType.EARN.value,
-                    EnergyTransaction.created_at >= week_start
+                    EnergyTransaction.created_at >= week_start,
                 )
             )
         )

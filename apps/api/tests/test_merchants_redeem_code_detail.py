@@ -17,11 +17,15 @@ async def test_get_order_by_verify_code_returns_enriched_order_detail(
     test_users: dict[str, Any],
     admin_token: str,
 ):
-    merchant = Merchant(name="Test Merchant", category="sports", address="Test Address", status="active")
+    merchant = Merchant(
+        name="Test Merchant", category="sports", address="Test Address", status="active"
+    )
     db_session.add(merchant)
     await db_session.flush()
 
-    merchant_user = MerchantUser(merchant_id=merchant.id, user_id=test_users["admin"].id, role="owner")
+    merchant_user = MerchantUser(
+        merchant_id=merchant.id, user_id=test_users["admin"].id, role="owner"
+    )
     db_session.add(merchant_user)
 
     item = RedeemItem(

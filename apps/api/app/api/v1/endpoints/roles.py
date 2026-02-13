@@ -5,6 +5,7 @@
 - GET /menus          获取当前用户可见菜单
 - POST /switch-role   切换当前激活角色
 """
+
 import logging
 from datetime import timedelta
 from typing import List
@@ -43,6 +44,7 @@ router = APIRouter()
 
 # ============ 角色查询 ============
 
+
 @router.get("/roles", response_model=UserRolesResponse, summary="获取当前用户所有角色")
 async def get_user_roles(
     current_user: dict = Depends(get_current_user_with_roles),
@@ -63,22 +65,23 @@ async def get_user_roles(
     if not roles:
         legacy_role = current_user.get("role", "parent")
         return UserRolesResponse(
-            data=[RoleResponse(
-                id=0,
-                code=legacy_role,
-                name=_role_display_name(legacy_role),
-                is_system=True,
-                is_active=True,
-                sort_order=0,
-            )]
+            data=[
+                RoleResponse(
+                    id=0,
+                    code=legacy_role,
+                    name=_role_display_name(legacy_role),
+                    is_system=True,
+                    is_active=True,
+                    sort_order=0,
+                )
+            ]
         )
 
-    return UserRolesResponse(
-        data=[RoleResponse.model_validate(r) for r in roles]
-    )
+    return UserRolesResponse(data=[RoleResponse.model_validate(r) for r in roles])
 
 
 # ============ 权限查询 ============
+
 
 @router.get("/permissions", response_model=UserPermissionsResponse, summary="获取当前用户权限列表")
 async def get_permissions(
@@ -90,13 +93,9 @@ async def get_permissions(
 
     # admin 返回所有权限
     if "admin" in current_user.get("roles", []):
-        result = await db.execute(
-            select(Permission).where(Permission.is_active.is_(True))
-        )
+        result = await db.execute(select(Permission).where(Permission.is_active.is_(True)))
         perms = result.scalars().all()
-        return UserPermissionsResponse(
-            data=[PermissionResponse.model_validate(p) for p in perms]
-        )
+        return UserPermissionsResponse(data=[PermissionResponse.model_validate(p) for p in perms])
 
     result = await db.execute(
         select(Permission)
@@ -112,12 +111,11 @@ async def get_permissions(
     )
     perms = result.scalars().all()
 
-    return UserPermissionsResponse(
-        data=[PermissionResponse.model_validate(p) for p in perms]
-    )
+    return UserPermissionsResponse(data=[PermissionResponse.model_validate(p) for p in perms])
 
 
 # ============ 菜单查询 ============
+
 
 @router.get("/menus", response_model=UserMenusResponse, summary="获取当前用户可见菜单")
 async def get_menus(
@@ -160,6 +158,7 @@ async def get_menus(
 
 # ============ 切换角色 ============
 
+
 @router.post("/switch-role", response_model=SwitchRoleResponse, summary="切换当前激活角色")
 async def switch_role(
     data: SwitchRoleRequest,
@@ -187,9 +186,7 @@ async def switch_role(
     if target_role:
         # 将所有角色设为非激活
         await db.execute(
-            update(user_roles)
-            .where(user_roles.c.user_id == user_id)
-            .values(is_active=False)
+            update(user_roles).where(user_roles.c.user_id == user_id).values(is_active=False)
         )
         # 将目标角色设为激活
         await db.execute(
@@ -202,9 +199,7 @@ async def switch_role(
         )
 
     # 同时更新 User.role 字段（兼容旧逻辑）
-    await db.execute(
-        update(User).where(User.id == user_id).values(role=target_code)
-    )
+    await db.execute(update(User).where(User.id == user_id).values(role=target_code))
 
     await db.commit()
 
@@ -229,6 +224,7 @@ async def switch_role(
 
 
 # ============ 辅助函数 ============
+
 
 def _role_display_name(code: str) -> str:
     """角色代码 -> 显示名称"""

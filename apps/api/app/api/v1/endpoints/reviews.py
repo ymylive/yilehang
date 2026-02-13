@@ -1,6 +1,7 @@
 """
 评价管理API端点
 """
+
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -24,7 +25,7 @@ router = APIRouter()
 async def create_review(
     data: ReviewCreate,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -38,6 +39,7 @@ async def create_review(
     try:
         review = await service.create_review(data, student_id)
         import json
+
         return ReviewResponse(
             id=review.id,
             booking_id=review.booking_id,
@@ -49,7 +51,7 @@ async def create_review(
             is_anonymous=review.is_anonymous,
             coach_reply=review.coach_reply,
             coach_reply_at=review.coach_reply_at,
-            created_at=review.created_at
+            created_at=review.created_at,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -57,11 +59,12 @@ async def create_review(
 
 # ==================== 教练反馈 ====================
 
+
 @router.post("/feedbacks", response_model=CoachFeedbackResponse)
 async def create_coach_feedback(
     data: CoachFeedbackCreate,
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -85,7 +88,7 @@ async def create_coach_feedback(
             performance_rating=feedback.performance_rating,
             content=feedback.content,
             suggestions=feedback.suggestions,
-            created_at=feedback.created_at
+            created_at=feedback.created_at,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -96,7 +99,7 @@ async def get_my_feedbacks(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -118,7 +121,7 @@ async def get_my_feedbacks(
             performance_rating=f.performance_rating,
             content=f.content,
             suggestions=f.suggestions,
-            created_at=f.created_at
+            created_at=f.created_at,
         )
         for f in feedbacks
     ]
@@ -129,7 +132,7 @@ async def get_my_coach_reviews(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -146,6 +149,7 @@ async def get_my_coach_reviews(
     reviews, total, avg_rating = await service.get_coach_reviews(coach.id, page, page_size)
 
     import json
+
     return {
         "items": [
             ReviewResponse(
@@ -160,14 +164,14 @@ async def get_my_coach_reviews(
                 coach_reply=r.coach_reply,
                 coach_reply_at=r.coach_reply_at,
                 created_at=r.created_at,
-                student_name="匿名用户" if r.is_anonymous else None
+                student_name="匿名用户" if r.is_anonymous else None,
             )
             for r in reviews
         ],
         "total": total,
         "page": page,
         "page_size": page_size,
-        "avg_rating": avg_rating
+        "avg_rating": avg_rating,
     }
 
 
@@ -177,7 +181,7 @@ async def get_coach_feedbacks(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user_data: dict = Depends(get_current_user)
+    current_user_data: dict = Depends(get_current_user),
 ):
     """Fetch user model"""
     current_user = await fetch_user_from_token(db, current_user_data)
@@ -204,9 +208,7 @@ async def get_coach_feedbacks(
     feedbacks = result.scalars().all()
 
     count_query = (
-        select(func.count())
-        .select_from(CoachFeedback)
-        .where(CoachFeedback.coach_id == coach.id)
+        select(func.count()).select_from(CoachFeedback).where(CoachFeedback.coach_id == coach.id)
     )
     if student_id:
         count_query = count_query.where(CoachFeedback.student_id == student_id)
@@ -224,11 +226,11 @@ async def get_coach_feedbacks(
                 performance_rating=f.performance_rating,
                 content=f.content,
                 suggestions=f.suggestions,
-                created_at=f.created_at
+                created_at=f.created_at,
             )
             for f in feedbacks
         ],
         "total": total,
         "page": page,
-        "page_size": page_size
+        "page_size": page_size,
     }

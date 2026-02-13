@@ -1,6 +1,7 @@
 """
 约课系统服务层
 """
+
 from datetime import date, datetime, time, timedelta, timezone
 from typing import List, Optional, Tuple
 
@@ -51,7 +52,7 @@ class BookingService:
         booking_date: date,
         start_time: time,
         end_time: time,
-        exclude_booking_id: Optional[int] = None
+        exclude_booking_id: Optional[int] = None,
     ) -> bool:
         """检查教练在指定时段是否有冲突"""
         query = select(Booking).where(
@@ -61,8 +62,8 @@ class BookingService:
             or_(
                 and_(Booking.start_time <= start_time, Booking.end_time > start_time),
                 and_(Booking.start_time < end_time, Booking.end_time >= end_time),
-                and_(Booking.start_time >= start_time, Booking.end_time <= end_time)
-            )
+                and_(Booking.start_time >= start_time, Booking.end_time <= end_time),
+            ),
         )
         if exclude_booking_id:
             query = query.where(Booking.id != exclude_booking_id)
@@ -76,7 +77,7 @@ class BookingService:
         booking_date: date,
         start_time: time,
         end_time: time,
-        exclude_booking_id: Optional[int] = None
+        exclude_booking_id: Optional[int] = None,
     ) -> bool:
         """检查学员在指定时段是否有冲突"""
         query = select(Booking).where(
@@ -86,8 +87,8 @@ class BookingService:
             or_(
                 and_(Booking.start_time <= start_time, Booking.end_time > start_time),
                 and_(Booking.start_time < end_time, Booking.end_time >= end_time),
-                and_(Booking.start_time >= start_time, Booking.end_time <= end_time)
-            )
+                and_(Booking.start_time >= start_time, Booking.end_time <= end_time),
+            ),
         )
         if exclude_booking_id:
             query = query.where(Booking.id != exclude_booking_id)
@@ -98,18 +99,11 @@ class BookingService:
     # ==================== 预约管理 ====================
 
     async def create_booking(
-        self,
-        data: BookingCreate,
-        student_id: int,
-        auto_deduct: bool = True
+        self, data: BookingCreate, student_id: int, auto_deduct: bool = True
     ) -> Booking:
         """创建预约"""
-        await self.db.execute(
-            select(Coach.id).where(Coach.id == data.coach_id).with_for_update()
-        )
-        await self.db.execute(
-            select(Student.id).where(Student.id == student_id).with_for_update()
-        )
+        await self.db.execute(select(Coach.id).where(Coach.id == data.coach_id).with_for_update())
+        await self.db.execute(select(Student.id).where(Student.id == student_id).with_for_update())
 
         # 检查教练时段冲突
         if await self.check_booking_conflict(
@@ -141,7 +135,7 @@ class BookingService:
             course_type=data.course_type,
             status=BookingStatus.CONFIRMED.value,
             membership_id=membership.id,
-            remark=data.remark
+            remark=data.remark,
         )
         self.db.add(booking)
         await self.db.flush()
@@ -154,7 +148,9 @@ class BookingService:
         await self.db.refresh(booking)
         return booking
 
-    async def _get_active_membership_for_update(self, student_id: int) -> Optional[StudentMembership]:
+    async def _get_active_membership_for_update(
+        self, student_id: int
+    ) -> Optional[StudentMembership]:
         """获取并锁定学员有效课时卡（优先使用即将过期的）"""
         result = await self.db.execute(
             select(StudentMembership)
@@ -164,8 +160,8 @@ class BookingService:
                 StudentMembership.remaining_times > 0,
                 or_(
                     StudentMembership.expire_date.is_(None),
-                    StudentMembership.expire_date >= date.today()
-                )
+                    StudentMembership.expire_date >= date.today(),
+                ),
             )
             .order_by(StudentMembership.expire_date.asc().nullslast())
             .with_for_update()
@@ -173,10 +169,7 @@ class BookingService:
         return result.scalar_one_or_none()
 
     async def cancel_booking(
-        self,
-        booking_id: int,
-        user_id: int,
-        data: BookingCancelRequest
+        self, booking_id: int, user_id: int, data: BookingCancelRequest
     ) -> Booking:
         """取消预约"""
         booking = await self.get_booking(booking_id)
@@ -188,10 +181,9 @@ class BookingService:
 
         # 检查取消时限
         from app.core.config import settings
+
         booking_datetime = datetime.combine(booking.booking_date, booking.start_time)
-        cancel_deadline = booking_datetime - timedelta(
-            hours=settings.BOOKING_CANCEL_HOURS_BEFORE
-        )
+        cancel_deadline = booking_datetime - timedelta(hours=settings.BOOKING_CANCEL_HOURS_BEFORE)
         if datetime.now() > cancel_deadline:
             raise ValueError(f"距离上课不足{settings.BOOKING_CANCEL_HOURS_BEFORE}小时，无法取消")
 
@@ -209,11 +201,7 @@ class BookingService:
         await self.db.refresh(booking)
         return booking
 
-    async def reschedule_booking(
-        self,
-        booking_id: int,
-        data: BookingRescheduleRequest
-    ) -> Booking:
+    async def reschedule_booking(self, booking_id: int, data: BookingRescheduleRequest) -> Booking:
         """改期预约"""
         booking = await self.get_booking(booking_id)
         if not booking:
@@ -224,14 +212,20 @@ class BookingService:
 
         # 检查新时段冲突
         if await self.check_booking_conflict(
-            booking.coach_id, data.new_date, data.new_start_time, data.new_end_time,
-            exclude_booking_id=booking_id
+            booking.coach_id,
+            data.new_date,
+            data.new_start_time,
+            data.new_end_time,
+            exclude_booking_id=booking_id,
         ):
             raise ValueError("新时段教练已被预约")
 
         if await self.check_student_booking_conflict(
-            booking.student_id, data.new_date, data.new_start_time, data.new_end_time,
-            exclude_booking_id=booking_id
+            booking.student_id,
+            data.new_date,
+            data.new_start_time,
+            data.new_end_time,
+            exclude_booking_id=booking_id,
         ):
             raise ValueError("新时段您已有其他预约")
 
@@ -278,7 +272,7 @@ class BookingService:
             .options(
                 selectinload(Booking.student),
                 selectinload(Booking.coach),
-                selectinload(Booking.schedule).selectinload(Schedule.course)
+                selectinload(Booking.schedule).selectinload(Schedule.course),
             )
             .where(Booking.id == booking_id)
         )
@@ -291,7 +285,7 @@ class BookingService:
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         page: int = 1,
-        page_size: int = 20
+        page_size: int = 20,
     ) -> Tuple[List[Booking], int]:
         """获取学员预约列表"""
         query = (
@@ -329,7 +323,7 @@ class BookingService:
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         page: int = 1,
-        page_size: int = 20
+        page_size: int = 20,
     ) -> Tuple[List[Booking], int]:
         """获取教练预约列表"""
         query = (
@@ -372,8 +366,8 @@ class BookingService:
                 StudentMembership.remaining_times > 0,
                 or_(
                     StudentMembership.expire_date.is_(None),
-                    StudentMembership.expire_date >= date.today()
-                )
+                    StudentMembership.expire_date >= date.today(),
+                ),
             )
             .order_by(StudentMembership.expire_date.asc().nullslast())
         )
@@ -390,16 +384,11 @@ class BookingService:
         return result.scalars().all()
 
     async def deduct_class_time(
-        self,
-        student_id: int,
-        booking_id: int,
-        membership_id: int
+        self, student_id: int, booking_id: int, membership_id: int
     ) -> Transaction:
         """扣除课时"""
         result = await self.db.execute(
-            select(StudentMembership)
-            .where(StudentMembership.id == membership_id)
-            .with_for_update()
+            select(StudentMembership).where(StudentMembership.id == membership_id).with_for_update()
         )
         membership = result.scalar_one_or_none()
         if not membership or membership.remaining_times <= 0:
@@ -418,7 +407,7 @@ class BookingService:
             times_change=-1,
             membership_id=membership_id,
             booking_id=booking_id,
-            description="预约扣费"
+            description="预约扣费",
         )
         self.db.add(transaction)
 
@@ -430,10 +419,7 @@ class BookingService:
         return transaction
 
     async def refund_class_time(
-        self,
-        student_id: int,
-        booking_id: int,
-        membership_id: int
+        self, student_id: int, booking_id: int, membership_id: int
     ) -> Transaction:
         """退还课时"""
         membership = await self.db.get(StudentMembership, membership_id)
@@ -451,7 +437,7 @@ class BookingService:
             times_change=1,
             membership_id=membership_id,
             booking_id=booking_id,
-            description="取消预约退还"
+            description="取消预约退还",
         )
         self.db.add(transaction)
 
@@ -463,9 +449,7 @@ class BookingService:
         return transaction
 
     async def recharge_membership(
-        self,
-        data: MembershipRechargeRequest,
-        operator_id: int
+        self, data: MembershipRechargeRequest, operator_id: int
     ) -> StudentMembership:
         """管理员手动充值课时"""
         # 获取课时卡信息
@@ -478,7 +462,7 @@ class BookingService:
             select(StudentMembership).where(
                 StudentMembership.student_id == data.student_id,
                 StudentMembership.card_id == data.card_id,
-                StudentMembership.status == MembershipStatus.ACTIVE.value
+                StudentMembership.status == MembershipStatus.ACTIVE.value,
             )
         )
         membership = result.scalar_one_or_none()
@@ -497,7 +481,7 @@ class BookingService:
                 card_id=data.card_id,
                 remaining_times=data.times,
                 expire_date=expire_date,
-                status=MembershipStatus.ACTIVE.value
+                status=MembershipStatus.ACTIVE.value,
             )
             self.db.add(membership)
             await self.db.flush()
@@ -509,7 +493,7 @@ class BookingService:
             times_change=data.times,
             membership_id=membership.id,
             description=data.remark or f"管理员充值{data.times}次",
-            operator_id=operator_id
+            operator_id=operator_id,
         )
         self.db.add(transaction)
 
@@ -532,18 +516,14 @@ class BookingService:
             start_time=data.start_time,
             end_time=data.end_time,
             slot_duration=data.slot_duration,
-            max_students=data.max_students
+            max_students=data.max_students,
         )
         self.db.add(slot)
         await self.db.commit()
         await self.db.refresh(slot)
         return slot
 
-    async def update_coach_slot(
-        self,
-        slot_id: int,
-        data: CoachSlotUpdate
-    ) -> CoachAvailableSlot:
+    async def update_coach_slot(self, slot_id: int, data: CoachSlotUpdate) -> CoachAvailableSlot:
         """更新教练可约时段"""
         slot = await self.db.get(CoachAvailableSlot, slot_id)
         if not slot:
@@ -570,19 +550,13 @@ class BookingService:
         """获取教练所有可约时段"""
         result = await self.db.execute(
             select(CoachAvailableSlot)
-            .where(
-                CoachAvailableSlot.coach_id == coach_id,
-                CoachAvailableSlot.is_active.is_(True)
-            )
+            .where(CoachAvailableSlot.coach_id == coach_id, CoachAvailableSlot.is_active.is_(True))
             .order_by(CoachAvailableSlot.day_of_week, CoachAvailableSlot.start_time)
         )
         return result.scalars().all()
 
     async def get_coach_available_times(
-        self,
-        coach_id: int,
-        start_date: date,
-        end_date: date
+        self, coach_id: int, start_date: date, end_date: date
     ) -> List[CoachAvailableTimeSlot]:
         """获取教练在指定日期范围内的可约时间"""
         # 获取教练的可约时段配置
@@ -596,7 +570,7 @@ class BookingService:
                 Booking.coach_id == coach_id,
                 Booking.booking_date >= start_date,
                 Booking.booking_date <= end_date,
-                Booking.status.in_([BookingStatus.PENDING.value, BookingStatus.CONFIRMED.value])
+                Booking.status.in_([BookingStatus.PENDING.value, BookingStatus.CONFIRMED.value]),
             )
         )
         existing_bookings = result.scalars().all()
@@ -613,19 +587,21 @@ class BookingService:
                 if slot.day_of_week == day_of_week:
                     # 检查该时段是否已被预约
                     is_booked = any(
-                        b.booking_date == current_date and
-                        b.start_time == slot.start_time and
-                        b.end_time == slot.end_time
+                        b.booking_date == current_date
+                        and b.start_time == slot.start_time
+                        and b.end_time == slot.end_time
                         for b in existing_bookings
                     )
 
-                    available_times.append(CoachAvailableTimeSlot(
-                        date=current_date,
-                        start_time=slot.start_time,
-                        end_time=slot.end_time,
-                        is_available=not is_booked,
-                        remaining_slots=0 if is_booked else slot.max_students
-                    ))
+                    available_times.append(
+                        CoachAvailableTimeSlot(
+                            date=current_date,
+                            start_time=slot.start_time,
+                            end_time=slot.end_time,
+                            is_available=not is_booked,
+                            remaining_slots=0 if is_booked else slot.max_students,
+                        )
+                    )
 
             current_date += timedelta(days=1)
 
@@ -692,14 +668,13 @@ class ReviewService:
             raise ValueError("只能评价自己的课程")
 
         # 检查是否已评价
-        result = await self.db.execute(
-            select(Review).where(Review.booking_id == data.booking_id)
-        )
+        result = await self.db.execute(select(Review).where(Review.booking_id == data.booking_id))
         if result.scalar_one_or_none():
             raise ValueError("该课程已评价")
 
         # 创建评价
         import json
+
         review = Review(
             booking_id=data.booking_id,
             student_id=student_id,
@@ -707,7 +682,7 @@ class ReviewService:
             rating=data.rating,
             content=data.content,
             tags=json.dumps(data.tags) if data.tags else None,
-            is_anonymous=data.is_anonymous
+            is_anonymous=data.is_anonymous,
         )
         self.db.add(review)
         await self.db.commit()
@@ -730,10 +705,7 @@ class ReviewService:
         return review
 
     async def get_coach_reviews(
-        self,
-        coach_id: int,
-        page: int = 1,
-        page_size: int = 20
+        self, coach_id: int, page: int = 1, page_size: int = 20
     ) -> Tuple[List[Review], int, float]:
         """获取教练评价列表"""
         query = select(Review).where(Review.coach_id == coach_id)
@@ -775,7 +747,7 @@ class CoachFeedbackService:
             student_id=data.student_id,
             performance_rating=data.performance_rating,
             content=data.content,
-            suggestions=data.suggestions
+            suggestions=data.suggestions,
         )
         self.db.add(feedback)
         await self.db.commit()
@@ -783,10 +755,7 @@ class CoachFeedbackService:
         return feedback
 
     async def get_student_feedbacks(
-        self,
-        student_id: int,
-        page: int = 1,
-        page_size: int = 20
+        self, student_id: int, page: int = 1, page_size: int = 20
     ) -> Tuple[List[CoachFeedback], int]:
         """获取学员收到的反馈列表"""
         query = select(CoachFeedback).where(CoachFeedback.student_id == student_id)

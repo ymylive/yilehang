@@ -1,4 +1,5 @@
 """Authentication services."""
+
 import asyncio
 import logging
 import random
@@ -84,10 +85,7 @@ class VerificationCodeStore:
 
         # Clean up old timestamps
         if key in self._rate_limit:
-            self._rate_limit[key] = [
-                ts for ts in self._rate_limit[key]
-                if ts > window_start
-            ]
+            self._rate_limit[key] = [ts for ts in self._rate_limit[key] if ts > window_start]
         else:
             self._rate_limit[key] = []
 
@@ -112,21 +110,21 @@ class AuthService:
     @staticmethod
     def generate_student_no() -> str:
         """Generate student number."""
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        random_str = ''.join(random.choices(string.digits, k=4))
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        random_str = "".join(random.choices(string.digits, k=4))
         return f"S{timestamp}{random_str}"
 
     @staticmethod
     def generate_coach_no() -> str:
         """Generate coach number."""
-        timestamp = datetime.now().strftime('%Y%m%d')
-        random_str = ''.join(random.choices(string.digits, k=4))
+        timestamp = datetime.now().strftime("%Y%m%d")
+        random_str = "".join(random.choices(string.digits, k=4))
         return f"C{timestamp}{random_str}"
 
     @staticmethod
     def generate_verification_code() -> str:
         """Generate 6-digit verification code."""
-        return ''.join(random.choices(string.digits, k=6))
+        return "".join(random.choices(string.digits, k=6))
 
     @staticmethod
     async def get_user_by_phone(db: AsyncSession, phone: str) -> Optional[User]:
@@ -169,7 +167,7 @@ class AuthService:
         nickname: Optional[str] = None,
         email: Optional[str] = None,
         phone: Optional[str] = None,
-        openid: Optional[str] = None
+        openid: Optional[str] = None,
     ) -> User:
         """Create user."""
         if nickname:
@@ -188,7 +186,7 @@ class AuthService:
             role=role,
             nickname=nickname or default_name,
             wechat_openid=openid,
-            status="active"
+            status="active",
         )
         db.add(user)
         await db.flush()
@@ -202,7 +200,7 @@ class AuthService:
         name: str,
         gender: Optional[str] = None,
         birth_date=None,
-        parent_id: Optional[int] = None
+        parent_id: Optional[int] = None,
     ) -> Student:
         """Create student profile."""
         student = Student(
@@ -212,7 +210,7 @@ class AuthService:
             gender=gender,
             birth_date=birth_date,
             parent_id=parent_id,
-            status="active"
+            status="active",
         )
         db.add(student)
         await db.flush()
@@ -225,7 +223,7 @@ class AuthService:
         user_id: int,
         name: str,
         specialty: Optional[str] = None,
-        introduction: Optional[str] = None
+        introduction: Optional[str] = None,
     ) -> Coach:
         """Create coach profile."""
         coach = Coach(
@@ -234,7 +232,7 @@ class AuthService:
             name=name,
             specialty=specialty,
             introduction=introduction,
-            status="active"
+            status="active",
         )
         db.add(coach)
         await db.flush()
@@ -242,27 +240,18 @@ class AuthService:
         return coach
 
     @staticmethod
-    async def create_merchant_profile(
-        db: AsyncSession,
-        user_id: int,
-        name: str
-    ) -> Merchant:
+    async def create_merchant_profile(db: AsyncSession, user_id: int, name: str) -> Merchant:
         """Create merchant profile and link user."""
         from app.models.merchant import MerchantStatus
+
         merchant = Merchant(
-            name=name,
-            category="其他",
-            status=MerchantStatus.PENDING,
-            is_featured=False
+            name=name, category="其他", status=MerchantStatus.PENDING, is_featured=False
         )
         db.add(merchant)
         await db.flush()
 
         merchant_user = MerchantUser(
-            merchant_id=merchant.id,
-            user_id=user_id,
-            role="owner",
-            is_active=True
+            merchant_id=merchant.id, user_id=user_id, role="owner", is_active=True
         )
         db.add(merchant_user)
         await db.flush()
@@ -275,7 +264,7 @@ class AuthService:
         expires_in = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         access_token = create_access_token(
             data={"sub": str(user.id), "role": user.role},
-            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         )
         return access_token, expires_in
 
@@ -346,6 +335,7 @@ class WechatService:
                 if not device_id:
                     raise Exception("WECHAT_SECRET not configured and device_id is missing")
                 import hashlib
+
                 fallback_hash = hashlib.sha256(device_id.encode("utf-8")).hexdigest()
                 fallback_openid = f"dev_{fallback_hash[:32]}"
                 logger.warning(
@@ -360,12 +350,13 @@ class WechatService:
             raise Exception("WeChat login code is empty")
 
         import httpx
+
         url = "https://api.weixin.qq.com/sns/jscode2session"
         params = {
             "appid": settings.WECHAT_APPID,
             "secret": settings.WECHAT_SECRET,
             "js_code": code,
-            "grant_type": "authorization_code"
+            "grant_type": "authorization_code",
         }
 
         logger.info(f"[WeChat] Calling code2session API with code: {code[:8]}...")
@@ -383,10 +374,9 @@ class WechatService:
 
         if "errcode" in data and data["errcode"] != 0:
             errcode = data["errcode"]
-            errmsg = WECHAT_ERROR_MESSAGES.get(errcode, data.get('errmsg', '未知错误'))
+            errmsg = WECHAT_ERROR_MESSAGES.get(errcode, data.get("errmsg", "未知错误"))
             logger.error(
-                f"[WeChat] code2session failed: errcode={errcode}, "
-                f"errmsg={data.get('errmsg')}"
+                f"[WeChat] code2session failed: errcode={errcode}, errmsg={data.get('errmsg')}"
             )
             raise Exception(errmsg)
 
@@ -408,7 +398,10 @@ class WechatService:
             raise Exception("WeChat access token is empty")
 
         import httpx
-        url = f"https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token={access_token}"
+
+        url = (
+            f"https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token={access_token}"
+        )
 
         logger.info("[WeChat] Calling getuserphonenumber API...")
 
@@ -425,7 +418,7 @@ class WechatService:
 
         if data.get("errcode", 0) != 0:
             errcode = data.get("errcode")
-            errmsg = WECHAT_ERROR_MESSAGES.get(errcode, data.get('errmsg', '未知错误'))
+            errmsg = WECHAT_ERROR_MESSAGES.get(errcode, data.get("errmsg", "未知错误"))
             logger.error(
                 f"[WeChat] getuserphonenumber failed: errcode={errcode}, "
                 f"errmsg={data.get('errmsg')}"
@@ -461,11 +454,12 @@ class WechatService:
                 return cls._access_token
 
             import httpx
+
             url = "https://api.weixin.qq.com/cgi-bin/token"
             params = {
                 "grant_type": "client_credential",
                 "appid": settings.WECHAT_APPID,
-                "secret": settings.WECHAT_SECRET
+                "secret": settings.WECHAT_SECRET,
             }
 
             logger.info("[WeChat] Calling get_access_token API...")
@@ -483,7 +477,7 @@ class WechatService:
 
             if "errcode" in data and data["errcode"] != 0:
                 errcode = data["errcode"]
-                errmsg = WECHAT_ERROR_MESSAGES.get(errcode, data.get('errmsg', 'unknown error'))
+                errmsg = WECHAT_ERROR_MESSAGES.get(errcode, data.get("errmsg", "unknown error"))
                 logger.error(
                     f"[WeChat] get_access_token failed: errcode={errcode}, "
                     f"errmsg={data.get('errmsg')}"
@@ -501,7 +495,6 @@ class WechatService:
 
             logger.info("[WeChat] get_access_token success")
             return access_token
-
 
 
 class EmailService:
@@ -522,7 +515,7 @@ class EmailService:
             "success": True,
             "delivery": "smtp",
             "dev_code": None,
-            "message": "Verification code sent"
+            "message": "Verification code sent",
         }
 
         if settings.DEV_PRINT_CODE:
@@ -547,7 +540,7 @@ class EmailService:
                 "success": False,
                 "delivery": "smtp",
                 "dev_code": None,
-                "message": "Failed to send verification code"
+                "message": "Failed to send verification code",
             }
 
         try:
@@ -607,7 +600,7 @@ class EmailService:
                 "success": False,
                 "delivery": "smtp",
                 "dev_code": None,
-                "message": "Failed to send verification code"
+                "message": "Failed to send verification code",
             }
 
     @staticmethod

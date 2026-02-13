@@ -9,8 +9,10 @@ Test Coverage:
 - TC017-TC020: Role-specific endpoint access
 - TC021-TC024: Edge cases and security scenarios
 """
+
 import pytest
 from httpx import AsyncClient
+
 from app.models.rbac import Permission, Role, role_permissions, user_roles
 
 
@@ -21,8 +23,7 @@ class TestRoleLogin:
     async def test_tc001_admin_login_success(self, client: AsyncClient, test_users: dict):
         """TC001: Admin user can login successfully."""
         response = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "admin@test.com", "password": "admin123"}
+            "/api/v1/auth/login", json={"account": "admin@test.com", "password": "admin123"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -34,8 +35,7 @@ class TestRoleLogin:
     async def test_tc002_coach_login_success(self, client: AsyncClient, test_users: dict):
         """TC002: Coach user can login successfully."""
         response = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "coach@test.com", "password": "coach123"}
+            "/api/v1/auth/login", json={"account": "coach@test.com", "password": "coach123"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -47,8 +47,7 @@ class TestRoleLogin:
     async def test_tc003_parent_login_success(self, client: AsyncClient, test_users: dict):
         """TC003: Parent user can login successfully."""
         response = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "parent@test.com", "password": "parent123"}
+            "/api/v1/auth/login", json={"account": "parent@test.com", "password": "parent123"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -60,8 +59,7 @@ class TestRoleLogin:
     async def test_tc004_student_login_success(self, client: AsyncClient, test_users: dict):
         """TC004: Student user can login successfully."""
         response = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "student@test.com", "password": "student123"}
+            "/api/v1/auth/login", json={"account": "student@test.com", "password": "student123"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -73,8 +71,7 @@ class TestRoleLogin:
     async def test_tc005_login_with_invalid_credentials(self, client: AsyncClient):
         """TC005: Login fails with invalid credentials."""
         response = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "admin@test.com", "password": "wrongpassword"}
+            "/api/v1/auth/login", json={"account": "admin@test.com", "password": "wrongpassword"}
         )
         assert response.status_code == 401
         assert "Invalid account or password" in response.json()["detail"]
@@ -84,7 +81,7 @@ class TestRoleLogin:
         """TC006: Login fails with non-existent user."""
         response = await client.post(
             "/api/v1/auth/login",
-            json={"account": "nonexistent@test.com", "password": "password123"}
+            json={"account": "nonexistent@test.com", "password": "password123"},
         )
         assert response.status_code == 401
 
@@ -96,8 +93,7 @@ class TestTokenValidation:
     async def test_tc007_valid_token_access(self, client: AsyncClient, admin_token: str):
         """TC007: Valid token allows access to protected endpoints."""
         response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {admin_token}"}
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {admin_token}"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -107,8 +103,7 @@ class TestTokenValidation:
     async def test_tc008_invalid_token_rejected(self, client: AsyncClient):
         """TC008: Invalid token is rejected."""
         response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": "Bearer invalid_token_12345"}
+            "/api/v1/auth/me", headers={"Authorization": "Bearer invalid_token_12345"}
         )
         assert response.status_code == 401
 
@@ -119,13 +114,10 @@ class TestTokenValidation:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_tc010_token_contains_correct_role(
-        self, client: AsyncClient, coach_token: str
-    ):
+    async def test_tc010_token_contains_correct_role(self, client: AsyncClient, coach_token: str):
         """TC010: Token contains correct role information."""
         response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {coach_token}"}
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {coach_token}"}
         )
         assert response.status_code == 200
         assert response.json()["role"] == "coach"
@@ -135,51 +127,43 @@ class TestCrossRoleAccessControl:
     """Test cross-role access control and 403 scenarios."""
 
     @pytest.mark.asyncio
-    async def test_tc011_student_cannot_add_student(
-        self, client: AsyncClient, student_token: str
-    ):
+    async def test_tc011_student_cannot_add_student(self, client: AsyncClient, student_token: str):
         """TC011: Student cannot add new students (403)."""
         response = await client.post(
             "/api/v1/auth/students",
             headers={"Authorization": f"Bearer {student_token}"},
-            json={"name": "New Student", "gender": "male"}
+            json={"name": "New Student", "gender": "male"},
         )
         assert response.status_code == 403
         assert "Permission denied" in response.json()["detail"]
 
     @pytest.mark.asyncio
-    async def test_tc012_coach_cannot_add_student(
-        self, client: AsyncClient, coach_token: str
-    ):
+    async def test_tc012_coach_cannot_add_student(self, client: AsyncClient, coach_token: str):
         """TC012: Coach cannot add new students (403)."""
         response = await client.post(
             "/api/v1/auth/students",
             headers={"Authorization": f"Bearer {coach_token}"},
-            json={"name": "New Student", "gender": "male"}
+            json={"name": "New Student", "gender": "male"},
         )
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_tc013_parent_can_add_student(
-        self, client: AsyncClient, parent_token: str
-    ):
+    async def test_tc013_parent_can_add_student(self, client: AsyncClient, parent_token: str):
         """TC013: Parent can add new students (200)."""
         response = await client.post(
             "/api/v1/auth/students",
             headers={"Authorization": f"Bearer {parent_token}"},
-            json={"name": "New Student", "gender": "male"}
+            json={"name": "New Student", "gender": "male"},
         )
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_tc014_admin_can_add_student(
-        self, client: AsyncClient, admin_token: str
-    ):
+    async def test_tc014_admin_can_add_student(self, client: AsyncClient, admin_token: str):
         """TC014: Admin can add new students (200)."""
         response = await client.post(
             "/api/v1/auth/students",
             headers={"Authorization": f"Bearer {admin_token}"},
-            json={"name": "Admin Student", "gender": "female"}
+            json={"name": "Admin Student", "gender": "female"},
         )
         assert response.status_code == 200
 
@@ -188,13 +172,10 @@ class TestRoleSpecificEndpoints:
     """Test role-specific endpoint access patterns."""
 
     @pytest.mark.asyncio
-    async def test_tc015_coach_access_own_profile(
-        self, client: AsyncClient, coach_token: str
-    ):
+    async def test_tc015_coach_access_own_profile(self, client: AsyncClient, coach_token: str):
         """TC015: Coach can access their own profile."""
         response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {coach_token}"}
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {coach_token}"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -202,13 +183,10 @@ class TestRoleSpecificEndpoints:
         assert "coach" in data
 
     @pytest.mark.asyncio
-    async def test_tc016_student_access_own_profile(
-        self, client: AsyncClient, student_token: str
-    ):
+    async def test_tc016_student_access_own_profile(self, client: AsyncClient, student_token: str):
         """TC016: Student can access their own profile."""
         response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {student_token}"}
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {student_token}"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -216,26 +194,20 @@ class TestRoleSpecificEndpoints:
         assert "student" in data
 
     @pytest.mark.asyncio
-    async def test_tc017_parent_access_own_profile(
-        self, client: AsyncClient, parent_token: str
-    ):
+    async def test_tc017_parent_access_own_profile(self, client: AsyncClient, parent_token: str):
         """TC017: Parent can access their own profile."""
         response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {parent_token}"}
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {parent_token}"}
         )
         assert response.status_code == 200
         data = response.json()
         assert data["role"] == "parent"
 
     @pytest.mark.asyncio
-    async def test_tc018_admin_access_own_profile(
-        self, client: AsyncClient, admin_token: str
-    ):
+    async def test_tc018_admin_access_own_profile(self, client: AsyncClient, admin_token: str):
         """TC018: Admin can access their own profile."""
         response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {admin_token}"}
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {admin_token}"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -246,27 +218,22 @@ class TestUserProfileUpdate:
     """Test user profile update permissions."""
 
     @pytest.mark.asyncio
-    async def test_tc019_user_can_update_own_profile(
-        self, client: AsyncClient, student_token: str
-    ):
+    async def test_tc019_user_can_update_own_profile(self, client: AsyncClient, student_token: str):
         """TC019: User can update their own profile."""
         response = await client.put(
             "/api/v1/auth/me",
             headers={"Authorization": f"Bearer {student_token}"},
-            json={"nickname": "Updated Student"}
+            json={"nickname": "Updated Student"},
         )
         assert response.status_code == 200
         assert response.json()["nickname"] == "Updated Student"
 
     @pytest.mark.asyncio
-    async def test_tc020_user_cannot_change_role(
-        self, client: AsyncClient, student_token: str
-    ):
+    async def test_tc020_user_cannot_change_role(self, client: AsyncClient, student_token: str):
         """TC020: User cannot change their own role."""
         # Get current profile
         response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {student_token}"}
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {student_token}"}
         )
         assert response.status_code == 200
         original_role = response.json()["role"]
@@ -275,14 +242,13 @@ class TestUserProfileUpdate:
         response = await client.put(
             "/api/v1/auth/me",
             headers={"Authorization": f"Bearer {student_token}"},
-            json={"nickname": "Hacker Student"}
+            json={"nickname": "Hacker Student"},
         )
         assert response.status_code == 200
 
         # Verify role hasn't changed
         response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {student_token}"}
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {student_token}"}
         )
         assert response.json()["role"] == original_role
 
@@ -291,21 +257,18 @@ class TestPasswordManagement:
     """Test password change and reset flows."""
 
     @pytest.mark.asyncio
-    async def test_tc021_user_can_change_password(
-        self, client: AsyncClient, parent_token: str
-    ):
+    async def test_tc021_user_can_change_password(self, client: AsyncClient, parent_token: str):
         """TC021: User can change their password with correct old password."""
         response = await client.post(
             "/api/v1/auth/password/change",
             headers={"Authorization": f"Bearer {parent_token}"},
-            json={"old_password": "parent123", "new_password": "newparent123"}
+            json={"old_password": "parent123", "new_password": "newparent123"},
         )
         assert response.status_code == 200
 
         # Verify can login with new password
         response = await client.post(
-            "/api/v1/auth/login",
-            json={"account": "parent@test.com", "password": "newparent123"}
+            "/api/v1/auth/login", json={"account": "parent@test.com", "password": "newparent123"}
         )
         assert response.status_code == 200
 
@@ -317,7 +280,7 @@ class TestPasswordManagement:
         response = await client.post(
             "/api/v1/auth/password/change",
             headers={"Authorization": f"Bearer {coach_token}"},
-            json={"old_password": "wrongpassword", "new_password": "newcoach123"}
+            json={"old_password": "wrongpassword", "new_password": "newcoach123"},
         )
         assert response.status_code == 400
         assert "Invalid old password" in response.json()["detail"]
@@ -335,8 +298,8 @@ class TestRegistrationFlows:
                 "email": "newparent@test.com",
                 "password": "password123",
                 "role": "parent",
-                "nickname": "New Parent"
-            }
+                "nickname": "New Parent",
+            },
         )
         assert response.status_code == 200
         data = response.json()
@@ -350,11 +313,7 @@ class TestRegistrationFlows:
         """TC024: Registration fails with duplicate email."""
         response = await client.post(
             "/api/v1/auth/register",
-            json={
-                "email": "admin@test.com",
-                "password": "password123",
-                "role": "parent"
-            }
+            json={"email": "admin@test.com", "password": "password123", "role": "parent"},
         )
         assert response.status_code == 400
         assert "already registered" in response.json()["detail"]
@@ -367,8 +326,7 @@ class TestLogout:
     async def test_tc025_user_can_logout(self, client: AsyncClient, admin_token: str):
         """TC025: User can logout successfully."""
         response = await client.post(
-            "/api/v1/auth/logout",
-            headers={"Authorization": f"Bearer {admin_token}"}
+            "/api/v1/auth/logout", headers={"Authorization": f"Bearer {admin_token}"}
         )
         assert response.status_code == 200
         assert "Logout success" in response.json()["message"]
@@ -376,17 +334,15 @@ class TestLogout:
 
 # ============ RBAC Multi-Role Tests ============
 
+
 class TestRBACRoleAPI:
     """Test RBAC role management API endpoints."""
 
     @pytest.mark.asyncio
-    async def test_tc026_get_user_roles_endpoint(
-        self, client: AsyncClient, admin_token: str
-    ):
+    async def test_tc026_get_user_roles_endpoint(self, client: AsyncClient, admin_token: str):
         """TC026: GET /user/roles returns user's role list."""
         response = await client.get(
-            "/api/v1/user/roles",
-            headers={"Authorization": f"Bearer {admin_token}"}
+            "/api/v1/user/roles", headers={"Authorization": f"Bearer {admin_token}"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -397,13 +353,10 @@ class TestRBACRoleAPI:
         assert len(data["data"]) >= 1
 
     @pytest.mark.asyncio
-    async def test_tc027_get_user_permissions_endpoint(
-        self, client: AsyncClient, coach_token: str
-    ):
+    async def test_tc027_get_user_permissions_endpoint(self, client: AsyncClient, coach_token: str):
         """TC027: GET /user/permissions returns user's permission list."""
         response = await client.get(
-            "/api/v1/user/permissions",
-            headers={"Authorization": f"Bearer {coach_token}"}
+            "/api/v1/user/permissions", headers={"Authorization": f"Bearer {coach_token}"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -412,13 +365,10 @@ class TestRBACRoleAPI:
         assert isinstance(data["data"], list)
 
     @pytest.mark.asyncio
-    async def test_tc028_get_user_menus_endpoint(
-        self, client: AsyncClient, parent_token: str
-    ):
+    async def test_tc028_get_user_menus_endpoint(self, client: AsyncClient, parent_token: str):
         """TC028: GET /user/menus returns user's menu tree."""
         response = await client.get(
-            "/api/v1/user/menus",
-            headers={"Authorization": f"Bearer {parent_token}"}
+            "/api/v1/user/menus", headers={"Authorization": f"Bearer {parent_token}"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -434,7 +384,7 @@ class TestRBACRoleAPI:
         response = await client.post(
             "/api/v1/user/switch-role",
             headers={"Authorization": f"Bearer {student_token}"},
-            json={"role_code": "admin"}
+            json={"role_code": "admin"},
         )
         assert response.status_code == 403
         assert "没有" in response.json()["detail"]
@@ -469,7 +419,9 @@ class TestRBACRoleAPI:
         parent_user = test_users["parent"]
 
         parent_role = Role(code="parent", name="家长", is_system=True, is_active=True, sort_order=1)
-        student_role = Role(code="student", name="学员", is_system=True, is_active=True, sort_order=2)
+        student_role = Role(
+            code="student", name="学员", is_system=True, is_active=True, sort_order=2
+        )
         parent_perm = Permission(
             code="booking:read",
             name="Read booking",
@@ -553,39 +505,30 @@ class TestRBACCrossRoleAccess:
     ):
         """TC031: Student role cannot access coach-only endpoints."""
         response = await client.get(
-            "/api/v1/coaches/me/schedule",
-            headers={"Authorization": f"Bearer {student_token}"}
+            "/api/v1/coaches/me/schedule", headers={"Authorization": f"Bearer {student_token}"}
         )
         # Should be 403 or 404 (no coach profile)
         assert response.status_code in [403, 404]
 
     @pytest.mark.asyncio
-    async def test_tc032_coach_can_access_own_schedule(
-        self, client: AsyncClient, coach_token: str
-    ):
+    async def test_tc032_coach_can_access_own_schedule(self, client: AsyncClient, coach_token: str):
         """TC032: Coach role can access their own schedule."""
         response = await client.get(
-            "/api/v1/coaches/me/schedule",
-            headers={"Authorization": f"Bearer {coach_token}"}
+            "/api/v1/coaches/me/schedule", headers={"Authorization": f"Bearer {coach_token}"}
         )
         # Should be 200 or empty result, not 403
         assert response.status_code != 403
 
     @pytest.mark.asyncio
-    async def test_tc033_parent_can_view_coaches(
-        self, client: AsyncClient, parent_token: str
-    ):
+    async def test_tc033_parent_can_view_coaches(self, client: AsyncClient, parent_token: str):
         """TC033: Parent role can view coach list."""
         response = await client.get(
-            "/api/v1/coaches",
-            headers={"Authorization": f"Bearer {parent_token}"}
+            "/api/v1/coaches", headers={"Authorization": f"Bearer {parent_token}"}
         )
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_tc034_admin_can_access_dashboard(
-        self, client: AsyncClient, admin_token: str
-    ):
+    async def test_tc034_admin_can_access_dashboard(self, client: AsyncClient, admin_token: str):
         """TC034: Admin role can access all real dashboard routes."""
         endpoints = [
             "/api/v1/dashboard/overview",
@@ -625,9 +568,7 @@ class TestRBACRoleInheritance:
     """Test role-based permission inheritance."""
 
     @pytest.mark.asyncio
-    async def test_tc035_admin_has_all_permissions(
-        self, client: AsyncClient, admin_token: str
-    ):
+    async def test_tc035_admin_has_all_permissions(self, client: AsyncClient, admin_token: str):
         """TC035: Admin role has access to all endpoints."""
         # Test various endpoints that require different permissions
         endpoints = [
@@ -638,8 +579,7 @@ class TestRBACRoleInheritance:
 
         for endpoint in endpoints:
             response = await client.get(
-                endpoint,
-                headers={"Authorization": f"Bearer {admin_token}"}
+                endpoint, headers={"Authorization": f"Bearer {admin_token}"}
             )
             # Admin should not get 403 on any endpoint
             assert response.status_code != 403, f"Admin blocked from {endpoint}"
@@ -651,16 +591,14 @@ class TestRBACRoleInheritance:
         """TC036: Users can only see data relevant to their role."""
         # Coach sees their own profile
         coach_response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {coach_token}"}
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {coach_token}"}
         )
         assert coach_response.status_code == 200
         assert coach_response.json()["role"] == "coach"
 
         # Student sees their own profile
         student_response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {student_token}"}
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {student_token}"}
         )
         assert student_response.status_code == 200
         assert student_response.json()["role"] == "student"
@@ -670,22 +608,19 @@ class TestRBACSecurityScenarios:
     """Test security edge cases for RBAC system."""
 
     @pytest.mark.asyncio
-    async def test_tc037_cannot_escalate_privileges(
-        self, client: AsyncClient, student_token: str
-    ):
+    async def test_tc037_cannot_escalate_privileges(self, client: AsyncClient, student_token: str):
         """TC037: User cannot escalate their own privileges."""
         # Try to update profile with admin role (should be ignored)
         response = await client.put(
             "/api/v1/auth/me",
             headers={"Authorization": f"Bearer {student_token}"},
-            json={"nickname": "Hacker"}
+            json={"nickname": "Hacker"},
         )
 
         if response.status_code == 200:
             # Verify role hasn't changed
             me_response = await client.get(
-                "/api/v1/auth/me",
-                headers={"Authorization": f"Bearer {student_token}"}
+                "/api/v1/auth/me", headers={"Authorization": f"Bearer {student_token}"}
             )
             assert me_response.json()["role"] == "student"
 
@@ -694,8 +629,7 @@ class TestRBACSecurityScenarios:
         """TC038: Expired or malformed tokens are rejected."""
         # Test with obviously invalid token
         response = await client.get(
-            "/api/v1/user/roles",
-            headers={"Authorization": "Bearer invalid.token.here"}
+            "/api/v1/user/roles", headers={"Authorization": "Bearer invalid.token.here"}
         )
         assert response.status_code == 401
 
@@ -708,7 +642,7 @@ class TestRBACSecurityScenarios:
         response = await client.post(
             "/api/v1/auth/students",
             headers={"Authorization": f"Bearer {student_token}"},
-            json={"name": "Unauthorized Student", "gender": "male"}
+            json={"name": "Unauthorized Student", "gender": "male"},
         )
         assert response.status_code == 403
 
@@ -721,21 +655,16 @@ class TestRBACSecurityScenarios:
 
         async def admin_request():
             return await client.get(
-                "/api/v1/auth/me",
-                headers={"Authorization": f"Bearer {admin_token}"}
+                "/api/v1/auth/me", headers={"Authorization": f"Bearer {admin_token}"}
             )
 
         async def coach_request():
             return await client.get(
-                "/api/v1/auth/me",
-                headers={"Authorization": f"Bearer {coach_token}"}
+                "/api/v1/auth/me", headers={"Authorization": f"Bearer {coach_token}"}
             )
 
         # Run concurrent requests
-        admin_resp, coach_resp = await asyncio.gather(
-            admin_request(),
-            coach_request()
-        )
+        admin_resp, coach_resp = await asyncio.gather(admin_request(), coach_request())
 
         assert admin_resp.status_code == 200
         assert admin_resp.json()["role"] == "admin"

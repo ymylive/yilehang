@@ -1,6 +1,5 @@
-from sqlalchemy import select
-
 import pytest
+from sqlalchemy import select
 
 from app.models.energy import EnergyAccount, EnergyRule, EnergyTransaction
 from app.models.user import Student, User
