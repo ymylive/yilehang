@@ -32,7 +32,7 @@ APPS_DIR = PROJECT_ROOT / "apps"
 DOCKER_DIR = PROJECT_ROOT / "docker"
 
 # 杩滅▼璺緞
-REMOTE_BASE = "/opt/yilehang"
+REMOTE_BASE = "/opt/renling"
 
 
 def run_local_command(cmd: str, cwd: Path = None) -> bool:
@@ -357,11 +357,11 @@ def fix_docker_compose(client: paramiko.SSHClient):
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: yilehang-postgres
+    container_name: renling-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres123
-      POSTGRES_DB: yilehang
+      POSTGRES_DB: renling
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -374,10 +374,10 @@ services:
   api:
     build:
       context: ../apps/api
-      dockerfile: /opt/yilehang/docker/Dockerfile.api
-    container_name: yilehang-api
+      dockerfile: /opt/renling/docker/Dockerfile.api
+    container_name: renling-api
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-change-me-in-production}@postgres:5432/yilehang
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-change-me-in-production}@postgres:5432/renling
       DEBUG: "false"
       SECRET_KEY: ${SECRET_KEY:?set-in-env}
     depends_on:
@@ -387,7 +387,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: yilehang-nginx
+    container_name: renling-nginx
     ports:
       - "80:80"
     volumes:

@@ -49,7 +49,7 @@
 ## 仓库结构
 
 ```text
-yilehang/
+renling/
 |- apps/
 |  |- client/          # 学员端小程序（UniApp）
 |  |- coach/           # 教练端小程序（UniApp）

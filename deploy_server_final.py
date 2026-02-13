@@ -12,7 +12,7 @@ SERVER_PASSWORD = os.getenv("SERVER_PASSWORD")
 if not SERVER_PASSWORD:
     print("错误: 必须设置 SERVER_PASSWORD 环境变量")
     sys.exit(1)
-PROJECT_DIR = "/opt/yilehang-server"
+PROJECT_DIR = "/opt/renling-server"
 
 def run_cmd(ssh, cmd, desc=""):
     if desc:
@@ -75,18 +75,18 @@ def main():
 
         # 上传 apps/api
         print("上传 apps/api...")
-        local_api = "E:/project/yilehang/apps/api"
+        local_api = "E:/project/renling/apps/api"
         upload_dir(sftp, local_api, f"{PROJECT_DIR}/apps/api")
 
         # 上传 deploy/server
         print("上传 deploy/server...")
         for f in ['Dockerfile', 'nginx.conf', '.env.example']:
-            local_f = f"E:/project/yilehang/deploy/server/{f}"
+            local_f = f"E:/project/renling/deploy/server/{f}"
             remote_f = f"{PROJECT_DIR}/deploy/server/{f}"
             sftp.put(local_f, remote_f)
 
         # 上传正确的 docker-compose.yml
-        local_compose = "E:/project/yilehang/deploy/server/docker-compose.yml"
+        local_compose = "E:/project/renling/deploy/server/docker-compose.yml"
         remote_compose = f"{PROJECT_DIR}/deploy/server/docker-compose.yml"
         sftp.put(local_compose, remote_compose)
 
@@ -99,8 +99,8 @@ def main():
         print("=" * 60)
 
         env_content = """POSTGRES_USER=postgres
-POSTGRES_PASSWORD=yilehang2024secure
-POSTGRES_DB=yilehang
+POSTGRES_PASSWORD=renling2024secure
+POSTGRES_DB=renling
 SECRET_KEY=prod-key-$(openssl rand -hex 16)
 DEBUG=false
 WECHAT_APPID=wxdbd150a0458a3c7c

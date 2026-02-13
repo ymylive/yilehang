@@ -1,8 +1,8 @@
 """Application settings."""
+
 from typing import List
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
 
 INSECURE_SECRET_KEY_VALUES = {
     "your-secret-key-change-in-production",
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
         if (
             not secret_key
             or secret_key in INSECURE_SECRET_KEY_VALUES
-            or secret_key.lower().startswith("yilehang-secret")
+            or secret_key.lower().startswith("renling-secret")
         ):
             raise ValueError(
                 "SECRET_KEY must be set via environment variable. "
@@ -38,7 +38,7 @@ class Settings(BaseSettings):
             )
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/yilehang"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/renling"
 
     # CORS
     CORS_ORIGINS: List[str] = [
@@ -73,4 +73,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-

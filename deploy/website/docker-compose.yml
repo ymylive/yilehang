@@ -5,7 +5,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/website/Dockerfile
-    container_name: yilehang-website
+    container_name: renling-website
     ports:
       - "80:80"
     volumes:

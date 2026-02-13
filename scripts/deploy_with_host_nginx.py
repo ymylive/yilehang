@@ -17,7 +17,7 @@ if not SERVER_PASSWORD:
     sys.exit(1)
 
 # 杩滅▼璺緞
-REMOTE_BASE = '/opt/yilehang'
+REMOTE_BASE = '/opt/renling'
 REMOTE_DOCKER = f'{REMOTE_BASE}/docker'
 
 def create_ssh_client():
@@ -77,13 +77,13 @@ def main():
 
     # 闈欐€佹枃浠?- 灏忕▼搴忓鎴风
     location /client/ {
-        alias /opt/yilehang/apps/client/dist/;
+        alias /opt/renling/apps/client/dist/;
         try_files $uri $uri/ /client/index.html;
     }
 
     # 闈欐€佹枃浠?- 绠＄悊鍚庡彴
     location /admin/ {
-        alias /opt/yilehang/apps/admin/dist/;
+        alias /opt/renling/apps/admin/dist/;
         try_files $uri $uri/ /admin/index.html;
     }
 
@@ -95,12 +95,12 @@ def main():
 """
 
         # 鍐欏叆nginx閰嶇疆鏂囦欢
-        exec_command(client, f"cat > /etc/nginx/sites-available/yilehang << 'EOF'\n{nginx_config}\nEOF",
+        exec_command(client, f"cat > /etc/nginx/sites-available/renling << 'EOF'\n{nginx_config}\nEOF",
                     "鍒涘缓nginx閰嶇疆鏂囦欢")
 
         # 3. 鍚敤绔欑偣
         print("\n姝ラ3: 鍚敤nginx绔欑偣")
-        exec_command(client, "ln -sf /etc/nginx/sites-available/yilehang /etc/nginx/sites-enabled/yilehang",
+        exec_command(client, "ln -sf /etc/nginx/sites-available/renling /etc/nginx/sites-enabled/renling",
                     "鍒涘缓绗﹀彿閾炬帴")
 
         # 4. 娴嬭瘯nginx閰嶇疆

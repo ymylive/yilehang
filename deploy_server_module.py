@@ -16,7 +16,7 @@ SERVER_PASSWORD = os.getenv("SERVER_PASSWORD")
 if not SERVER_PASSWORD:
     print("错误: 必须设置 SERVER_PASSWORD 环境变量")
     sys.exit(1)
-PROJECT_DIR = "/opt/yilehang-server"
+PROJECT_DIR = "/opt/renling-server"
 
 def create_ssh_client():
     """创建 SSH 客户端"""
@@ -136,8 +136,8 @@ def main():
         print("步骤 4: 创建环境变量文件")
         print("=" * 60)
         env_content = f"""POSTGRES_USER=postgres
-POSTGRES_PASSWORD=yilehang2024secure
-POSTGRES_DB=yilehang
+POSTGRES_PASSWORD=renling2024secure
+POSTGRES_DB=renling
 SECRET_KEY=prod-secret-key-{os.urandom(16).hex()}
 DEBUG=false
 WECHAT_APPID=wxdbd150a0458a3c7c

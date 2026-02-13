@@ -13,7 +13,7 @@ SERVER_PASSWORD = os.getenv("SERVER_PASSWORD")
 if not SERVER_PASSWORD:
     print("错误: 必须设置 SERVER_PASSWORD 环境变量")
     sys.exit(1)
-PROJECT_DIR = "/opt/yilehang-server"
+PROJECT_DIR = "/opt/renling-server"
 
 def run_remote_command(ssh, command, description=""):
     """执行远程命令"""

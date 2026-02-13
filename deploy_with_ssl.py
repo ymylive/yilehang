@@ -53,27 +53,27 @@ def deploy_services(server_ip, server_user, server_port):
 
     # 上传配置文件
     print("上传配置文件...")
-    run_cmd(f'scp -P {server_port} deploy/server/nginx-ssl.conf {server_user}@{server_ip}:/root/yilehang/deploy/server/')
-    run_cmd(f'scp -P {server_port} deploy/server/docker-compose-ssl.yml {server_user}@{server_ip}:/root/yilehang/deploy/server/')
-    run_cmd(f'scp -P {server_port} deploy/server/Dockerfile {server_user}@{server_ip}:/root/yilehang/deploy/server/')
+    run_cmd(f'scp -P {server_port} deploy/server/nginx-ssl.conf {server_user}@{server_ip}:/root/renling/deploy/server/')
+    run_cmd(f'scp -P {server_port} deploy/server/docker-compose-ssl.yml {server_user}@{server_ip}:/root/renling/deploy/server/')
+    run_cmd(f'scp -P {server_port} deploy/server/Dockerfile {server_user}@{server_ip}:/root/renling/deploy/server/')
 
     # 上传后端代码
     print("上传后端代码...")
-    run_cmd(f'scp -P {server_port} -r apps/api {server_user}@{server_ip}:/root/yilehang/apps/')
+    run_cmd(f'scp -P {server_port} -r apps/api {server_user}@{server_ip}:/root/renling/apps/')
 
     # 停止旧服务
     print("停止旧服务...")
-    cmd = f'ssh -p {server_port} {server_user}@{server_ip} "cd /root/yilehang/deploy/server && docker-compose down"'
+    cmd = f'ssh -p {server_port} {server_user}@{server_ip} "cd /root/renling/deploy/server && docker-compose down"'
     run_cmd(cmd, check=False)
 
     # 启动新服务
     print("启动新服务...")
-    cmd = f'ssh -p {server_port} {server_user}@{server_ip} "cd /root/yilehang/deploy/server && docker-compose -f docker-compose-ssl.yml up -d --build"'
+    cmd = f'ssh -p {server_port} {server_user}@{server_ip} "cd /root/renling/deploy/server && docker-compose -f docker-compose-ssl.yml up -d --build"'
     run_cmd(cmd)
 
     # 检查服务状态
     print("检查服务状态...")
-    cmd = f'ssh -p {server_port} {server_user}@{server_ip} "cd /root/yilehang/deploy/server && docker-compose -f docker-compose-ssl.yml ps"'
+    cmd = f'ssh -p {server_port} {server_user}@{server_ip} "cd /root/renling/deploy/server && docker-compose -f docker-compose-ssl.yml ps"'
     run_cmd(cmd)
 
 def main():

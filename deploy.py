@@ -11,7 +11,7 @@ SERVER_HOST = os.getenv("SERVER_HOST", "8.134.33.19")
 SERVER_USER = os.getenv("SERVER_USER", "root")
 SERVER_PASSWORD = os.getenv("SERVER_PASSWORD")
 DOMAIN = os.getenv("DOMAIN", "rl.cornna.xyz")
-PROJECT_DIR = os.getenv("PROJECT_DIR", "/opt/yilehang")
+PROJECT_DIR = os.getenv("PROJECT_DIR", "/opt/renling")
 
 if not SERVER_PASSWORD:
     print("错误: 必须设置 SERVER_PASSWORD 环境变量")
@@ -63,7 +63,7 @@ def main():
 
     # 5. 创建 .env 文件
     print("\n=== 创建环境变量文件 ===")
-    env_content = f"""POSTGRES_PASSWORD=yilehang2024
+    env_content = f"""POSTGRES_PASSWORD=renling2024
 SECRET_KEY=your-secret-key-change-in-production
 WECHAT_APPID=wxdbd150a0458a3c7c
 WECHAT_SECRET=

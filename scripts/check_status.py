@@ -25,7 +25,7 @@ print("=== Docker瀹瑰櫒鐘舵€?===")
 run("docker ps -a")
 
 print("\n=== API鏃ュ織 ===")
-run("docker logs yilehang-api --tail 30 2>&1")
+run("docker logs renling-api --tail 30 2>&1")
 
 print("\n=== 妫€鏌ョ鍙?===")
 run("netstat -tlnp | grep 8088")

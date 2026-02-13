@@ -4,11 +4,11 @@ services:
   # PostgreSQL数据库
   postgres:
     image: postgres:15-alpine
-    container_name: yilehang-postgres
+    container_name: renling-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: yilehang
+      POSTGRES_DB: renling
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -23,11 +23,11 @@ services:
     build:
       context: ../apps/api
       dockerfile: ../../docker/Dockerfile.api
-    container_name: yilehang-api
+    container_name: renling-api
     ports:
       - "8001:8000"
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/yilehang
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/renling
       DEBUG: "false"
       SECRET_KEY: ${SECRET_KEY:?set-in-env}
       WECHAT_APPID: ${WECHAT_APPID:-wxdbd150a0458a3c7c}
@@ -48,7 +48,7 @@ services:
   # Nginx反向代理
   nginx:
     image: nginx:alpine
-    container_name: yilehang-nginx
+    container_name: renling-nginx
     ports:
       - "80:80"
       - "443:443"

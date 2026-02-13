@@ -28,16 +28,16 @@ def deploy(host: str, user: str, password: str, port: int = 22):
 
     # 鍒涘缓杩滅▼鐩綍
     print("\n=== 鍒涘缓杩滅▼鐩綍 ===")
-    run_command(f"{ssh_cmd} 'mkdir -p /opt/yilehang'")
+    run_command(f"{ssh_cmd} 'mkdir -p /opt/renling'")
 
     # 鍚屾鏂囦欢
     print("\n=== 鍚屾鏂囦欢 ===")
-    rsync_cmd = f"sshpass -p '{password}' rsync -avz --exclude 'node_modules' --exclude '__pycache__' --exclude '.git' -e 'ssh -o StrictHostKeyChecking=no -p {port}' {project_root}/ {user}@{host}:/opt/yilehang/"
+    rsync_cmd = f"sshpass -p '{password}' rsync -avz --exclude 'node_modules' --exclude '__pycache__' --exclude '.git' -e 'ssh -o StrictHostKeyChecking=no -p {port}' {project_root}/ {user}@{host}:/opt/renling/"
     run_command(rsync_cmd)
 
     # 鍦ㄦ湇鍔″櫒涓婃墽琛岄儴缃插懡浠?    print("\n=== 鍚姩鏈嶅姟 ===")
     remote_commands = """
-    cd /opt/yilehang
+    cd /opt/renling
     docker-compose -f docker/docker-compose.prod.yml down
     docker-compose -f docker/docker-compose.prod.yml up -d --build
     """

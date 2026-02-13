@@ -1,6 +1,7 @@
 """
 韧翎成长计划 - FastAPI 主入口
 """
+
 import os
 from contextlib import asynccontextmanager
 
@@ -65,10 +66,10 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.get("/health")
 async def health_check():
     """健康检查"""
-    return {"status": "healthy", "service": "yilehang-api"}
+    return {"status": "healthy", "service": "renling-api"}
 
 
 @app.get(f"{settings.API_V1_STR}/health")
 async def health_check_v1():
     """Versioned health check for API consumers."""
-    return {"status": "healthy", "service": "yilehang-api"}
+    return {"status": "healthy", "service": "renling-api"}

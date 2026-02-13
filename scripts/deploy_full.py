@@ -112,8 +112,8 @@ def upload_api(client):
         sftp.close()
 
         print("Extracting...")
-        run(client, "mkdir -p /opt/yilehang/apps/api")
-        run(client, "tar -xzf /tmp/api.tar.gz -C /opt/yilehang/apps/api --strip-components=1")
+        run(client, "mkdir -p /opt/renling/apps/api")
+        run(client, "tar -xzf /tmp/api.tar.gz -C /opt/renling/apps/api --strip-components=1")
         run(client, "rm -f /tmp/api.tar.gz")
         print("API upload done")
     finally:
@@ -144,8 +144,8 @@ def upload_website(client):
         sftp.close()
 
         print("Extracting...")
-        run(client, "mkdir -p /opt/yilehang/website")
-        run(client, "tar -xzf /tmp/website.tar.gz -C /opt/yilehang/website --strip-components=1")
+        run(client, "mkdir -p /opt/renling/website")
+        run(client, "tar -xzf /tmp/website.tar.gz -C /opt/renling/website --strip-components=1")
         run(client, "rm -f /tmp/website.tar.gz")
         print("Website upload done")
     finally:
@@ -190,15 +190,15 @@ def cleanup_zombie_processes(client):
 def cleanup_old_deployment(client, compose_cmd):
     """Stop and remove old containers."""
     print("\n=== Clean old deployment ===")
-    run(client, f"cd /opt/yilehang/docker && {compose_cmd} down 2>/dev/null; echo 'done'", check=False)
-    run(client, "docker stop yilehang-nginx yilehang-api yilehang-postgres yilehang-redis 2>/dev/null; "
-                "docker rm yilehang-nginx yilehang-api yilehang-postgres yilehang-redis 2>/dev/null; echo 'cleaned'", check=False)
+    run(client, f"cd /opt/renling/docker && {compose_cmd} down 2>/dev/null; echo 'done'", check=False)
+    run(client, "docker stop renling-nginx renling-api renling-postgres renling-redis 2>/dev/null; "
+                "docker rm renling-nginx renling-api renling-postgres renling-redis 2>/dev/null; echo 'cleaned'", check=False)
 
 
 def setup_directories(client):
     """Create required directory structure."""
     print("\n=== Create directories ===")
-    run(client, "mkdir -p /opt/yilehang/{apps/{api,client/dist,admin/dist},docker/nginx/ssl,uploads/{avatars,images},website}")
+    run(client, "mkdir -p /opt/renling/{apps/{api,client/dist,admin/dist},docker/nginx/ssl,uploads/{avatars,images},website}")
 
 
 def create_docker_compose(client):
@@ -208,15 +208,15 @@ def create_docker_compose(client):
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: yilehang-postgres
+    container_name: renling-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres123
-      POSTGRES_DB: yilehang
+      POSTGRES_DB: renling
     volumes:
-      - yilehang_pg:/var/lib/postgresql/data
+      - renling_pg:/var/lib/postgresql/data
     networks:
-      - yilehang
+      - renling
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -226,21 +226,21 @@ services:
 
   api:
     image: python:3.11-slim
-    container_name: yilehang-api
+    container_name: renling-api
     working_dir: /app
     command: sh -c "pip install -i https://pypi.tuna.tsinghua.edu.cn/simple fastapi uvicorn sqlalchemy asyncpg pydantic pydantic-settings python-jose passlib httpx bcrypt python-multipart aiofiles websockets -q && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     volumes:
-      - /opt/yilehang/apps/api:/app
-      - /opt/yilehang/uploads:/app/app/uploads
+      - /opt/renling/apps/api:/app
+      - /opt/renling/uploads:/app/app/uploads
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-change-me-in-production}@postgres:5432/yilehang
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-change-me-in-production}@postgres:5432/renling
       SECRET_KEY: ${SECRET_KEY:?set-in-env}
       WECHAT_APPID: ${WECHAT_APPID:-}
       WECHAT_SECRET: ${WECHAT_SECRET:-}
       ALLOW_WECHAT_LOGIN_WITHOUT_SECRET: "false"
       DEV_PRINT_CODE_ON_SEND_FAIL: "false"
     networks:
-      - yilehang
+      - renling
     depends_on:
       postgres:
         condition: service_healthy
@@ -248,31 +248,31 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: yilehang-nginx
+    container_name: renling-nginx
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - /opt/yilehang/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - /opt/yilehang/apps/client/dist:/usr/share/nginx/html/client:ro
-      - /opt/yilehang/apps/admin/dist:/usr/share/nginx/html/admin:ro
-      - /opt/yilehang/uploads:/usr/share/nginx/html/uploads:ro
-      - /opt/yilehang/docker/nginx/ssl:/etc/nginx/ssl:ro
-      - /opt/yilehang/website:/usr/share/nginx/html/website:ro
+      - /opt/renling/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /opt/renling/apps/client/dist:/usr/share/nginx/html/client:ro
+      - /opt/renling/apps/admin/dist:/usr/share/nginx/html/admin:ro
+      - /opt/renling/uploads:/usr/share/nginx/html/uploads:ro
+      - /opt/renling/docker/nginx/ssl:/etc/nginx/ssl:ro
+      - /opt/renling/website:/usr/share/nginx/html/website:ro
     networks:
-      - yilehang
+      - renling
     depends_on:
       - api
     restart: unless-stopped
 
 networks:
-  yilehang:
-    name: yilehang
+  renling:
+    name: renling
 
 volumes:
-  yilehang_pg:
+  renling_pg:
 '''
-    run(client, f"cat > /opt/yilehang/docker/docker-compose.yml << 'EOFCOMPOSE'\n{compose}\nEOFCOMPOSE")
+    run(client, f"cat > /opt/renling/docker/docker-compose.yml << 'EOFCOMPOSE'\n{compose}\nEOFCOMPOSE")
 
 
 def create_nginx_config(client):
@@ -345,7 +345,7 @@ http {
         location / { root /usr/share/nginx/html/client; try_files $uri $uri/ /index.html; }
     }
 }'''
-    run(client, f"cat > /opt/yilehang/docker/nginx/nginx.conf << 'EOFNGINX'\n{nginx}\nEOFNGINX")
+    run(client, f"cat > /opt/renling/docker/nginx/nginx.conf << 'EOFNGINX'\n{nginx}\nEOFNGINX")
 
 
 def create_placeholder_pages(client):
@@ -367,15 +367,15 @@ def create_placeholder_pages(client):
 .status{background:rgba(255,255,255,.2);padding:15px 30px;border-radius:30px;display:inline-block}</style></head>
 <body><div class="c"><div class="logo">馃搳</div><h1>闊х繋鎴愰暱璁″垝 Admin</h1><p class="sub">Operations Console</p><div class="status">鉁?Service ready</div></div></body></html>'''
 
-    run(client, f"cat > /opt/yilehang/apps/client/dist/index.html << 'EOFHTML'\n{client_html}\nEOFHTML")
-    run(client, f"cat > /opt/yilehang/apps/admin/dist/index.html << 'EOFHTML'\n{admin_html}\nEOFHTML")
+    run(client, f"cat > /opt/renling/apps/client/dist/index.html << 'EOFHTML'\n{client_html}\nEOFHTML")
+    run(client, f"cat > /opt/renling/apps/admin/dist/index.html << 'EOFHTML'\n{admin_html}\nEOFHTML")
 
 
 def start_services(client, compose_cmd):
     """Start Docker services."""
     print("\n=== Start Docker services ===")
-    run(client, f"cd /opt/yilehang/docker && {compose_cmd} pull", check=False)
-    run(client, f"cd /opt/yilehang/docker && {compose_cmd} up -d")
+    run(client, f"cd /opt/renling/docker && {compose_cmd} pull", check=False)
+    run(client, f"cd /opt/renling/docker && {compose_cmd} up -d")
 
     # Wait for services to start
     print("\nWaiting for services...")
@@ -386,14 +386,14 @@ def start_services(client, compose_cmd):
 def check_service_status(client, compose_cmd):
     """Check service status and logs."""
     print("\n=== Service status ===")
-    run(client, f"cd /opt/yilehang/docker && {compose_cmd} ps", check=False)
-    run(client, "docker logs yilehang-api --tail 20 2>&1 || echo 'no logs'", check=False)
+    run(client, f"cd /opt/renling/docker && {compose_cmd} ps", check=False)
+    run(client, "docker logs renling-api --tail 20 2>&1 || echo 'no logs'", check=False)
 
 
 def initialize_seed_data(client):
     """Run seed data initialization."""
     print("\n=== Initialize seed data ===")
-    run(client, "docker exec yilehang-api python -m scripts.seed_data 2>&1 || echo 'Seed data may already exist'", check=False, timeout=120)
+    run(client, "docker exec renling-api python -m scripts.seed_data 2>&1 || echo 'Seed data may already exist'", check=False, timeout=120)
 
 
 def print_deployment_summary():

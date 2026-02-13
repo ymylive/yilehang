@@ -19,7 +19,7 @@ except ImportError:
 SERVER_HOST = os.getenv("SERVER_HOST", "8.134.33.19")
 SERVER_USER = os.getenv("SERVER_USER", "root")
 SERVER_PASSWORD = os.getenv("SERVER_PASSWORD")
-REMOTE_BASE = os.getenv("REMOTE_BASE", "/opt/yilehang")
+REMOTE_BASE = os.getenv("REMOTE_BASE", "/opt/renling")
 
 if not SERVER_PASSWORD:
     print("错误: 必须设置 SERVER_PASSWORD 环境变量")
@@ -112,7 +112,7 @@ def main():
         print("Step 1: 清理旧的 Docker 服务")
         print("=" * 60)
 
-        run_command(client, "docker-compose -f /opt/yilehang/docker/docker-compose.prod.yml down 2>/dev/null || true", "停止旧的 docker-compose 服务")
+        run_command(client, "docker-compose -f /opt/renling/docker/docker-compose.prod.yml down 2>/dev/null || true", "停止旧的 docker-compose 服务")
         run_command(client, "docker stop $(docker ps -aq) 2>/dev/null || true", "停止所有容器")
         run_command(client, "docker rm $(docker ps -aq) 2>/dev/null || true", "删除所有容器")
         run_command(client, "docker system prune -f", "清理 Docker 缓存")
@@ -169,12 +169,12 @@ def main():
 services:
   nginx:
     image: nginx:alpine
-    container_name: yilehang-website
+    container_name: renling-website
     ports:
       - "80:80"
     volumes:
-      - /opt/yilehang/website:/usr/share/nginx/html:ro
-      - /opt/yilehang/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /opt/renling/website:/usr/share/nginx/html:ro
+      - /opt/renling/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     restart: unless-stopped
 '''
 

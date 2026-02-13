@@ -1,9 +1,9 @@
 -- 韧翎成长计划数据库初始化脚本
 -- 创建数据库
-CREATE DATABASE IF NOT EXISTS yilehang;
+CREATE DATABASE IF NOT EXISTS renling;
 
 -- 使用数据库
-\c yilehang;
+\c renling;
 
 -- 用户表
 CREATE TABLE IF NOT EXISTS users (

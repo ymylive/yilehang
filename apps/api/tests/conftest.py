@@ -1,4 +1,5 @@
 """Pytest configuration and fixtures for integration tests."""
+
 import asyncio
 import os
 from pathlib import Path
@@ -17,7 +18,7 @@ from app.models import Coach, Student, User
 # Test database URL
 # Prefer an explicit TEST_DATABASE_URL when provided.
 # Default to local SQLite test DB to avoid external PostgreSQL dependency.
-_DEFAULT_TEST_DB_FILE = f".pytest_yilehang_{os.getpid()}.db"
+_DEFAULT_TEST_DB_FILE = f".pytest_renling_{os.getpid()}.db"
 _DEFAULT_TEST_DB_URL = f"sqlite+aiosqlite:///./{_DEFAULT_TEST_DB_FILE}"
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", _DEFAULT_TEST_DB_URL)
 
@@ -59,9 +60,7 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
-    async_session = async_sessionmaker(
-        test_engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as session:
         yield session
@@ -70,9 +69,7 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
 @pytest.fixture(scope="function")
 async def client(db_session: AsyncSession, test_engine) -> AsyncGenerator[AsyncClient, None]:
     """Create test client with database session override."""
-    async_session = async_sessionmaker(
-        test_engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
 
     async def override_get_db():
         async with async_session() as session:
@@ -99,7 +96,7 @@ async def test_users(db_session: AsyncSession) -> dict:
         password_hash=get_password_hash("admin123"),
         role="admin",
         nickname="Admin User",
-        status="active"
+        status="active",
     )
     db_session.add(admin)
     await db_session.flush()
@@ -112,7 +109,7 @@ async def test_users(db_session: AsyncSession) -> dict:
         password_hash=get_password_hash("coach123"),
         role="coach",
         nickname="Coach User",
-        status="active"
+        status="active",
     )
     db_session.add(coach_user)
     await db_session.flush()
@@ -122,7 +119,7 @@ async def test_users(db_session: AsyncSession) -> dict:
         coach_no=f"C{coach_user.id:06d}",
         name="Coach User",
         status="active",
-        is_active=True
+        is_active=True,
     )
     db_session.add(coach)
     await db_session.flush()
@@ -135,7 +132,7 @@ async def test_users(db_session: AsyncSession) -> dict:
         password_hash=get_password_hash("parent123"),
         role="parent",
         nickname="Parent User",
-        status="active"
+        status="active",
     )
     db_session.add(parent)
     await db_session.flush()
@@ -148,7 +145,7 @@ async def test_users(db_session: AsyncSession) -> dict:
         password_hash=get_password_hash("student123"),
         role="student",
         nickname="Student User",
-        status="active"
+        status="active",
     )
     db_session.add(student_user)
     await db_session.flush()
@@ -159,7 +156,7 @@ async def test_users(db_session: AsyncSession) -> dict:
         name="Student User",
         parent_id=parent.id,
         status="active",
-        is_active=True
+        is_active=True,
     )
     db_session.add(student)
     await db_session.flush()
@@ -174,8 +171,7 @@ async def test_users(db_session: AsyncSession) -> dict:
 async def admin_token(client: AsyncClient, test_users: dict) -> str:
     """Get admin authentication token."""
     response = await client.post(
-        "/api/v1/auth/login",
-        json={"account": "admin@test.com", "password": "admin123"}
+        "/api/v1/auth/login", json={"account": "admin@test.com", "password": "admin123"}
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -185,8 +181,7 @@ async def admin_token(client: AsyncClient, test_users: dict) -> str:
 async def coach_token(client: AsyncClient, test_users: dict) -> str:
     """Get coach authentication token."""
     response = await client.post(
-        "/api/v1/auth/login",
-        json={"account": "coach@test.com", "password": "coach123"}
+        "/api/v1/auth/login", json={"account": "coach@test.com", "password": "coach123"}
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -196,8 +191,7 @@ async def coach_token(client: AsyncClient, test_users: dict) -> str:
 async def parent_token(client: AsyncClient, test_users: dict) -> str:
     """Get parent authentication token."""
     response = await client.post(
-        "/api/v1/auth/login",
-        json={"account": "parent@test.com", "password": "parent123"}
+        "/api/v1/auth/login", json={"account": "parent@test.com", "password": "parent123"}
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -207,8 +201,7 @@ async def parent_token(client: AsyncClient, test_users: dict) -> str:
 async def student_token(client: AsyncClient, test_users: dict) -> str:
     """Get student authentication token."""
     response = await client.post(
-        "/api/v1/auth/login",
-        json={"account": "student@test.com", "password": "student123"}
+        "/api/v1/auth/login", json={"account": "student@test.com", "password": "student123"}
     )
     assert response.status_code == 200
     return response.json()["access_token"]

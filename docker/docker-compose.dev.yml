@@ -4,11 +4,11 @@ services:
   # PostgreSQL数据库
   postgres:
     image: postgres:15-alpine
-    container_name: yilehang-postgres
+    container_name: renling-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: yilehang
+      POSTGRES_DB: renling
     ports:
       - "5432:5432"
     volumes:
@@ -24,9 +24,9 @@ services:
     build:
       context: ../apps/api
       dockerfile: ../../docker/Dockerfile.api
-    container_name: yilehang-api
+    container_name: renling-api
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/yilehang
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/renling
       DEBUG: "true"
     ports:
       - "8000:8000"
@@ -42,7 +42,7 @@ services:
     build:
       context: ../apps/admin
       dockerfile: ../../docker/Dockerfile.admin
-    container_name: yilehang-admin
+    container_name: renling-admin
     ports:
       - "3000:3000"
     volumes:

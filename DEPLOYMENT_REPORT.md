@@ -12,9 +12,9 @@ Date: 2026-02-05
 - HTTPS is enabled on 443
 
 ## Containers
-- yilehang-nginx
-- yilehang-api
-- yilehang-postgres
+- renling-nginx
+- renling-api
+- renling-postgres
 
 ## Access
 - Client: https://rl.cornna.xyz/

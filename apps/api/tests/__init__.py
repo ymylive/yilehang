@@ -1,1 +1,1 @@
-"""Test package for yilehang API."""
+"""Test package for renling API."""

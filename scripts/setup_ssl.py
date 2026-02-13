@@ -106,21 +106,21 @@ print("\n=== 2. Verify cert files ===")
 run(f"ls -la ~/.acme.sh/{DOMAIN}_ecc/ 2>/dev/null || ls -la ~/.acme.sh/{DOMAIN}/ 2>/dev/null || echo 'No cert found'", check=False)
 
 print("\n=== 3. Install cert ===")
-run("mkdir -p /opt/yilehang/ssl")
+run("mkdir -p /opt/renling/ssl")
 install_cmd = (
     f"{export_env} ~/.acme.sh/acme.sh --install-cert -d {DOMAIN} --ecc "
-    f"--key-file /opt/yilehang/ssl/key.pem --fullchain-file /opt/yilehang/ssl/cert.pem"
+    f"--key-file /opt/renling/ssl/key.pem --fullchain-file /opt/renling/ssl/cert.pem"
 )
 exit_code, _ = run(install_cmd, check=False)
 if exit_code != 0:
     install_cmd = (
         f"{export_env} ~/.acme.sh/acme.sh --install-cert -d {DOMAIN} "
-        f"--key-file /opt/yilehang/ssl/key.pem --fullchain-file /opt/yilehang/ssl/cert.pem"
+        f"--key-file /opt/renling/ssl/key.pem --fullchain-file /opt/renling/ssl/cert.pem"
     )
     run(install_cmd, check=False)
 
 print("\n=== 4. Check cert files ===")
-run("ls -la /opt/yilehang/ssl/", check=False)
+run("ls -la /opt/renling/ssl/", check=False)
 
 print("\n=== 5. Update nginx config ===")
 nginx_conf = f'''events {{ worker_connections 1024; }}
@@ -180,22 +180,22 @@ http {{
     }}
 }}'''
 
-run(f"cat > /opt/yilehang/docker/nginx/nginx.conf << 'EOFNGINX'\n{nginx_conf}\nEOFNGINX")
+run(f"cat > /opt/renling/docker/nginx/nginx.conf << 'EOFNGINX'\n{nginx_conf}\nEOFNGINX")
 
 print("\n=== 6. Update docker-compose.yml ===")
 compose = '''version: "3.8"
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: yilehang-postgres
+    container_name: renling-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres123
-      POSTGRES_DB: yilehang
+      POSTGRES_DB: renling
     volumes:
-      - yilehang_pg:/var/lib/postgresql/data
+      - renling_pg:/var/lib/postgresql/data
     networks:
-      - yilehang
+      - renling
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -205,16 +205,16 @@ services:
 
   api:
     image: python:3.11-slim
-    container_name: yilehang-api
+    container_name: renling-api
     working_dir: /app
     command: sh -c "pip install -i https://pypi.tuna.tsinghua.edu.cn/simple fastapi uvicorn sqlalchemy asyncpg pydantic pydantic-settings python-jose passlib httpx bcrypt -q && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     volumes:
-      - /opt/yilehang/apps/api:/app
+      - /opt/renling/apps/api:/app
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-change-me-in-production}@postgres:5432/yilehang
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-change-me-in-production}@postgres:5432/renling
       SECRET_KEY: ${SECRET_KEY:?set-in-env}
     networks:
-      - yilehang
+      - renling
     depends_on:
       postgres:
         condition: service_healthy
@@ -222,37 +222,37 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: yilehang-nginx
+    container_name: renling-nginx
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - /opt/yilehang/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - /opt/yilehang/apps/client/dist:/usr/share/nginx/html/client:ro
-      - /opt/yilehang/apps/admin/dist:/usr/share/nginx/html/admin:ro
-      - /opt/yilehang/ssl:/etc/nginx/ssl:ro
+      - /opt/renling/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /opt/renling/apps/client/dist:/usr/share/nginx/html/client:ro
+      - /opt/renling/apps/admin/dist:/usr/share/nginx/html/admin:ro
+      - /opt/renling/ssl:/etc/nginx/ssl:ro
     networks:
-      - yilehang
+      - renling
     depends_on:
       - api
     restart: unless-stopped
 
 networks:
-  yilehang:
-    name: yilehang
+  renling:
+    name: renling
 
 volumes:
-  yilehang_pg:
+  renling_pg:
 '''
 
-run(f"cat > /opt/yilehang/docker/docker-compose.yml << 'EOFCOMPOSE'\n{compose}\nEOFCOMPOSE")
+run(f"cat > /opt/renling/docker/docker-compose.yml << 'EOFCOMPOSE'\n{compose}\nEOFCOMPOSE")
 
 print("\n=== 7. Restart services ===")
-run(f"cd /opt/yilehang/docker && {compose_cmd} up -d", check=False)
+run(f"cd /opt/renling/docker && {compose_cmd} up -d", check=False)
 
 print("\n=== 8. Check status ===")
 run("docker ps", check=False)
-run("docker logs yilehang-nginx --tail 15 2>&1", check=False)
+run("docker logs renling-nginx --tail 15 2>&1", check=False)
 
 client.close()
 

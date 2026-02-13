@@ -31,7 +31,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 APPS_DIR = PROJECT_ROOT / "apps"
 
 # 杩滅▼璺緞
-REMOTE_BASE = "/opt/yilehang"
+REMOTE_BASE = "/opt/renling"
 
 
 def create_ssh_client() -> paramiko.SSHClient:
@@ -104,8 +104,8 @@ def cleanup_old_deployment(client: paramiko.SSHClient):
 
     # 鍋滄骞跺垹闄ゆ棫瀹瑰櫒
     print("\n[娓呯悊] 鍋滄鏃х殑Docker瀹瑰櫒...")
-    exec_remote(client, "docker stop yilehang-nginx yilehang-api yilehang-postgres 2>/dev/null || true", check=False)
-    exec_remote(client, "docker rm yilehang-nginx yilehang-api yilehang-postgres 2>/dev/null || true", check=False)
+    exec_remote(client, "docker stop renling-nginx renling-api renling-postgres 2>/dev/null || true", check=False)
+    exec_remote(client, "docker rm renling-nginx renling-api renling-postgres 2>/dev/null || true", check=False)
 
     # 鍒犻櫎鏃х殑椤圭洰鐩綍
     print("\n[娓呯悊] 鍒犻櫎鏃х殑椤圭洰鐩綍...")
@@ -265,15 +265,15 @@ http {
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: yilehang-postgres
+    container_name: renling-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres123
-      POSTGRES_DB: yilehang
+      POSTGRES_DB: renling
     volumes:
-      - yilehang_postgres_data:/var/lib/postgresql/data
+      - renling_postgres_data:/var/lib/postgresql/data
     networks:
-      - yilehang_network
+      - renling_network
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -284,14 +284,14 @@ services:
   api:
     build:
       context: ../apps/api
-      dockerfile: /opt/yilehang/docker/Dockerfile.api
-    container_name: yilehang-api
+      dockerfile: /opt/renling/docker/Dockerfile.api
+    container_name: renling-api
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-change-me-in-production}@postgres:5432/yilehang
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-change-me-in-production}@postgres:5432/renling
       DEBUG: "false"
       SECRET_KEY: ${SECRET_KEY:?set-in-env}
     networks:
-      - yilehang_network
+      - renling_network
     depends_on:
       postgres:
         condition: service_healthy
@@ -299,7 +299,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: yilehang-nginx
+    container_name: renling-nginx
     ports:
       - "8088:80"
     volumes:
@@ -307,17 +307,17 @@ services:
       - ../apps/client/dist:/usr/share/nginx/html/client:ro
       - ../apps/admin/dist:/usr/share/nginx/html/admin:ro
     networks:
-      - yilehang_network
+      - renling_network
     depends_on:
       - api
     restart: unless-stopped
 
 networks:
-  yilehang_network:
-    name: yilehang_network
+  renling_network:
+    name: renling_network
 
 volumes:
-  yilehang_postgres_data:
+  renling_postgres_data:
 '''
     exec_remote(client, f"cat > {REMOTE_BASE}/docker/docker-compose.yml << 'EOF'\n{compose_config}\nEOF")
 

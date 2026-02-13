@@ -55,9 +55,9 @@ curl http://localhost/health
 
 | 服务 | 容器名 | 端口 | 说明 |
 |------|--------|------|------|
-| PostgreSQL | yilehang-server-postgres | 内部 5432（不暴露） | 数据库 |
-| FastAPI | yilehang-server-api | 8001:8000 | API 服务 |
-| Nginx | yilehang-server-nginx | 80:80 | 反向代理 |
+| PostgreSQL | renling-server-postgres | 内部 5432（不暴露） | 数据库 |
+| FastAPI | renling-server-api | 8001:8000 | API 服务 |
+| Nginx | renling-server-nginx | 80:80 | 反向代理 |
 
 ## Nginx 代理路由
 
