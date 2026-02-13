@@ -31,6 +31,14 @@ WECHAT_ERROR_MESSAGES = {
 }
 
 
+class WechatServiceError(Exception):
+    """Structured WeChat API error with errcode for HTTP mapping."""
+
+    def __init__(self, message: str, errcode: Optional[int] = None):
+        super().__init__(message)
+        self.errcode = errcode
+
+
 class VerificationCodeStore:
     """In-memory verification code store (replace with Redis in production)."""
 
@@ -333,7 +341,9 @@ class WechatService:
                 WechatService._ensure_wechat_config()
             else:
                 if not device_id:
-                    raise Exception("WECHAT_SECRET not configured and device_id is missing")
+                    raise WechatServiceError(
+                        "WECHAT_SECRET not configured and device_id is missing"
+                    )
                 import hashlib
 
                 fallback_hash = hashlib.sha256(device_id.encode("utf-8")).hexdigest()
@@ -347,7 +357,7 @@ class WechatService:
             WechatService._ensure_wechat_config()
 
         if not code:
-            raise Exception("WeChat login code is empty")
+            raise WechatServiceError("WeChat login code is empty")
 
         import httpx
 
@@ -367,10 +377,10 @@ class WechatService:
                 data = response.json()
         except httpx.TimeoutException:
             logger.error("[WeChat] code2session request timeout")
-            raise Exception("微信服务请求超时，请稍后重试")
+            raise WechatServiceError("微信服务请求超时，请稍后重试")
         except httpx.RequestError as e:
             logger.error(f"[WeChat] code2session request error: {e}")
-            raise Exception("微信服务请求失败，请检查网络连接")
+            raise WechatServiceError("微信服务请求失败，请检查网络连接")
 
         if "errcode" in data and data["errcode"] != 0:
             errcode = data["errcode"]
@@ -378,7 +388,7 @@ class WechatService:
             logger.error(
                 f"[WeChat] code2session failed: errcode={errcode}, errmsg={data.get('errmsg')}"
             )
-            raise Exception(errmsg)
+            raise WechatServiceError(errmsg, errcode=errcode)
 
         logger.info(f"[WeChat] code2session success, openid: {data.get('openid', '')[:8]}...")
         return data

@@ -9,7 +9,7 @@
       <view class="album-item" v-for="item in moments" :key="item.id" @click="viewMoment(item)">
         <image class="thumbnail" :src="item.thumbnail" mode="aspectFill" />
         <view class="overlay" v-if="item.type === 'video'">
-          <text class="play-icon">▶</text>
+          <image :src="playIcon" class="play-icon" mode="aspectFit" />
         </view>
         <view class="info">
           <text class="date">{{ formatDate(item.created_at) }}</text>
@@ -19,7 +19,7 @@
 
     <view class="empty" v-else>
       <view class="icon">
-        <wd-icon name="camera" size="66rpx" color="#94a3b8" />
+        <image :src="momentsEmptyIcon" class="empty-icon-image" mode="aspectFit" />
       </view>
       <text class="text">暂无精彩瞬间</text>
       <text class="hint">完成训练后会自动生成内容</text>
@@ -33,6 +33,7 @@
 import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, onMounted } from 'vue'
 import { safeNavigate } from '@/utils/safe-nav'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 interface MomentItem {
   id: number
@@ -42,6 +43,8 @@ interface MomentItem {
 }
 
 const moments = ref<MomentItem[]>([])
+const playIcon = getSemanticIcon('icon-play-filled')
+const momentsEmptyIcon = getSemanticIcon('moments-empty')
 
 onMounted(() => {
   loadMoments()
@@ -141,8 +144,8 @@ function viewMoment(item: MomentItem) {
 }
 
 .play-icon {
-  font-size: 54rpx;
-  color: #fff;
+  width: 54rpx;
+  height: 54rpx;
 }
 
 .info {
@@ -175,6 +178,11 @@ function viewMoment(item: MomentItem) {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.empty-icon-image {
+  width: 66rpx;
+  height: 66rpx;
 }
 
 .empty .text {

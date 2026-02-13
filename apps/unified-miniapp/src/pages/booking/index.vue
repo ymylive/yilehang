@@ -9,7 +9,8 @@
           :class="['tag-item', { active: selectedTag === tag.value }]"
           @click="selectTag(tag.value)"
         >
-          {{ tag.label }}
+          <image :src="tag.icon" class="tag-icon" mode="aspectFit" />
+          <text>{{ tag.label }}</text>
         </view>
       </scroll-view>
     </view>
@@ -48,7 +49,9 @@
     </view>
 
     <view class="empty-state" v-else-if="!loading">
-      <view class="empty-icon">练</view>
+      <view class="empty-icon">
+        <image :src="emptyIcon" class="empty-icon-image" mode="aspectFit" />
+      </view>
       <text class="empty-title">暂无匹配教练</text>
       <text class="empty-sub">试试切换标签或清空关键词</text>
     </view>
@@ -65,6 +68,7 @@ import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { computed, ref, onMounted } from 'vue'
 import { onReachBottom } from '@dcloudio/uni-app'
 import { coachApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 interface Coach {
   id: number
@@ -88,15 +92,16 @@ const loading = ref(false)
 const page = ref(1)
 const pageSize = 20
 const hasMore = ref(true)
+const emptyIcon = getSemanticIcon('booking-empty')
 
 const specialtyTags = [
-  { label: '全部', value: '' },
-  { label: '篮球', value: 'basketball' },
-  { label: '足球', value: 'football' },
-  { label: '游泳', value: 'swimming' },
-  { label: '跆拳道', value: 'taekwondo' },
-  { label: '舞蹈', value: 'dance' },
-  { label: '体操', value: 'gymnastics' }
+  { label: '全部', value: '', icon: '/static/sports/all.svg' },
+  { label: '篮球', value: '篮球', icon: '/static/sports/basketball.svg' },
+  { label: '足球', value: '足球', icon: '/static/sports/football.svg' },
+  { label: '游泳', value: '游泳', icon: '/static/sports/swimming.svg' },
+  { label: '跆拳道', value: '跆拳道', icon: '/static/sports/taekwondo.svg' },
+  { label: '舞蹈', value: '舞蹈', icon: '/static/sports/dance.svg' },
+  { label: '体操', value: '体操', icon: '/static/sports/gymnastics.svg' }
 ]
 
 const displayCoaches = computed(() => {
@@ -206,6 +211,12 @@ onMounted(() => {
   background: #f4f6fb;
   color: #7f879a;
   font-size: 22rpx;
+  gap: 6rpx;
+}
+
+.tag-icon {
+  width: 26rpx;
+  height: 26rpx;
 }
 
 .tag-item.active {
@@ -354,6 +365,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.empty-icon-image {
+  width: 56rpx;
+  height: 56rpx;
 }
 
 .empty-title {

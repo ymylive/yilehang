@@ -115,7 +115,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { coachApi } from '@/api/index'
 
 interface Coach {
@@ -178,12 +179,6 @@ const reviews = ref<Review[]>([])
 const initialLoading = ref(true)
 const reviewsLoading = ref(false)
 
-function getOptions() {
-  const pages = getCurrentPages()
-  const current = pages[pages.length - 1]
-  return (current as any).$page?.options || {}
-}
-
 function normalizeReviews(source: any): Review[] {
   const list = Array.isArray(source) ? source : source?.items || []
   return list.map((item: any) => ({
@@ -243,8 +238,7 @@ async function loadReviews() {
   }
 }
 
-onMounted(async () => {
-  const options = getOptions()
+onLoad(async (options: any) => {
   coachId.value = Number(options.id || options.coachId || 0)
 
   if (!coachId.value) {

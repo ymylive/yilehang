@@ -88,6 +88,7 @@
         </view>
 
         <view v-else class="state-wrap">
+          <image :src="incomeEmptyIcon" class="state-icon" mode="aspectFit" />
           <text class="state-text">{{ t.emptyMonthIncome }}</text>
         </view>
       </view>
@@ -99,6 +100,7 @@
 import { ref, onMounted } from 'vue'
 import { onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
 import { coachProfileApi } from '@/api/index'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 interface IncomeSummary {
   this_month: { lessons: number; income: number }
@@ -147,6 +149,7 @@ const incomeList = ref<IncomeItem[]>([])
 const loading = ref(false)
 const page = ref(1)
 const hasMore = ref(true)
+const incomeEmptyIcon = getSemanticIcon('coach-income-empty')
 
 function formatMonth(date: Date): string {
   const year = date.getFullYear()
@@ -485,8 +488,17 @@ onMounted(() => {
 }
 
 .state-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 48rpx 0;
   text-align: center;
+}
+
+.state-icon {
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 12rpx;
 }
 
 .state-text {

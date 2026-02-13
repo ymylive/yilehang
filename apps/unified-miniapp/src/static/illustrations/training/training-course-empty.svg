@@ -1,0 +1,9 @@
+<svg width="320" height="220" viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="training empty illustration">
+  <rect width="320" height="220" rx="24" fill="#FFF7EC"/>
+  <circle cx="98" cy="110" r="44" fill="#FFE1B7"/>
+  <path d="M86 108C86 95.85 95.85 86 108 86H150C162.15 86 172 95.85 172 108V132C172 144.15 162.15 154 150 154H108C95.85 154 86 144.15 86 132V108Z" fill="#FFB45F"/>
+  <path d="M144 110L120 124V96L144 110Z" fill="#FFF7EC"/>
+  <rect x="184" y="90" width="54" height="12" rx="6" fill="#FF9B2F"/>
+  <rect x="184" y="114" width="74" height="12" rx="6" fill="#FDBA74"/>
+  <rect x="184" y="138" width="64" height="10" rx="5" fill="#F59E0B"/>
+</svg>

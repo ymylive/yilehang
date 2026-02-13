@@ -5,7 +5,7 @@
       <text class="balance-label">我的能量</text>
       <view class="balance-info">
         <text class="balance-value">{{ balance }}</text>
-        <text class="balance-icon">⚡</text>
+        <image :src="energyBoltIcon" class="balance-icon" mode="aspectFit" />
       </view>
     </view>
 
@@ -37,7 +37,7 @@
           <view class="item-image">
             <image v-if="item.image" :src="item.image" mode="aspectFill" />
             <view v-else class="item-placeholder">
-              <wd-icon name="gift" size="56rpx" color="#94a3b8" />
+              <image :src="itemPlaceholderIcon" class="item-placeholder-icon" mode="aspectFit" />
             </view>
           </view>
           <view class="item-info">
@@ -46,7 +46,7 @@
             <view class="item-footer">
               <view class="item-cost">
                 <text class="cost-value">{{ item.energy_cost }}</text>
-                <text class="cost-icon">⚡</text>
+                <image :src="energyBoltIcon" class="cost-icon" mode="aspectFit" />
               </view>
               <text class="item-original" v-if="item.original_price">
                 ¥{{ item.original_price }}
@@ -58,7 +58,7 @@
 
       <view class="empty-state" v-else>
         <view class="empty-icon">
-          <wd-icon name="gift" size="64rpx" color="#94a3b8" />
+          <image :src="redeemEmptyIcon" class="empty-icon-image" mode="aspectFit" />
         </view>
         <text class="empty-text">暂无可兑换商品</text>
       </view>
@@ -70,7 +70,7 @@
         <view class="detail-image">
           <image v-if="selectedItem.image" :src="selectedItem.image" mode="aspectFill" />
           <view v-else class="detail-placeholder">
-            <wd-icon name="gift" size="86rpx" color="#94a3b8" />
+            <image :src="detailPlaceholderIcon" class="detail-placeholder-icon" mode="aspectFit" />
           </view>
         </view>
         <view class="detail-content">
@@ -92,7 +92,7 @@
           <view class="detail-footer">
             <view class="detail-cost">
               <text class="cost-value">{{ selectedItem.energy_cost }}</text>
-              <text class="cost-icon">⚡</text>
+              <image :src="energyBoltIcon" class="cost-icon" mode="aspectFit" />
             </view>
             <button
               class="redeem-btn"
@@ -119,8 +119,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { energyApi, merchantApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 const balance = ref(0)
+const energyBoltIcon = getSemanticIcon('icon-energy-bolt')
+const itemPlaceholderIcon = getSemanticIcon('energy-redeem-empty')
+const redeemEmptyIcon = getSemanticIcon('energy-redeem-empty')
+const detailPlaceholderIcon = getSemanticIcon('energy-redeem-empty')
 const items = ref<any[]>([])
 const currentCategory = ref('')
 const selectedItem = ref<any>(null)
@@ -245,7 +250,8 @@ function goToOrders() {
 }
 
 .balance-icon {
-  font-size: 32rpx;
+  width: 32rpx;
+  height: 32rpx;
   margin-left: 8rpx;
 }
 
@@ -318,6 +324,11 @@ function goToOrders() {
   background: linear-gradient(135deg, #eff6ff, #f5f8ff);
 }
 
+.item-placeholder-icon {
+  width: 56rpx;
+  height: 56rpx;
+}
+
 .item-info {
   padding: 20rpx;
 }
@@ -358,7 +369,8 @@ function goToOrders() {
 }
 
 .cost-icon {
-  font-size: 24rpx;
+  width: 24rpx;
+  height: 24rpx;
   margin-left: 4rpx;
 }
 
@@ -382,6 +394,11 @@ function goToOrders() {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.empty-icon-image {
+  width: 64rpx;
+  height: 64rpx;
 }
 
 .empty-text {
@@ -424,6 +441,11 @@ function goToOrders() {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #eff6ff, #f7f9ff);
+}
+
+.detail-placeholder-icon {
+  width: 86rpx;
+  height: 86rpx;
 }
 
 .detail-content {

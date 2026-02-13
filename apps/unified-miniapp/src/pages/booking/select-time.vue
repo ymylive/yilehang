@@ -97,7 +97,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { coachApi } from '@/api/index'
 
 interface Coach {
@@ -204,12 +205,6 @@ const selectedDateLabel = computed(() => {
   return `${date.getMonth() + 1}${t.monthUnit}${date.getDate()}${t.dayUnit} ${weekdayNames[date.getDay()]}`
 })
 
-function getOptions() {
-  const pages = getCurrentPages()
-  const current = pages[pages.length - 1]
-  return (current as any).$page?.options || {}
-}
-
 function formatDate(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -311,8 +306,7 @@ function goToConfirm() {
   })
 }
 
-onMounted(async () => {
-  const options = getOptions()
+onLoad(async (options: any) => {
   coachId.value = Number(options.coachId || options.id || 0)
   rescheduleId.value = Number(options.rescheduleId || 0)
   selectedDate.value = dateList.value[0]?.date || ''

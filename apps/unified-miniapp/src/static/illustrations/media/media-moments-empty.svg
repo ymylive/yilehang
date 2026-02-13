@@ -1,0 +1,7 @@
+<svg width="320" height="220" viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="moments empty illustration">
+  <rect width="320" height="220" rx="24" fill="#FFF8EE"/>
+  <rect x="56" y="48" width="208" height="124" rx="18" fill="#FFE4BF"/>
+  <circle cx="98" cy="86" r="16" fill="#FFB45F"/>
+  <path d="M86 146L128 110L160 136L192 104L234 146" stroke="#FF9B2F" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M170 96L202 114V78L170 96Z" fill="#F59E0B"/>
+</svg>

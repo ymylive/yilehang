@@ -24,6 +24,14 @@ from app.schemas import (
 router = APIRouter()
 
 
+def _normalize_naive_datetime(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 async def _get_permitted_student_ids(db: AsyncSession, user) -> set[int]:
     if user.role == "admin":
         return set()
@@ -63,9 +71,9 @@ async def _ensure_student_access(student_id: int, db: AsyncSession, user) -> Non
 
 @router.get("", response_model=List[ScheduleResponse])
 async def list_schedules(
-    start_date: datetime = None,
-    end_date: datetime = None,
-    coach_id: int = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    coach_id: int | None = None,
     skip: int = 0,
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
@@ -73,6 +81,12 @@ async def list_schedules(
 ):
     """获取排课列表"""
     await fetch_user_from_token(db, current_user_data)
+    start_date = _normalize_naive_datetime(start_date)
+    end_date = _normalize_naive_datetime(end_date)
+
+    if start_date and end_date and end_date < start_date:
+        raise HTTPException(status_code=400, detail="结束时间必须晚于开始时间")
+
     query = select(Schedule).join(Course)
 
     filters = []

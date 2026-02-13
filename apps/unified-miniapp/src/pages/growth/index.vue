@@ -44,6 +44,7 @@
         </view>
       </view>
       <view class="empty" v-else>
+        <image :src="growthEmptyIcon" class="empty-icon" mode="aspectFit" />
         <text>暂无体测记录</text>
       </view>
     </view>
@@ -77,6 +78,7 @@ import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, onMounted, nextTick } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { studentApi, growthApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 const userStore = useUserStore()
 
@@ -84,6 +86,7 @@ const student = ref<any>(null)
 const growthData = ref<any>(null)
 const fitnessTests = ref<any[]>([])
 const latestTest = ref<any>(null)
+const growthEmptyIcon = getSemanticIcon('growth-history-empty')
 
 const radarItems = [
   { key: 'speed', label: '速度', color: '#FF6384' },
@@ -371,9 +374,18 @@ function viewTestDetail(test: any) {
 }
 
 .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   color: #999;
   padding: 20rpx 0;
+}
+
+.empty-icon {
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 10rpx;
 }
 
 .stats-grid {

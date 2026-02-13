@@ -5,14 +5,14 @@
       <picker mode="date" :value="startDate" @change="onStartDateChange">
         <view class="date-picker">
           <text>{{ startDate || '开始日期' }}</text>
-          <text class="icon">▼</text>
+          <image :src="chevronDownIcon" class="picker-icon" mode="aspectFit" />
         </view>
       </picker>
       <text class="separator">至</text>
       <picker mode="date" :value="endDate" @change="onEndDateChange">
         <view class="date-picker">
           <text>{{ endDate || '结束日期' }}</text>
-          <text class="icon">▼</text>
+          <image :src="chevronDownIcon" class="picker-icon" mode="aspectFit" />
         </view>
       </picker>
       <view class="reset-btn" @click="resetFilter">重置</view>
@@ -61,12 +61,15 @@
           </view>
         </view>
         <view class="test-footer">
-          <text class="view-detail">查看详情 ></text>
+          <view class="view-detail">
+            <text>查看详情</text>
+            <image :src="detailChevronRightIcon" class="detail-arrow-icon" mode="aspectFit" />
+          </view>
         </view>
       </view>
 
       <view v-if="fitnessTests.length === 0 && !loading" class="empty-state">
-        <image src="/static/empty.svg" mode="aspectFit" class="empty-image" />
+        <image :src="emptyIcon" mode="aspectFit" class="empty-image" />
         <text class="empty-text">暂无体测记录</text>
       </view>
 
@@ -85,6 +88,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { growthApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 const userStore = useUserStore()
 
@@ -96,6 +100,9 @@ const limit = 10
 
 const startDate = ref('')
 const endDate = ref('')
+const emptyIcon = getSemanticIcon('growth-history-empty')
+const chevronDownIcon = getSemanticIcon('icon-chevron-down')
+const detailChevronRightIcon = getSemanticIcon('icon-growth-chevron-right')
 
 const hasMore = computed(() => fitnessTests.value.length < total.value)
 
@@ -206,10 +213,10 @@ onPullDownRefresh(async () => {
   color: #333;
 }
 
-.date-picker .icon {
+.date-picker .picker-icon {
   margin-left: 8rpx;
-  font-size: 20rpx;
-  color: #999;
+  width: 20rpx;
+  height: 20rpx;
 }
 
 .separator {
@@ -305,6 +312,14 @@ onPullDownRefresh(async () => {
 .view-detail {
   font-size: 26rpx;
   color: #FF8800;
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.detail-arrow-icon {
+  width: 20rpx;
+  height: 20rpx;
 }
 
 .empty-state {

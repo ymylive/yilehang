@@ -24,6 +24,14 @@
     <view class="section">
       <text class="section-title">快捷操作</text>
       <view class="action-list">
+        <view class="action-item" @click="navigateTo('/pages/admin/coaches/index')">
+          <text>教练管理</text>
+          <text class="arrow">›</text>
+        </view>
+        <view class="action-item" @click="navigateTo('/pages/admin/notices/index')">
+          <text>公告活动</text>
+          <text class="arrow">›</text>
+        </view>
         <view class="action-item" @click="navigateTo('/pages/admin/users/index')">
           <text>用户管理</text>
           <text class="arrow">›</text>
@@ -41,6 +49,7 @@
 <script setup lang="ts">
 import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, onMounted } from 'vue'
+import { dashboardApi } from '@/api'
 
 const stats = ref({
   totalUsers: 0,
@@ -54,14 +63,22 @@ function navigateTo(url: string) {
 }
 
 onMounted(() => {
-  // 模拟数据
-  stats.value = {
-    totalUsers: 1280,
-    totalCoaches: 25,
-    totalBookings: 48,
-    totalRevenue: '¥12,580'
-  }
+  loadOverview()
 })
+
+async function loadOverview() {
+  try {
+    const overview: any = await dashboardApi.getOverview()
+    stats.value = {
+      totalUsers: Number(overview?.students?.total || 0),
+      totalCoaches: Number(overview?.coaches?.total || 0),
+      totalBookings: Number(overview?.bookings?.today || 0),
+      totalRevenue: `¥${Number(overview?.revenue?.this_month || 0).toFixed(0)}`
+    }
+  } catch (error: any) {
+    uni.showToast({ title: error?.message || '看板数据加载失败', icon: 'none' })
+  }
+}
 </script>
 
 <style lang="scss" scoped>

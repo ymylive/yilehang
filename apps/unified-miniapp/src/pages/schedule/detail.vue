@@ -35,7 +35,15 @@
       <view class="feedback-content">
         <view class="rating-row" v-if="feedback.performance_rating">
           <text class="rating-label">表现评分</text>
-          <text class="rating-stars">{{ renderStars(feedback.performance_rating) }}</text>
+          <view class="rating-stars">
+            <image
+              v-for="(icon, index) in getRatingStarIcons(feedback.performance_rating)"
+              :key="index"
+              :src="icon"
+              class="rating-star-icon"
+              mode="aspectFit"
+            />
+          </view>
         </view>
         <text class="content">{{ feedback.content }}</text>
         <view class="suggestions" v-if="feedback.suggestions">
@@ -74,6 +82,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { bookingApi, reviewApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 interface Booking {
   id: number
@@ -106,6 +115,8 @@ const bookingId = ref(0)
 const booking = ref<Booking | null>(null)
 const feedback = ref<Feedback | null>(null)
 const hasReviewed = ref(false)
+const ratingStarActiveIcon = getSemanticIcon('icon-star-filled')
+const ratingStarInactiveIcon = getSemanticIcon('icon-star-outline')
 
 const showCancelPanel = ref(false)
 const cancelReason = ref('')
@@ -145,9 +156,12 @@ function formatClock(timeStr?: string) {
   return timeStr.slice(0, 5)
 }
 
-function renderStars(score: number) {
+function getRatingStarIcons(score: number | null) {
+  if (!score) {
+    return Array.from({ length: 5 }, () => ratingStarInactiveIcon)
+  }
   const num = Math.max(0, Math.min(5, Math.round(score)))
-  return `${'★'.repeat(num)}${'☆'.repeat(5 - num)}`
+  return Array.from({ length: 5 }, (_, index) => (index < num ? ratingStarActiveIcon : ratingStarInactiveIcon))
 }
 
 async function loadBookingDetail() {
@@ -313,9 +327,14 @@ onMounted(() => {
 }
 
 .rating-stars {
-  font-size: 24rpx;
-  letter-spacing: 2rpx;
-  color: #f3a11d;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.rating-star-icon {
+  width: 24rpx;
+  height: 24rpx;
 }
 
 .content {

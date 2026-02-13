@@ -1,0 +1,10 @@
+<svg width="320" height="220" viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="coach workbench empty illustration">
+  <rect width="320" height="220" rx="24" fill="#FFF7EA"/>
+  <rect x="48" y="52" width="224" height="132" rx="20" fill="#FFE2BA"/>
+  <rect x="70" y="74" width="86" height="42" rx="10" fill="#FFB45F"/>
+  <rect x="164" y="74" width="86" height="42" rx="10" fill="#FF9B2F"/>
+  <rect x="70" y="124" width="86" height="42" rx="10" fill="#FDBA74"/>
+  <rect x="164" y="124" width="86" height="42" rx="10" fill="#F59E0B"/>
+  <circle cx="113" cy="95" r="10" fill="#FFF7EA"/>
+  <circle cx="207" cy="95" r="10" fill="#FFF7EA"/>
+</svg>

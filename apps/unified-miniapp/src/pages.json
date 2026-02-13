@@ -308,6 +308,18 @@
           }
         },
         {
+          "path": "coaches/index",
+          "style": {
+            "navigationBarTitleText": "教练管理"
+          }
+        },
+        {
+          "path": "notices/index",
+          "style": {
+            "navigationBarTitleText": "公告活动"
+          }
+        },
+        {
           "path": "analytics/index",
           "style": {
             "navigationBarTitleText": "数据分析"

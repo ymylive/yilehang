@@ -33,7 +33,7 @@
 
       <!-- 空状态 -->
       <view v-if="filteredTransactions.length === 0 && !loading" class="empty-state">
-        <image src="/static/empty.png" mode="aspectFit" class="empty-image" />
+        <image :src="emptyIcon" mode="aspectFit" class="empty-image" />
         <text class="empty-text">暂无记录</text>
       </view>
 
@@ -57,6 +57,7 @@ import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { onReachBottom } from '@dcloudio/uni-app'
 import { membershipApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 interface Transaction {
   id: number
@@ -83,6 +84,7 @@ const loading = ref(false)
 const page = ref(1)
 const pageSize = 20
 const hasMore = ref(true)
+const emptyIcon = getSemanticIcon('membership-transactions-empty')
 
 const filteredTransactions = computed(() => {
   if (!currentTab.value) return transactions.value

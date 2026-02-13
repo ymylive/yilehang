@@ -84,6 +84,7 @@
           <text class="section-more" @tap="navigateTo('/pages/schedule/index')">查看全部</text>
         </view>
         <view v-if="todaySchedules.length === 0" class="empty-tip">
+          <image :src="homeScheduleEmptyIcon" class="empty-tip-icon" mode="aspectFit" />
           <text>今日暂无课程安排</text>
         </view>
         <view v-else class="schedule-list">
@@ -135,11 +136,13 @@ import { scheduleApi, energyApi } from '@/api'
 import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import RoleSwitcher from '@/components/RoleSwitcher.vue'
 import { BRAND_LOGO_INLINE_DATA_URI, BRAND_LOGO_PROJECT_PATH } from '@/utils/brand-logo'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 const userStore = useUserStore()
 const permissionStore = usePermissionStore()
 const tabBarRef = ref()
 const brandLogoSrc = ref(BRAND_LOGO_PROJECT_PATH)
+const homeScheduleEmptyIcon = getSemanticIcon('home-schedule-empty')
 
 const todaySchedules = ref<any[]>([])
 const growthData = ref({
@@ -202,9 +205,19 @@ function goRegister() {
 function navigateTo(path: string) {
   const userRole = userStore.user?.role as UserRole
   if (userRole && isTabBarPage(userRole, path)) {
-    uni.switchTab({ url: path })
+    uni.switchTab({
+      url: path,
+      fail: () => {
+        uni.reLaunch({ url: path })
+      }
+    })
   } else {
-    uni.navigateTo({ url: path })
+    uni.navigateTo({
+      url: path,
+      fail: () => {
+        uni.reLaunch({ url: path })
+      }
+    })
   }
 }
 
@@ -220,9 +233,22 @@ function statusLabel(status: string) {
 
 async function loadTodaySchedules() {
   if (!userStore.isLoggedIn) return
+  const role = userStore.userRole
+  if (role !== 'parent' && role !== 'student') {
+    todaySchedules.value = []
+    return
+  }
+
   try {
-    const today = new Date().toISOString().slice(0, 10)
-    const res: any = await scheduleApi.list({ start_date: today, end_date: today })
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    const dateStr = `${year}-${month}-${day}`
+    const res: any = await scheduleApi.list({
+      start_date: `${dateStr}T00:00:00`,
+      end_date: `${dateStr}T23:59:59`
+    })
     todaySchedules.value = res?.items || res || []
   } catch (e) {
     console.error('Load schedules failed:', e)
@@ -231,6 +257,16 @@ async function loadTodaySchedules() {
 
 async function loadGrowthData() {
   if (!userStore.isLoggedIn) return
+  const role = userStore.userRole
+  if (role !== 'parent' && role !== 'student') {
+    growthData.value = { totalLessons: 0, thisMonth: 0, energy: 0 }
+    return
+  }
+  if (role === 'parent' && !userStore.currentStudent) {
+    growthData.value = { totalLessons: 0, thisMonth: 0, energy: 0 }
+    return
+  }
+
   try {
     const res: any = await energyApi.getSummary()
     growthData.value = {
@@ -238,7 +274,11 @@ async function loadGrowthData() {
       thisMonth: res?.this_month_lessons || 0,
       energy: res?.energy_balance || 0,
     }
-  } catch (e) {
+  } catch (e: any) {
+    if (e?.statusCode === 400 && String(e?.message || '').includes('未找到关联的学员账户')) {
+      growthData.value = { totalLessons: 0, thisMonth: 0, energy: 0 }
+      return
+    }
     console.error('Load growth data failed:', e)
   }
 }
@@ -688,10 +728,19 @@ onMounted(async () => {
 }
 
 .empty-tip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   padding: 40rpx 0;
   color: #999;
   font-size: 26rpx;
+}
+
+.empty-tip-icon {
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 10rpx;
 }
 
 /* 课程卡片 */

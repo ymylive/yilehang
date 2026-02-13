@@ -29,7 +29,7 @@
       </view>
 
       <view v-if="conversations.length === 0 && !loading" class="empty-state">
-        <image src="/static/empty.svg" mode="aspectFit" class="empty-image" />
+        <image :src="emptyIcon" mode="aspectFit" class="empty-image" />
         <text class="empty-text">暂无消息</text>
         <text class="empty-hint">与教练或家长开始聊天吧</text>
       </view>
@@ -49,6 +49,7 @@ import PageErrorBoundary from '@/components/PageErrorBoundary.vue'
 import { ref } from 'vue'
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { chatApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 import { safeNavigate } from '@/utils/safe-nav'
 
 interface UserBrief {
@@ -76,6 +77,7 @@ interface Conversation {
 
 const conversations = ref<Conversation[]>([])
 const loading = ref(false)
+const emptyIcon = getSemanticIcon('chat-empty')
 
 async function loadConversations() {
   loading.value = true

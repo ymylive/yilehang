@@ -4,7 +4,9 @@ type NavigateMode = 'navigateTo' | 'reLaunch' | 'switchTab'
 
 const REGISTERED_PAGE_PATHS = new Set<string>([
   'pages/admin/analytics/index',
+  'pages/admin/coaches/index',
   'pages/admin/dashboard/index',
+  'pages/admin/notices/index',
   'pages/admin/users/detail',
   'pages/admin/users/index',
   'pages/booking/coach-detail',

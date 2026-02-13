@@ -36,12 +36,15 @@
           <view class="order-image">
             <image v-if="order.item_image" :src="order.item_image" mode="aspectFill" />
             <view v-else class="order-placeholder">
-              <wd-icon name="gift" size="44rpx" color="#94a3b8" />
+              <image :src="orderPlaceholderIcon" class="order-placeholder-icon" mode="aspectFit" />
             </view>
           </view>
           <view class="order-info">
             <text class="order-name">{{ order.item_name }}</text>
-            <text class="order-cost">{{ order.energy_cost }} ⚡</text>
+            <view class="order-cost">
+              <text>{{ order.energy_cost }}</text>
+              <image :src="energyBoltIcon" class="order-cost-icon" mode="aspectFit" />
+            </view>
             <text class="order-time">{{ formatTime(order.created_at) }}</text>
           </view>
         </view>
@@ -57,7 +60,7 @@
 
     <view class="empty-state" v-else>
       <view class="empty-icon">
-        <wd-icon name="view-list" size="62rpx" color="#94a3b8" />
+        <image :src="ordersEmptyIcon" class="empty-icon-image" mode="aspectFit" />
       </view>
       <text class="empty-text">暂无兑换记录</text>
       <button class="empty-btn" @click="goToRedeem">去兑换</button>
@@ -85,7 +88,10 @@
           </view>
           <view class="detail-item">
             <text class="detail-label">消耗能量</text>
-            <text class="detail-value">{{ selectedOrder.energy_cost }} ⚡</text>
+            <view class="detail-value detail-energy-cost">
+              <text>{{ selectedOrder.energy_cost }}</text>
+              <image :src="energyBoltIcon" class="detail-cost-icon" mode="aspectFit" />
+            </view>
           </view>
           <view class="detail-item">
             <text class="detail-label">订单号</text>
@@ -119,8 +125,12 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { merchantApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 const orders = ref<any[]>([])
+const energyBoltIcon = getSemanticIcon('icon-energy-bolt')
+const orderPlaceholderIcon = getSemanticIcon('energy-orders-empty')
+const ordersEmptyIcon = getSemanticIcon('energy-orders-empty')
 const currentStatus = ref('')
 const selectedOrder = ref<any>(null)
 const page = ref(1)
@@ -332,6 +342,11 @@ function goToRedeem() {
   background: linear-gradient(135deg, #eff6ff, #f7f9ff);
 }
 
+.order-placeholder-icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
 .order-info {
   flex: 1;
   margin-left: 20rpx;
@@ -350,6 +365,14 @@ function goToRedeem() {
   font-size: 26rpx;
   color: #FF8800;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.order-cost-icon {
+  width: 24rpx;
+  height: 24rpx;
 }
 
 .order-time {
@@ -402,6 +425,11 @@ function goToRedeem() {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.empty-icon-image {
+  width: 62rpx;
+  height: 62rpx;
 }
 
 .empty-text {
@@ -483,6 +511,18 @@ function goToRedeem() {
   color: #333;
   text-align: right;
   max-width: 60%;
+}
+
+.detail-energy-cost {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4rpx;
+}
+
+.detail-cost-icon {
+  width: 24rpx;
+  height: 24rpx;
 }
 
 .qrcode-section {

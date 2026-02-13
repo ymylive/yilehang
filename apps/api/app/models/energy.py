@@ -15,6 +15,11 @@ if TYPE_CHECKING:
     from app.models.user import Student
 
 
+def utc_now_naive() -> datetime:
+    """Return UTC naive datetime for TIMESTAMP WITHOUT TIME ZONE columns."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 class EnergyTransactionType(str, Enum):
     """能量交易类型"""
 
@@ -56,12 +61,12 @@ class EnergyRule(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=utc_now_naive
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=utc_now_naive,
+        onupdate=utc_now_naive,
     )
 
 
@@ -80,12 +85,12 @@ class EnergyAccount(Base):
     level: Mapped[int] = mapped_column(Integer, default=1)  # 能量等级
     version: Mapped[int] = mapped_column(Integer, default=0)  # 乐观锁版本号
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=utc_now_naive
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=utc_now_naive,
+        onupdate=utc_now_naive,
     )
 
     # 关系
@@ -116,7 +121,7 @@ class EnergyTransaction(Base):
     description: Mapped[Optional[str]] = mapped_column(String(200))  # 描述
     operator_id: Mapped[Optional[int]] = mapped_column(Integer)  # 操作人ID（手动调整时）
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=utc_now_naive
     )
 
     # 关系

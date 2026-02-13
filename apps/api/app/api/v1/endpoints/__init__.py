@@ -1,4 +1,5 @@
 from app.api.v1.endpoints import (
+    admin_panel,
     ai,
     auth,
     bookings,
@@ -13,6 +14,7 @@ from app.api.v1.endpoints import (
 )
 
 __all__ = [
+    "admin_panel",
     "auth",
     "students",
     "schedules",

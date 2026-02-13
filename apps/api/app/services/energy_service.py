@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 MAX_CAS_RETRIES = 3
 
 
+def _utc_now_naive() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 class AccountSnapshot(TypedDict):
     id: int
     balance: int
@@ -65,7 +69,7 @@ class EnergyService:
             "total_earned": EnergyAccount.total_earned + total_earned_delta,
             "total_spent": EnergyAccount.total_spent + total_spent_delta,
             "version": EnergyAccount.version + 1,
-            "updated_at": datetime.now(timezone.utc),
+            "updated_at": _utc_now_naive(),
         }
         if new_level is not None:
             values["level"] = new_level
@@ -142,7 +146,7 @@ class EnergyService:
     @staticmethod
     async def check_limit(db: AsyncSession, student_id: int, rule: EnergyRule) -> Tuple[bool, str]:
         """检查积分获取限制"""
-        now = datetime.now(timezone.utc)
+        now = _utc_now_naive()
 
         # 检查每日限制
         if rule.daily_limit:
@@ -417,7 +421,7 @@ class EnergyService:
     @staticmethod
     async def get_today_earned(db: AsyncSession, student_id: int) -> int:
         """获取今日获取的能量"""
-        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = _utc_now_naive().replace(hour=0, minute=0, second=0, microsecond=0)
         result = await db.execute(
             select(func.sum(EnergyTransaction.amount)).where(
                 and_(
@@ -432,7 +436,7 @@ class EnergyService:
     @staticmethod
     async def get_week_earned(db: AsyncSession, student_id: int) -> int:
         """获取本周获取的能量"""
-        now = datetime.now(timezone.utc)
+        now = _utc_now_naive()
         week_start = now - timedelta(days=now.weekday())
         week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
         result = await db.execute(

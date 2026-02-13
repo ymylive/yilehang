@@ -168,7 +168,7 @@ function goToFeedback(id: number) {
 async function loadStudents() {
   loading.value = true
   try {
-    const data = await coachStudentsApi.getStudents({ page: 1, page_size: 200 })
+    const data = await coachStudentsApi.getStudents({ page: 1, page_size: 100 })
     students.value = normalizeList(data)
   } catch (error: any) {
     uni.showToast({ title: error.message || t.loadFailed, icon: 'none' })

@@ -34,19 +34,27 @@
 
     <view class="quick-card anim-fade-up anim-delay-1">
       <view class="quick-item tap-active" @click="goToSlots">
-        <view class="quick-icon">{{ t.slotIcon }}</view>
+        <view class="quick-icon">
+          <image :src="quickEntryIcons.slots" class="quick-icon-image" mode="aspectFit" />
+        </view>
         <text class="quick-label">{{ t.slotManagement }}</text>
       </view>
       <view class="quick-item tap-active" @click="goToStudents">
-        <view class="quick-icon">{{ t.studentIcon }}</view>
+        <view class="quick-icon">
+          <image :src="quickEntryIcons.students" class="quick-icon-image" mode="aspectFit" />
+        </view>
         <text class="quick-label">{{ t.studentManagement }}</text>
       </view>
       <view class="quick-item tap-active" @click="goToIncome">
-        <view class="quick-icon">{{ t.incomeIcon }}</view>
+        <view class="quick-icon">
+          <image :src="quickEntryIcons.income" class="quick-icon-image" mode="aspectFit" />
+        </view>
         <text class="quick-label">{{ t.incomeStats }}</text>
       </view>
       <view class="quick-item tap-active" @click="goToReviews">
-        <view class="quick-icon">{{ t.reviewIcon }}</view>
+        <view class="quick-icon">
+          <image :src="quickEntryIcons.reviews" class="quick-icon-image" mode="aspectFit" />
+        </view>
         <text class="quick-label">{{ t.reviewCenter }}</text>
       </view>
     </view>
@@ -90,6 +98,7 @@
       </view>
 
       <view v-else class="empty-state">
+        <image :src="scheduleEmptyIcon" class="empty-icon" mode="aspectFit" />
         <text class="empty-title">{{ t.noScheduleTitle }}</text>
         <text class="empty-sub">{{ t.noScheduleSub }}</text>
       </view>
@@ -104,6 +113,7 @@ import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import PageErrorBoundary from '@/components/PageErrorBoundary.vue'
 import { ref, onMounted } from 'vue'
 import { coachProfileApi, coachScheduleApi } from '@/api/index'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 import { safeNavigate } from '@/utils/safe-nav'
 
 interface CoachInfo {
@@ -132,13 +142,9 @@ const t = {
   todayLessons: '\u4eca\u65e5\u8bfe\u7a0b',
   completedLessons: '\u5df2\u5b8c\u6210',
   myStudents: '\u6211\u7684\u5b66\u5458',
-  slotIcon: '\u6392',
   slotManagement: '\u6392\u8bfe\u7ba1\u7406',
-  studentIcon: '\u5458',
   studentManagement: '\u5b66\u5458\u7ba1\u7406',
-  incomeIcon: '\u6536',
   incomeStats: '\u6536\u5165\u7edf\u8ba1',
-  reviewIcon: '\u8bc4',
   reviewCenter: '\u8bc4\u4ef7\u4e2d\u5fc3',
   todaySchedule: '\u4eca\u65e5\u65e5\u7a0b',
   viewAll: '\u67e5\u770b\u5168\u90e8',
@@ -178,6 +184,13 @@ const todayStats = ref({
 })
 const todayLessons = ref<Lesson[]>([])
 const loading = ref(false)
+const quickEntryIcons = {
+  slots: getSemanticIcon('schedule-empty'),
+  students: getSemanticIcon('user-student-empty'),
+  income: getSemanticIcon('coach-income-empty'),
+  reviews: getSemanticIcon('messages-empty')
+} as const
+const scheduleEmptyIcon = getSemanticIcon('schedule-empty')
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -473,6 +486,11 @@ onMounted(async () => {
   box-shadow: 0 8rpx 16rpx rgba(255, 143, 31, 0.12);
 }
 
+.quick-icon-image {
+  width: 44rpx;
+  height: 44rpx;
+}
+
 .quick-label {
   font-size: 24rpx;
   color: #44506a;
@@ -635,6 +653,12 @@ onMounted(async () => {
 .empty-state {
   text-align: center;
   padding: 52rpx 0 36rpx;
+}
+
+.empty-icon {
+  width: 120rpx;
+  height: 120rpx;
+  margin: 0 auto 14rpx;
 }
 
 .empty-title {

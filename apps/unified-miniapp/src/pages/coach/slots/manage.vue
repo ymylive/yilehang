@@ -43,47 +43,51 @@
     </view>
 
     <!-- 添加/编辑弹窗 -->
-    <view v-if="showPopup" class="popup-mask" @click="showPopup = false">
+    <view v-if="showPopup" class="popup-mask" @click="closePopup">
       <view class="popup-content" @click.stop>
-        <view class="popup-title">{{ editingSlot ? '编辑时段' : '添加时段' }}</view>
+        <view class="popup-title">{{ editingSlot ? '编辑时段' : `添加时段（${currentDayLabel}）` }}</view>
 
-        <view class="form-item">
-          <text class="form-label">开始时间</text>
-          <picker mode="time" :value="formData.startTime" @change="onStartTimeChange">
-            <view class="picker-value">{{ formData.startTime }}</view>
-          </picker>
-        </view>
+        <scroll-view scroll-y class="popup-form">
+          <view class="form-item">
+            <text class="form-label">开始时间</text>
+            <picker mode="time" :value="formData.startTime" @change="onStartTimeChange">
+              <view class="picker-value">{{ formData.startTime }}</view>
+            </picker>
+          </view>
 
-        <view class="form-item">
-          <text class="form-label">结束时间</text>
-          <picker mode="time" :value="formData.endTime" @change="onEndTimeChange">
-            <view class="picker-value">{{ formData.endTime }}</view>
-          </picker>
-        </view>
+          <view class="form-item">
+            <text class="form-label">结束时间</text>
+            <picker mode="time" :value="formData.endTime" @change="onEndTimeChange">
+              <view class="picker-value">{{ formData.endTime }}</view>
+            </picker>
+          </view>
 
-        <view class="form-item">
-          <text class="form-label">每节时长（分钟）</text>
-          <input
-            class="form-input"
-            type="number"
-            v-model="formData.duration"
-            placeholder="60"
-          />
-        </view>
+          <view class="form-item">
+            <text class="form-label">每节时长（分钟）</text>
+            <input
+              class="form-input"
+              type="number"
+              v-model="formData.duration"
+              placeholder="60"
+            />
+          </view>
 
-        <view class="form-item">
-          <text class="form-label">最大学员数</text>
-          <input
-            class="form-input"
-            type="number"
-            v-model="formData.maxStudents"
-            placeholder="1"
-          />
-        </view>
+          <view class="form-item">
+            <text class="form-label">最大学员数</text>
+            <input
+              class="form-input"
+              type="number"
+              v-model="formData.maxStudents"
+              placeholder="1"
+            />
+          </view>
+        </scroll-view>
 
-        <view class="popup-buttons">
-          <button class="btn cancel" @click="showPopup = false">取消</button>
-          <button class="btn confirm" @click="saveSlot" :loading="saving">保存</button>
+        <view class="popup-buttons-wrap">
+          <view class="popup-buttons">
+            <button class="btn cancel" @click="closePopup">取消</button>
+            <button class="btn confirm" @click="saveSlot" :loading="saving">保存</button>
+          </view>
         </view>
       </view>
     </view>
@@ -91,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { coachSlotsApi } from '@/api/index'
 
 interface Slot {
@@ -121,6 +125,11 @@ const currentDay = ref(0)
 const saving = ref(false)
 const loading = ref(false)
 
+const currentDayLabel = computed(() => {
+  const item = weekDays.find(day => day.value === currentDay.value)
+  return item ? item.label : '周一'
+})
+
 const formData = ref({
   startTime: '09:00',
   endTime: '10:00',
@@ -143,6 +152,11 @@ function onStartTimeChange(e: any) {
 
 function onEndTimeChange(e: any) {
   formData.value.endTime = e.detail.value
+}
+
+function closePopup() {
+  if (saving.value) return
+  showPopup.value = false
 }
 
 async function loadSlots() {
@@ -196,20 +210,40 @@ async function saveSlot() {
     return
   }
 
+  const duration = Number(formData.value.duration)
+  if (!Number.isFinite(duration) || duration <= 0) {
+    uni.showToast({ title: '每节时长需大于0', icon: 'none' })
+    return
+  }
+
+  const maxStudents = Number(formData.value.maxStudents)
+  if (!Number.isFinite(maxStudents) || maxStudents <= 0) {
+    uni.showToast({ title: '最大学员数需大于0', icon: 'none' })
+    return
+  }
+
   saving.value = true
   try {
-    const slotData = {
-      day_of_week: currentDay.value,
-      start_time: formData.value.startTime + ':00',
-      end_time: formData.value.endTime + ':00',
-      slot_duration: parseInt(formData.value.duration) || 60,
-      max_students: parseInt(formData.value.maxStudents) || 1
-    }
+    const startTime = `${formData.value.startTime}:00`
+    const endTime = `${formData.value.endTime}:00`
+    const slotDuration = Math.trunc(duration)
+    const maxStudentCount = Math.trunc(maxStudents)
 
     if (editingSlot.value) {
-      await coachSlotsApi.updateSlot(editingSlot.value.id, slotData)
+      await coachSlotsApi.updateSlot(editingSlot.value.id, {
+        start_time: startTime,
+        end_time: endTime,
+        slot_duration: slotDuration,
+        max_students: maxStudentCount
+      })
     } else {
-      await coachSlotsApi.createSlot(slotData)
+      await coachSlotsApi.createSlot({
+        day_of_week: currentDay.value,
+        start_time: startTime,
+        end_time: endTime,
+        slot_duration: slotDuration,
+        max_students: maxStudentCount
+      })
     }
 
     showPopup.value = false
@@ -375,14 +409,19 @@ onMounted(() => {
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: flex-end;
-  z-index: 999;
+  z-index: 1301;
 }
 
 .popup-content {
   width: 100%;
   background-color: #fff;
   border-radius: 24rpx 24rpx 0 0;
-  padding: 40rpx;
+  padding: 32rpx 28rpx 0;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
 
   .popup-title {
     font-size: 36rpx;
@@ -390,6 +429,12 @@ onMounted(() => {
     color: #333;
     text-align: center;
     margin-bottom: 40rpx;
+  }
+
+  .popup-form {
+    flex: 1;
+    min-height: 0;
+    padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
   }
 
   .form-item {
@@ -411,6 +456,8 @@ onMounted(() => {
     }
 
     .form-input {
+      width: 100%;
+      box-sizing: border-box;
       padding: 20rpx;
       background-color: #f5f5f5;
       border-radius: 12rpx;
@@ -418,10 +465,17 @@ onMounted(() => {
     }
   }
 
+  .popup-buttons-wrap {
+    margin: 0 -28rpx;
+    padding: 16rpx 28rpx calc(20rpx + constant(safe-area-inset-bottom));
+    padding: 16rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
+    background: #fff;
+    flex-shrink: 0;
+  }
+
   .popup-buttons {
     display: flex;
     gap: 20rpx;
-    margin-top: 40rpx;
 
     .btn {
       flex: 1;

@@ -72,7 +72,9 @@ image {
 }
 
 button {
-  transition: transform var(--motion-fast) ease, box-shadow var(--motion-fast) ease, opacity var(--motion-fast) ease;
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+  transition: transform var(--motion-fast, 180ms) ease, box-shadow var(--motion-fast, 180ms) ease,
+    opacity var(--motion-fast, 180ms) ease;
 }
 
 button::after {
@@ -103,13 +105,13 @@ textarea {
 
 .page-enter,
 .anim-page-enter {
-  animation: pageEnter var(--motion-medium) ease-out both;
+  animation: pageEnter 240ms ease-out both;
+  animation: pageEnter var(--motion-medium, 240ms) ease-out both;
 }
 
 .anim-fade-up {
-  opacity: 0;
-  transform: translateY(14rpx);
-  animation: fadeUp var(--motion-medium) ease-out forwards;
+  animation: fadeUp 240ms ease-out forwards;
+  animation: fadeUp var(--motion-medium, 240ms) ease-out forwards;
 }
 
 .anim-delay-1 {

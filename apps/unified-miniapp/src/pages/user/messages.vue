@@ -21,7 +21,7 @@
       </view>
 
       <view v-if="messages.length === 0 && !loading" class="empty-state">
-        <image src="/static/empty.svg" mode="aspectFit" class="empty-image" />
+        <image :src="emptyIcon" mode="aspectFit" class="empty-image" />
         <text class="empty-text">暂无消息</text>
       </view>
 
@@ -38,6 +38,7 @@ import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, onMounted } from 'vue'
 import { onPullDownRefresh } from '@dcloudio/uni-app'
 import { notificationApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 import { safeNavigate } from '@/utils/safe-nav'
 
 interface Message {
@@ -55,6 +56,7 @@ const messages = ref<Message[]>([])
 const loading = ref(false)
 const total = ref(0)
 const unreadCount = ref(0)
+const emptyIcon = getSemanticIcon('messages-empty')
 
 function getTypeIcon(type: string): string {
   const map: Record<string, string> = {

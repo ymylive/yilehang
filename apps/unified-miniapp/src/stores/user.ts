@@ -73,8 +73,8 @@ export const useUserStore = defineStore('user', () => {
     return res
   }
 
-  async function wechatLogin(code: string, userInfo?: any, deviceId?: string) {
-    const res = await authApi.wechatLogin(code, userInfo, deviceId)
+  async function wechatLogin(code: string, deviceId?: string) {
+    const res = await authApi.wechatLogin(code, deviceId)
     saveLoginState(res.access_token, res.user)
     return res
   }

@@ -49,7 +49,7 @@
       </view>
 
       <view v-else class="empty-state">
-        <image src="/static/empty.png" mode="aspectFit" class="empty-image" />
+        <image :src="emptyIcon" mode="aspectFit" class="empty-image" />
         <text class="empty-text">暂无会员卡</text>
       </view>
     </view>
@@ -94,6 +94,7 @@
 import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, computed, onMounted } from 'vue'
 import { membershipApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 interface MembershipCard {
   id: number
@@ -121,6 +122,7 @@ interface StudentMembership {
 const memberships = ref<StudentMembership[]>([])
 const availableCards = ref<MembershipCard[]>([])
 const loading = ref(false)
+const emptyIcon = getSemanticIcon('membership-empty')
 
 const totalRemaining = computed(() => {
   return memberships.value

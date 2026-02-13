@@ -22,7 +22,11 @@
           class="star-wrapper"
           @click="rating = i"
         >
-          <text :class="['star', { active: i <= rating }]">★</text>
+          <image
+            :src="i <= rating ? ratingStarActiveIcon : ratingStarInactiveIcon"
+            :class="['star', { active: i <= rating }]"
+            mode="aspectFit"
+          />
         </view>
       </view>
       <view class="rating-text">{{ getRatingText(rating) }}</view>
@@ -81,12 +85,15 @@
 import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, onMounted } from 'vue'
 import { reviewApi, bookingApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 const bookingId = ref(0)
 const coachName = ref('')
 const courseTime = ref('')
 
 const rating = ref(0)
+const ratingStarActiveIcon = getSemanticIcon('icon-star-filled')
+const ratingStarInactiveIcon = getSemanticIcon('icon-star-outline')
 const selectedTags = ref<string[]>([])
 const content = ref('')
 const isAnonymous = ref(false)
@@ -220,11 +227,11 @@ onMounted(() => {
 }
 
 .star {
-  font-size: 48rpx;
-  color: #ddd;
+  width: 48rpx;
+  height: 48rpx;
 
   &.active {
-    color: #FFB347;
+    transform: scale(1.02);
   }
 }
 

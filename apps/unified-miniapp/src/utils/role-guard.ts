@@ -7,6 +7,11 @@ import { trackEvent } from '@/utils/telemetry'
 
 export type UserRole = 'admin' | 'coach' | 'parent' | 'student' | 'merchant'
 
+const NATIVE_TAB_BAR_PAGES = new Set([
+  'pages/index/index',
+  'pages/user/index'
+])
+
 // 角色页面映射配置
 export const ROLE_PAGE_MAP: Record<UserRole, {
   home: string
@@ -142,9 +147,9 @@ export function getRoleTabBar(role: UserRole) {
  * 判断路径是否是某角色的 tabBar 页面
  */
 export function isTabBarPage(role: UserRole, route: string): boolean {
+  void role
   const normalizedRoute = route.startsWith('/') ? route.slice(1) : route
-  const tabBar = getRoleTabBar(role)
-  return tabBar.some(item => item.pagePath === normalizedRoute)
+  return NATIVE_TAB_BAR_PAGES.has(normalizedRoute)
 }
 
 /**
@@ -180,14 +185,35 @@ export function routeByRole(role?: string) {
     uni.reLaunch({ url: '/pages/user/login' })
     return
   }
+
   const home = getRoleHomePage(role as UserRole)
-  const tabBar = getRoleTabBar(role as UserRole)
-  const isTab = tabBar.some(item => `/${item.pagePath}` === home)
-  trackEvent('role.route.redirect', { role, home, mode: isTab ? 'switchTab' : 'navigateTo' })
+  const isTab = isTabBarPage(role as UserRole, home)
+  trackEvent('role.route.redirect', { role, home, mode: isTab ? 'switchTab' : 'reLaunch' })
+
   if (isTab) {
-    uni.switchTab({ url: home })
+    uni.switchTab({
+      url: home,
+      fail: err => {
+        trackEvent('role.route.switchtab_fail', {
+          role,
+          home,
+          errMsg: err?.errMsg || ''
+        }, 'error')
+        uni.reLaunch({ url: home })
+      }
+    })
   } else {
-    uni.navigateTo({ url: home })
+    uni.reLaunch({
+      url: home,
+      fail: err => {
+        trackEvent('role.route.relaunch_fail', {
+          role,
+          home,
+          errMsg: err?.errMsg || ''
+        }, 'error')
+        uni.reLaunch({ url: '/pages/index/index' })
+      }
+    })
   }
 }
 

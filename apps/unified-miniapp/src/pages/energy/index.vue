@@ -11,7 +11,7 @@
           <text class="balance-label">我的能量</text>
           <view class="balance-row">
             <text class="balance-value">{{ account.balance }}</text>
-            <text class="balance-unit">⚡</text>
+            <image :src="energyBoltIcon" class="balance-unit" mode="aspectFit" />
           </view>
         </view>
         <view class="level-section">
@@ -98,7 +98,11 @@
           :key="item.id"
         >
           <view class="trans-icon" :class="item.type">
-            {{ item.type === 'earn' ? '↑' : '↓' }}
+            <image
+              :src="transactionDirectionIcons[item.type === 'earn' ? 'earn' : 'spend']"
+              class="trans-icon-image"
+              mode="aspectFit"
+            />
           </view>
           <view class="trans-info">
             <text class="trans-desc">{{ item.description }}</text>
@@ -112,7 +116,7 @@
 
       <view class="empty-state" v-else>
         <view class="empty-icon">
-          <wd-icon name="note" size="64rpx" color="#94a3b8" />
+          <image :src="energyEmptyIcon" class="empty-icon-image" mode="aspectFit" />
         </view>
         <text class="empty-text">暂无记录</text>
       </view>
@@ -149,8 +153,15 @@ import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { energyApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 const userStore = useUserStore()
+const energyBoltIcon = getSemanticIcon('icon-energy-bolt')
+const transactionDirectionIcons = {
+  earn: getSemanticIcon('icon-arrow-up'),
+  spend: getSemanticIcon('icon-arrow-down')
+} as const
+const energyEmptyIcon = getSemanticIcon('energy-empty')
 
 const account = ref({
   balance: 0,
@@ -378,7 +389,8 @@ function goTo(url: string) {
 }
 
 .balance-unit {
-  font-size: 40rpx;
+  width: 40rpx;
+  height: 40rpx;
   margin-left: 10rpx;
 }
 
@@ -516,6 +528,11 @@ function goTo(url: string) {
   margin-bottom: 12rpx;
 }
 
+.empty-icon-image {
+  width: 64rpx;
+  height: 64rpx;
+}
+
 .stats-section {
   display: flex;
   align-items: center;
@@ -612,6 +629,11 @@ function goTo(url: string) {
   font-size: 28rpx;
   font-weight: 700;
   margin-right: 20rpx;
+}
+
+.trans-icon-image {
+  width: 28rpx;
+  height: 28rpx;
 }
 
 .trans-icon.earn {

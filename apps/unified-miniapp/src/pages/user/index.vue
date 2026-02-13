@@ -119,6 +119,7 @@
         </view>
 
         <view v-else class="student-empty">
+          <image :src="studentEmptyIcon" class="student-empty-icon" mode="aspectFit" />
           <text>暂无学员，点击右上角添加</text>
         </view>
       </view>
@@ -128,49 +129,49 @@
           <view class="menu-icon"><wd-icon name="books" size="30rpx" /></view>
           <text class="menu-label">我的会员卡</text>
           <text class="menu-badge" v-if="userStore.currentStudent?.remaining_lessons">{{ userStore.currentStudent.remaining_lessons }}次</text>
-          <text class="menu-arrow">›</text>
+          <image :src="menuArrowIcon" class="menu-arrow" mode="aspectFit" />
         </view>
 
         <view class="menu-item" @click="goTo('/pages/chat/index')">
           <view class="menu-icon"><wd-icon name="chat" size="30rpx" /></view>
           <text class="menu-label">聊天消息</text>
-          <text class="menu-arrow">›</text>
+          <image :src="menuArrowIcon" class="menu-arrow" mode="aspectFit" />
         </view>
 
         <view class="menu-item" @click="goTo('/pages/user/messages')">
           <view class="menu-icon"><wd-icon name="notification" size="30rpx" /></view>
           <text class="menu-label">系统通知</text>
-          <text class="menu-arrow">›</text>
+          <image :src="menuArrowIcon" class="menu-arrow" mode="aspectFit" />
         </view>
 
         <view class="menu-item" @click="goTo('/pages/schedule/index')" v-if="userStore.isParent || userStore.isStudent">
           <view class="menu-icon"><wd-icon name="calendar" size="30rpx" /></view>
           <text class="menu-label">我的课表</text>
-          <text class="menu-arrow">›</text>
+          <image :src="menuArrowIcon" class="menu-arrow" mode="aspectFit" />
         </view>
 
         <view class="menu-item" @click="goTo('/pages/membership/transactions')" v-if="userStore.isParent || userStore.isStudent">
           <view class="menu-icon"><wd-icon name="view-list" size="30rpx" /></view>
           <text class="menu-label">消费记录</text>
-          <text class="menu-arrow">›</text>
+          <image :src="menuArrowIcon" class="menu-arrow" mode="aspectFit" />
         </view>
 
         <view class="menu-item" @click="goTo('/pages/review/create')" v-if="userStore.isStudent || userStore.isParent">
           <view class="menu-icon"><wd-icon name="star" size="30rpx" /></view>
           <text class="menu-label">课程评价</text>
-          <text class="menu-arrow">›</text>
+          <image :src="menuArrowIcon" class="menu-arrow" mode="aspectFit" />
         </view>
 
         <view class="menu-item" @click="goTo('/pages/user/profile')">
           <view class="menu-icon"><wd-icon name="setting" size="30rpx" /></view>
           <text class="menu-label">个人资料</text>
-          <text class="menu-arrow">›</text>
+          <image :src="menuArrowIcon" class="menu-arrow" mode="aspectFit" />
         </view>
 
         <view class="menu-item" @click="goTo('/pages/index/index')">
           <view class="menu-icon"><wd-icon name="home" size="30rpx" /></view>
           <text class="menu-label">平台首页</text>
-          <text class="menu-arrow">›</text>
+          <image :src="menuArrowIcon" class="menu-arrow" mode="aspectFit" />
         </view>
       </view>
 
@@ -189,9 +190,12 @@ import PageErrorBoundary from '@/components/PageErrorBoundary.vue'
 import { ref, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { studentApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 import { safeNavigate } from '@/utils/safe-nav'
 
 const userStore = useUserStore()
+const menuArrowIcon = getSemanticIcon('icon-chevron-right')
+const studentEmptyIcon = getSemanticIcon('user-student-empty')
 const students = ref<any[]>([])
 
 onMounted(async () => {
@@ -582,9 +586,18 @@ function logout() {
 }
 
 .student-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   font-size: 24rpx;
   color: #98a1b4;
   padding: 10rpx 0;
+}
+
+.student-empty-icon {
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 8rpx;
 }
 
 .menu-card {
@@ -636,8 +649,8 @@ function logout() {
 }
 
 .menu-arrow {
-  font-size: 22rpx;
-  color: #9aa2b5;
+  width: 22rpx;
+  height: 22rpx;
 }
 
 .logout-wrap {

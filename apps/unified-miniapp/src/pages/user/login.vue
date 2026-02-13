@@ -1,5 +1,4 @@
 <template>
-  <PageErrorBoundary page="user.login" @retry="retryLoginPage">
   <view class="page page-enter anim-page-enter">
     <view class="hero anim-fade-up">
       <view class="hero-bubble bubble-1"></view>
@@ -138,11 +137,9 @@
       </view>
     </view>
   </view>
-  </PageErrorBoundary>
 </template>
 
 <script setup lang="ts">
-import PageErrorBoundary from '@/components/PageErrorBoundary.vue'
 import { onUnmounted, ref } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { usePermissionStore } from '@/stores/permission'
@@ -219,6 +216,30 @@ function isWechatCodeExpired(error: any) {
   return msg.includes('40029') || msg.includes('invalid code') || msg.includes('登录凭证已过期')
 }
 
+function parseWechatRoleRequired(error: any) {
+  const detail = error?.detail
+  const code = detail?.code || (typeof detail === 'string' ? detail : '')
+  const msg = String(error?.message || detail?.message || detail || '')
+  const required =
+    error?.statusCode === 409 &&
+    (
+      code === 'WECHAT_ROLE_REQUIRED' ||
+      msg.includes('WECHAT_ROLE_REQUIRED') ||
+      msg.includes('role selection') ||
+      msg.includes('首次')
+    )
+
+  const wechatOpenid = String(
+    detail?.wechat_openid || detail?.openid || detail?.wechatOpenid || error?.wechat_openid || ''
+  ).trim()
+
+  return {
+    required,
+    wechatOpenid,
+    nickname: detail?.nickname || '微信用户'
+  }
+}
+
 async function wechatLogin() {
   if (loading.value) return
   if (!ensureAgreement()) return
@@ -237,7 +258,7 @@ async function wechatLogin() {
 
     const deviceId = getOrCreateDeviceId()
     try {
-      await userStore.wechatLogin(loginRes.code, undefined, deviceId)
+      await userStore.wechatLogin(loginRes.code, deviceId)
     } catch (error: any) {
       if (!isWechatCodeExpired(error)) throw error
 
@@ -245,7 +266,7 @@ async function wechatLogin() {
         uni.login({ timeout: 10000, success: resolve, fail: reject })
       })
       if (!retryRes?.code) throw new Error('微信登录凭证已失效，请重试')
-      await userStore.wechatLogin(retryRes.code, undefined, deviceId)
+      await userStore.wechatLogin(retryRes.code, deviceId)
     }
 
     const user = await userStore.fetchUserInfo()
@@ -253,16 +274,17 @@ async function wechatLogin() {
     trackEvent('auth.wechat.success', { role: user?.role || '' })
     routeByRole(user?.role)
   } catch (error: any) {
-    const detail = error?.detail
-    if (error?.statusCode === 409 && detail?.code === 'WECHAT_ROLE_REQUIRED') {
-      const wechatOpenid = String(detail?.wechat_openid || '').trim()
+    const parsed = parseWechatRoleRequired(error)
+    if (parsed.required) {
+      const wechatOpenid = parsed.wechatOpenid
       if (!wechatOpenid) {
+        trackError('auth.wechat.role_required_missing_openid', error)
         uni.showToast({ title: '微信登录信息不完整，请重试', icon: 'none' })
         return
       }
       pendingRegister.value = {
         wechatOpenid,
-        nickname: detail?.nickname || '微信用户'
+        nickname: parsed.nickname
       }
       showRoleSelector.value = true
       trackEvent('auth.wechat.role_required')
@@ -430,14 +452,6 @@ function goRegister() {
 
 function goIntro() {
   safeNavigate('/pages/brand/intro')
-}
-
-function retryLoginPage() {
-  loading.value = false
-  sendingCode.value = false
-  showRoleSelector.value = false
-  clearCountdownTimer()
-  countdown.value = 0
 }
 
 function viewAgreement(type: 'user' | 'privacy') {

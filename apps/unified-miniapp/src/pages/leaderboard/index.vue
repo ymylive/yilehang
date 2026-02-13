@@ -115,7 +115,7 @@
 
       <view class="empty-state" v-if="!leaderboard.length">
         <view class="empty-icon">
-          <wd-icon name="chart-bar" size="62rpx" color="#94a3b8" />
+          <image :src="leaderboardEmptyIcon" class="empty-icon-image" mode="aspectFit" />
         </view>
         <text class="empty-text">暂无排行数据</text>
       </view>
@@ -128,6 +128,7 @@
 import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { leaderboardApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 const currentTab = ref('energy')
 const period = ref('week')
@@ -137,6 +138,7 @@ const myValue = ref<number | null>(null)
 const leaderboardLoading = ref(false)
 let leaderboardRequestId = 0
 let activeLeaderboardKey = ''
+const leaderboardEmptyIcon = getSemanticIcon('leaderboard-empty')
 
 const restLeaderboard = computed(() => {
   return leaderboard.value.slice(3)
@@ -540,6 +542,11 @@ function resolveLevelIcon(levelIcon?: string) {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.empty-icon-image {
+  width: 62rpx;
+  height: 62rpx;
 }
 
 .empty-text {

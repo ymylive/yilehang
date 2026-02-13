@@ -17,13 +17,13 @@
     <view class="chart-section">
       <view class="section-title">用户增长趋势</view>
       <view class="chart-placeholder">
-        <text class="placeholder-text">图表区域</text>
+        <image :src="userGrowthPlaceholderIcon" class="placeholder-icon" mode="aspectFit" />
       </view>
     </view>
     <view class="chart-section">
       <view class="section-title">预约统计</view>
       <view class="chart-placeholder">
-        <text class="placeholder-text">图表区域</text>
+        <image :src="bookingStatsPlaceholderIcon" class="placeholder-icon" mode="aspectFit" />
       </view>
     </view>
     <view class="data-table">
@@ -47,9 +47,12 @@
 
 <script setup lang="ts">
 import DynamicTabBar from '@/components/DynamicTabBar.vue'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 import { ref, onMounted } from 'vue'
 
 const period = ref('week')
+const userGrowthPlaceholderIcon = getSemanticIcon('admin-analytics-users-empty')
+const bookingStatsPlaceholderIcon = getSemanticIcon('admin-analytics-bookings-empty')
 const tableData = ref([
   { date: '02-07', newUsers: 15, bookings: 32, revenue: '¥2,580' },
   { date: '02-06', newUsers: 12, bookings: 28, revenue: '¥2,240' },
@@ -123,9 +126,9 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
 
-    .placeholder-text {
-      color: #999;
-      font-size: 28rpx;
+    .placeholder-icon {
+      width: 220rpx;
+      height: 220rpx;
     }
   }
 }

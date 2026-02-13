@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import fetch_user_from_token, get_current_user
-from app.models.booking import Booking, BookingStatus, Review
+from app.models.booking import Booking, BookingStatus, CoachAvailableSlot, Review
 from app.models.user import Coach, User
 from app.schemas.booking import (
     CoachAvailableSlotsResponse,
@@ -26,6 +26,14 @@ from app.schemas.booking import (
 from app.services.booking_service import BookingService, ReviewService
 
 router = APIRouter()
+
+
+async def _get_current_coach_profile(db: AsyncSession, user_id: int) -> Coach:
+    result = await db.execute(select(Coach).where(Coach.user_id == user_id))
+    coach = result.scalar_one_or_none()
+    if not coach:
+        raise HTTPException(status_code=400, detail="未找到教练信息")
+    return coach
 
 
 def parse_specialty(specialty: Optional[str]) -> Optional[List[str]]:
@@ -269,9 +277,7 @@ async def get_my_slots(
     if current_user.role != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
-    coach = current_user.coach
-    if not coach:
-        raise HTTPException(status_code=400, detail="未找到教练信息")
+    coach = await _get_current_coach_profile(db, current_user.id)
 
     service = BookingService(db)
     slots = await service.get_coach_slots(coach.id)
@@ -305,12 +311,13 @@ async def create_my_slot(
     if current_user.role != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
-    coach = current_user.coach
-    if not coach:
-        raise HTTPException(status_code=400, detail="未找到教练信息")
+    coach = await _get_current_coach_profile(db, current_user.id)
 
     service = BookingService(db)
-    slot = await service.create_coach_slot(coach.id, data)
+    try:
+        slot = await service.create_coach_slot(coach.id, data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     return CoachSlotResponse(
         id=slot.id,
@@ -339,6 +346,13 @@ async def update_my_slot(
     if current_user.role != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
 
+    coach = await _get_current_coach_profile(db, current_user.id)
+    slot = await db.get(CoachAvailableSlot, slot_id)
+    if not slot:
+        raise HTTPException(status_code=404, detail="时段不存在")
+    if slot.coach_id != coach.id:
+        raise HTTPException(status_code=403, detail="无权操作该时段")
+
     service = BookingService(db)
     try:
         slot = await service.update_coach_slot(slot_id, data)
@@ -354,7 +368,8 @@ async def update_my_slot(
             created_at=slot.created_at,
         )
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        status_code = 404 if str(e) == "时段不存在" else 400
+        raise HTTPException(status_code=status_code, detail=str(e))
 
 
 @router.delete("/me/slots/{slot_id}")
@@ -369,6 +384,13 @@ async def delete_my_slot(
     """删除我的可约时段"""
     if current_user.role != "coach":
         raise HTTPException(status_code=403, detail="仅教练可访问")
+
+    coach = await _get_current_coach_profile(db, current_user.id)
+    slot = await db.get(CoachAvailableSlot, slot_id)
+    if not slot:
+        raise HTTPException(status_code=404, detail="时段不存在")
+    if slot.coach_id != coach.id:
+        raise HTTPException(status_code=403, detail="无权操作该时段")
 
     service = BookingService(db)
     if not await service.delete_coach_slot(slot_id):
@@ -679,7 +701,7 @@ async def get_income_details(
 @router.get("/me/students")
 async def get_my_students(
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(20, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):

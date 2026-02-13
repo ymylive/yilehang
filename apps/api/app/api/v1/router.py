@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
+    admin_panel,
     ai,
     auth,
     bookings,
@@ -41,6 +42,7 @@ api_router.include_router(reviews.router, prefix="/reviews", tags=["Reviews"])
 
 # Admin dashboard
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
+api_router.include_router(admin_panel.router, prefix="/admin-panel", tags=["Admin Panel"])
 
 # AI
 api_router.include_router(ai.router, prefix="/ai", tags=["AI"])

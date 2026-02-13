@@ -510,6 +510,13 @@ class BookingService:
 
     async def create_coach_slot(self, coach_id: int, data: CoachSlotCreate) -> CoachAvailableSlot:
         """创建教练可约时段"""
+        if data.start_time >= data.end_time:
+            raise ValueError("结束时间必须大于开始时间")
+        if data.slot_duration <= 0:
+            raise ValueError("每节时长需大于0")
+        if data.max_students <= 0:
+            raise ValueError("最大学员数需大于0")
+
         slot = CoachAvailableSlot(
             coach_id=coach_id,
             day_of_week=data.day_of_week,
@@ -517,6 +524,7 @@ class BookingService:
             end_time=data.end_time,
             slot_duration=data.slot_duration,
             max_students=data.max_students,
+            created_at=datetime.now(timezone.utc).replace(tzinfo=None),
         )
         self.db.add(slot)
         await self.db.commit()
@@ -529,7 +537,21 @@ class BookingService:
         if not slot:
             raise ValueError("时段不存在")
 
-        for field, value in data.model_dump(exclude_unset=True).items():
+        payload = data.model_dump(exclude_unset=True)
+        start_time = payload.get("start_time", slot.start_time)
+        end_time = payload.get("end_time", slot.end_time)
+        if start_time >= end_time:
+            raise ValueError("结束时间必须大于开始时间")
+
+        slot_duration = payload.get("slot_duration", slot.slot_duration)
+        if slot_duration <= 0:
+            raise ValueError("每节时长需大于0")
+
+        max_students = payload.get("max_students", slot.max_students)
+        if max_students <= 0:
+            raise ValueError("最大学员数需大于0")
+
+        for field, value in payload.items():
             setattr(slot, field, value)
 
         await self.db.commit()

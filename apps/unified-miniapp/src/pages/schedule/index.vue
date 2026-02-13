@@ -62,7 +62,9 @@
     </view>
 
     <view class="empty-state" v-else>
-      <view class="empty-icon">课</view>
+      <view class="empty-icon">
+        <image :src="emptyIcon" class="empty-icon-image" mode="aspectFit" />
+      </view>
       <text class="empty-title">当天暂无课程安排</text>
       <text class="empty-sub">去预约一节新课程吧</text>
     </view>
@@ -75,6 +77,7 @@ import DynamicTabBar from '@/components/DynamicTabBar.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { scheduleApi } from '@/api'
+import { getSemanticIcon } from '@/constants/semantic-icons'
 
 const userStore = useUserStore()
 
@@ -82,6 +85,7 @@ const weekStart = ref(getWeekStart(new Date()))
 const selectedDate = ref(formatDateStr(new Date()))
 const schedules = ref<any[]>([])
 const enrolledIds = ref<number[]>([])
+const emptyIcon = getSemanticIcon('schedule-empty')
 
 const weekDates = computed(() => {
   const dates = []
@@ -140,11 +144,14 @@ async function loadSchedules() {
   try {
     const startDate = new Date(weekStart.value)
     const endDate = new Date(weekStart.value)
-    endDate.setDate(endDate.getDate() + 7)
+    endDate.setDate(endDate.getDate() + 6)
+
+    const startDateStr = `${formatDateStr(startDate)}T00:00:00`
+    const endDateStr = `${formatDateStr(endDate)}T23:59:59`
 
     const res = await scheduleApi.list({
-      start_date: startDate.toISOString(),
-      end_date: endDate.toISOString()
+      start_date: startDateStr,
+      end_date: endDateStr
     })
     schedules.value = res || []
   } catch (error) {
@@ -494,6 +501,11 @@ async function checkinSchedule(schedule: any) {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.empty-icon-image {
+  width: 56rpx;
+  height: 56rpx;
 }
 
 .empty-title {

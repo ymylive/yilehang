@@ -14,7 +14,7 @@ from unittest.mock import patch
 import pytest
 from httpx import AsyncClient
 
-from app.services.auth_service import EMAIL_CODE_STORE
+from app.services.auth_service import EMAIL_CODE_STORE, WechatServiceError
 
 # ============ Account + Password Login ============
 
@@ -445,6 +445,28 @@ class TestWechatLogin:
             )
             assert resp.status_code == 400
             assert "WeChat" in resp.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_wechat_login_rate_limited_maps_429(self, client: AsyncClient):
+        """WeChat errcode 45011 should map to HTTP 429."""
+        with patch("app.services.auth_service.WechatService.code2session") as mock_c2s:
+            mock_c2s.side_effect = WechatServiceError("请求过于频繁，请稍后重试", errcode=45011)
+
+            resp = await client.post(
+                "/api/v1/auth/login/wechat", json={"code": "rate_limited", "device_id": "dev-1"}
+            )
+            assert resp.status_code == 429
+
+    @pytest.mark.asyncio
+    async def test_wechat_login_risk_control_maps_403(self, client: AsyncClient):
+        """WeChat errcode 40226 should map to HTTP 403."""
+        with patch("app.services.auth_service.WechatService.code2session") as mock_c2s:
+            mock_c2s.side_effect = WechatServiceError("登录受限，请联系客服", errcode=40226)
+
+            resp = await client.post(
+                "/api/v1/auth/login/wechat", json={"code": "risk_control", "device_id": "dev-1"}
+            )
+            assert resp.status_code == 403
 
 
 # ============ Disabled Account ============

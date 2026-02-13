@@ -29,7 +29,7 @@ from app.schemas import (
     WechatLogin,
     WechatPhoneLogin,
 )
-from app.services.auth_service import AuthService, EmailService, WechatService
+from app.services.auth_service import AuthService, EmailService, WechatService, WechatServiceError
 
 router = APIRouter()
 PUBLIC_REGISTER_ALLOWED_ROLES = {"parent", "student", "coach", "merchant"}
@@ -84,7 +84,16 @@ def _token_response(user: User) -> Token:
     )
 
 
-def _wechat_error_http_status(message: str) -> int:
+def _wechat_error_http_status(message: str, errcode: Optional[int] = None) -> int:
+    if errcode == 45011:
+        return status.HTTP_429_TOO_MANY_REQUESTS
+    if errcode == 40226:
+        return status.HTTP_403_FORBIDDEN
+    if errcode in {40029, 40013}:
+        return status.HTTP_400_BAD_REQUEST
+    if errcode in {40125, -1}:
+        return status.HTTP_503_SERVICE_UNAVAILABLE
+
     msg = (message or "").lower()
     login_credential_cn = "\u767b\u5f55\u51ed\u8bc1"
     if "not configured" in msg:
@@ -508,6 +517,10 @@ async def wechat_login(wechat_data: WechatLogin, db: AsyncSession = Depends(get_
 
     except HTTPException:
         raise
+    except WechatServiceError as e:
+        message = str(e)
+        http_status = _wechat_error_http_status(message, e.errcode)
+        raise HTTPException(status_code=http_status, detail=message)
     except Exception as e:
         import logging
 
@@ -557,6 +570,10 @@ async def wechat_phone_login(data: WechatPhoneLogin, db: AsyncSession = Depends(
 
     except HTTPException:
         raise
+    except WechatServiceError as e:
+        message = str(e)
+        http_status = _wechat_error_http_status(message, e.errcode)
+        raise HTTPException(status_code=http_status, detail=message)
     except Exception as e:
         message = str(e)
         http_status = _wechat_error_http_status(message)

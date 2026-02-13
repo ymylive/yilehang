@@ -210,9 +210,9 @@ export const authApi = {
   sendEmailCode: (email: string) =>
     api.post('/auth/login/email/send', { email }),
 
-  // WeChat login
-  wechatLogin: (code: string, userInfo?: any, deviceId?: string) =>
-    api.post('/auth/login/wechat', { code, user_info: userInfo, device_id: deviceId }),
+  // WeChat login (official mini program flow: client code -> backend code2session)
+  wechatLogin: (code: string, deviceId?: string) =>
+    api.post('/auth/login/wechat', { code, device_id: deviceId }),
 
   // WeChat phone login
   wechatPhoneLogin: (code: string, phoneCode: string, deviceId?: string) =>
@@ -376,6 +376,40 @@ export const coachApi = {
     api.get(`/coaches/${id}/reviews`, { page, page_size: pageSize })
 }
 
+// Admin Panel API
+export const adminPanelApi = {
+  listCoaches: (params?: { keyword?: string; page?: number; page_size?: number }) =>
+    api.get('/admin-panel/coaches', params),
+
+  updateCoach: (
+    id: number,
+    data: {
+      name?: string
+      avatar?: string
+      specialty?: string[]
+      introduction?: string
+      hourly_rate?: number
+      years_of_experience?: number
+      status?: 'active' | 'inactive' | 'banned'
+    }
+  ) => api.put(`/admin-panel/coaches/${id}`, data),
+
+  seedMockCoaches: (count = 8) =>
+    api.post('/admin-panel/coaches/mock-seed', { count }),
+
+  publishNotice: (data: { kind: 'announcement' | 'activity'; title: string; content: string }) =>
+    api.post('/admin-panel/notices', data),
+
+  listNotices: (limit = 30) =>
+    api.get('/admin-panel/notices', { limit })
+}
+
+// Admin dashboard API
+export const dashboardApi = {
+  getOverview: () =>
+    api.get('/dashboard/overview')
+}
+
 // Review API
 export const reviewApi = {
   create: (data: {
@@ -526,7 +560,13 @@ export const coachSlotsApi = {
     slot_duration?: number
     max_students?: number
   }) => api.post('/coaches/me/slots', data),
-  updateSlot: (id: number, data: any) => api.put(`/coaches/me/slots/${id}`, data),
+  updateSlot: (id: number, data: {
+    start_time?: string
+    end_time?: string
+    slot_duration?: number
+    max_students?: number
+    is_active?: boolean
+  }) => api.put(`/coaches/me/slots/${id}`, data),
   deleteSlot: (id: number) => api.delete(`/coaches/me/slots/${id}`)
 }
 
