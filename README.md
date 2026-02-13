@@ -122,6 +122,26 @@ pnpm -C apps/merchant build:h5
 - `apps/client/dist/build/mp-weixin`
 - `apps/coach/dist/build/mp-weixin`
 
+### 5）统一小程序 UI 自动化测试
+
+先确保已安装微信开发者工具（Windows 默认目录：`C:/Program Files (x86)/Tencent/微信web开发者工具`）。
+
+```bash
+pnpm -C apps/unified-miniapp test:ui
+```
+
+如果本机 Node 版本较新导致 `spawn EINVAL`（常见于 Node 24 + Windows），使用 Node 20 执行：
+
+```bash
+npx -y node@20 "C:/Program Files/nodejs/node_modules/corepack/dist/pnpm.js" -C apps/unified-miniapp test:ui
+```
+
+可选环境变量：
+
+- `WECHAT_DEVTOOLS_CWD`：微信开发者工具目录
+- `WECHAT_DEVTOOLS_AUTO_PORT`：自动化端口（默认 `9420`）
+- `UNI_AUTOMATOR_TEARDOWN`：`disconnect` 或 `close`
+
 ## API 入口
 
 后端启动后可访问：
